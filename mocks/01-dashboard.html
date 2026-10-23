@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Panel · Potrero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/tw.css"></head>
+<body data-shell="org" data-on="1"><div id="side"></div><div class="lg:pl-[17rem]"><div id="top"></div>
+<main class="mx-auto max-w-[1400px] px-4 pb-32 pt-6 sm:px-6">
+
+  <div class="rise mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div><p class="eyebrow">Sábado 7 de noviembre</p><h1 class="mt-1 text-4xl font-bold tracking-tight sm:text-5xl">Buen día, Lucas.</h1></div>
+    <div class="flex w-full flex-wrap gap-2 sm:w-auto"><a href="03-inscripciones.html" class="btn-glass flex-1 sm:flex-none"><span data-i="share"></span>Compartir inscripción</a><a href="02-crear-torneo.html" class="btn-volt flex-1 sm:flex-none"><span data-i="plus"></span>Nuevo torneo</a></div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-4 md:grid-cols-6 xl:grid-cols-12">
+
+    <!-- Partido en vivo -->
+    <section class="tile-ink rise md:col-span-6 xl:col-span-8" style="--d:1">
+      <div class="field-pattern pointer-events-none absolute inset-0 opacity-90"></div>
+      <div class="relative">
+        <div class="flex items-center justify-between"><span class="pill-live">En vivo · 32'</span><span class="text-xs text-white/50">Apertura F7 · Fecha 7 · Cancha 2</span></div>
+        <div class="my-7 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 text-center sm:gap-6">
+          <div class="flex flex-col items-center gap-2"><span class="crest size-16 text-base sm:size-20 sm:text-lg" style="--c:#16a34a">LP</span><b class="text-sm sm:text-lg">Los Pibes</b></div>
+          <div class="text-6xl font-bold tracking-tighter sm:text-8xl num">2<span class="mx-2 text-white/25">:</span>1</div>
+          <div class="flex flex-col items-center gap-2"><span class="crest size-16 text-base sm:size-20 sm:text-lg" style="--c:#2563eb">AN</span><b class="text-sm sm:text-lg">Atl. Norte</b></div>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4"><div class="flex items-center gap-2 text-sm text-white/60"><span data-i="ball" class="text-volt"></span>12' Luna · 25' Gómez · 30' Pérez</div><a href="05-acta.html" class="btn-volt btn-sm">Abrir acta<span data-i="arrow"></span></a></div>
+      </div>
+    </section>
+
+    <!-- Cobrado -->
+    <section class="tile-volt rise md:col-span-3 xl:col-span-4" style="--d:2">
+      <div class="flex items-center justify-between"><span class="eyebrow !text-ink/60">Cobrado este torneo</span><span class="grid size-9 place-items-center rounded-full bg-ink text-volt"><span data-i="wallet"></span></span></div>
+      <div class="mt-6 text-5xl font-bold tracking-tighter num" data-count="1280000" data-pre="$ ">$ 1.280.000</div>
+      <p class="mt-1 text-sm text-ink/70">Neto tras comisión: <b>$ 1.235.200</b></p>
+      <svg viewBox="0 0 300 70" class="mt-5 w-full" fill="none"><path d="M0 60 C30 55 40 40 70 44 S120 20 150 28 S210 12 240 18 S280 6 300 4" stroke="#0a0a0a" stroke-width="3" stroke-linecap="round"/><path d="M0 60 C30 55 40 40 70 44 S120 20 150 28 S210 12 240 18 S280 6 300 4 V70 H0z" fill="#0a0a0a" fill-opacity=".08"/></svg>
+    </section>
+
+    <!-- KPIs -->
+    <section class="tile rise md:col-span-3 xl:col-span-3" style="--d:3"><div class="flex items-center justify-between"><span class="eyebrow">Equipos</span><span class="pill-volt">+8</span></div><div class="mt-4 text-5xl font-bold tracking-tighter num" data-count="42">42</div><p class="mt-1 text-sm text-mute">en 3 torneos activos</p>
+      <div class="mt-4 flex -space-x-2"><span class="crest size-8" style="--c:#16a34a">LP</span><span class="crest size-8" style="--c:#2563eb">AN</span><span class="crest size-8" style="--c:#7c3aed">DS</span><span class="crest size-8" style="--c:#ea580c">RB</span><span class="grid size-8 place-items-center rounded-full bg-ink text-[11px] font-bold text-white ring-2 ring-white">+38</span></div></section>
+
+    <section class="tile rise md:col-span-3 xl:col-span-3" style="--d:4"><div class="flex items-center justify-between"><span class="eyebrow">Partidos de hoy</span><span class="pill">3</span></div><div class="mt-4 text-5xl font-bold tracking-tighter num">3</div><p class="mt-1 text-sm text-mute">1 en juego · 1 sin árbitro</p>
+      <div class="mt-4 space-y-2 text-sm"><div class="flex justify-between"><span class="text-mute">15:00</span><b>Dep. Sur vs Real Barrio</b></div><div class="flex justify-between"><span class="text-mute">16:00</span><b>Fénix vs La Banda</b></div></div></section>
+
+    <!-- Pendiente -->
+    <section class="tile rise md:col-span-6 xl:col-span-6" style="--d:5">
+      <div class="flex items-start justify-between gap-3"><div><span class="eyebrow">Pendiente</span><div class="mt-2 whitespace-nowrap text-3xl font-bold tracking-tighter num sm:text-4xl">$ 310.000</div></div><button class="btn btn-sm hidden sm:inline-flex"><span data-i="whatsapp"></span>Recordar a los 5</button></div>
+      <div class="bar mt-5"><i style="width:80%"></i></div><div class="mt-2 flex justify-between text-xs text-mute"><span>80% cobrado</span><span>vence el vie 13</span></div>
+      <div class="mt-4 flex flex-wrap gap-2"><span class="pill-red">Fénix FC · $60.000</span><span class="pill-red">La Banda · $60.000</span><span class="pill-amber">Real Barrio · $40.000</span><span class="pill">+2 más</span></div></section>
+
+    <!-- Atención -->
+    <section class="tile rise md:col-span-3 xl:col-span-5" style="--d:6">
+      <div class="mb-1 flex items-center justify-between"><h2 class="text-lg font-bold">Requiere atención</h2><span class="pill-ink">3</span></div>
+      <div class="list-row"><span class="grid size-10 place-items-center rounded-2xl bg-red-100 text-red-600"><span data-i="shield"></span></span><div class="min-w-0 flex-1"><b class="block text-sm">Jugó un suspendido</b><span class="text-xs text-mute">Ruiz (Dep. Sur) · fecha 5</span></div><button class="btn-glass btn-sm">Resolver</button></div>
+      <div class="list-row"><span class="grid size-10 place-items-center rounded-2xl bg-amber-100 text-amber-700"><span data-i="flag"></span></span><div class="min-w-0 flex-1"><b class="block text-sm">2 actas sin cargar</b><span class="text-xs text-mute">Fecha 6 · Pumas y Sparta</span></div><a href="05-acta.html" class="btn-glass btn-sm">Cargar</a></div>
+      <div class="list-row"><span class="grid size-10 place-items-center rounded-2xl bg-amber-100 text-amber-700"><span data-i="whistle"></span></span><div class="min-w-0 flex-1"><b class="block text-sm">Partido sin árbitro</b><span class="text-xs text-mute">Fénix vs La Banda · 16:00</span></div><button class="btn-glass btn-sm">Asignar</button></div></section>
+
+    <!-- Torneos -->
+    <section class="tile rise md:col-span-3 xl:col-span-4" style="--d:7">
+      <div class="mb-3 flex items-center justify-between"><h2 class="text-lg font-bold">Tus torneos</h2><a href="02-crear-torneo.html" class="text-sm font-semibold text-mute hover:text-ink">Ver todos →</a></div>
+      <div class="space-y-4">
+        <div><div class="mb-1.5 flex items-center justify-between text-sm"><b>Apertura 2026 · F7</b><span class="text-mute">Fecha 7/15</span></div><div class="bar"><i style="width:47%"></i></div></div>
+        <div><div class="mb-1.5 flex items-center justify-between text-sm"><b>Copa Verano · F5</b><span class="pill-volt">Inscripción</span></div><div class="bar volt"><i style="width:75%;background:#b7e600"></i></div></div>
+        <div><div class="mb-1.5 flex items-center justify-between text-sm"><b>Senior +40 · F11</b><span class="text-mute">Fecha 3/9</span></div><div class="bar"><i style="width:33%"></i></div></div>
+      </div></section>
+
+    <!-- Próximas acciones / IA -->
+    <section class="tile-ink rise md:col-span-6 xl:col-span-3" style="--d:8">
+      <div class="field-pattern pointer-events-none absolute inset-0 opacity-70"></div>
+      <div class="relative"><span class="pill border-transparent bg-white/15 text-white"><span data-i="spark"></span>Sugerencia</span>
+      <p class="mt-4 text-xl font-semibold leading-snug">Publica el fixture de la fecha 8 hoy y avisa a 16 capitanes por WhatsApp.</p>
+      <a href="04-fixture.html" class="btn-volt mt-5 w-full">Revisar fixture<span data-i="arrow"></span></a></div></section>
+  </div>
+</main></div>
+<script src="assets/app.js"></script></body></html>

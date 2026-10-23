@@ -1,0 +1,47 @@
+@page { size: A4; margin: 18mm 15mm 18mm 15mm;
+  @top-right{content:"GREGAL TECH";font-family:"Geist Mono",monospace;font-size:7pt;letter-spacing:.07em;color:#6b6b66;vertical-align:bottom;padding-bottom:3mm}
+  @bottom-left{content:"Un producto de Gregal Tech · gregal.tech";font-family:"Geist Mono",monospace;font-size:7pt;letter-spacing:.07em;color:#6b6b66;vertical-align:top;padding-top:3mm}
+  @bottom-right{content:counter(page) " / " counter(pages);font-family:"Geist Mono",monospace;font-size:7pt;letter-spacing:.07em;color:#6b6b66;vertical-align:top;padding-top:3mm} }
+@page :first { margin: 0; @top-left{content:none} @top-right{content:none} @bottom-left{content:none} @bottom-right{content:none} }
+:root{--ink:#0a0a0a;--ink2:#1c1c1c;--paper:#f4f4f1;--volt:#d6ff3d;--voltd:#b7e600;--mute:#6b6b66;--line:#e2e2dc}
+*{box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:Geist,Arial,sans-serif;color:var(--ink);font-size:10pt;line-height:1.45;margin:0}
+.cover{height:297mm;width:210mm;background:var(--ink);color:#fff;padding:22mm 20mm;position:relative;page-break-after:always;overflow:hidden}
+.cover .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15pt}
+.cover .dot{width:34px;height:34px;border-radius:12px;background:var(--volt);display:inline-block}
+.cover .tag{display:inline-block;margin-top:70mm;background:var(--volt);color:var(--ink);font-weight:700;font-size:9pt;letter-spacing:.12em;text-transform:uppercase;padding:5px 12px;border-radius:99px}
+.cover h1{font-size:40pt;line-height:1.02;letter-spacing:-.03em;margin:14px 0 10px;font-weight:800}
+.cover h1 span{color:var(--volt)}
+.cover p{font-size:13pt;color:#cfcfc8;max-width:140mm;margin:0}
+.cover .gt-by{position:absolute;top:22mm;right:20mm}
+.cover .foot{position:absolute;left:20mm;right:20mm;bottom:18mm;display:flex;justify-content:space-between;font-size:9pt;color:#9a9a92;border-top:1px solid #333;padding-top:8px}
+h1.sec{font-size:22pt;letter-spacing:-.02em;margin:0 0 4mm;padding-top:2mm;page-break-before:always;border-top:5px solid var(--volt)}
+h1.sec.first{page-break-before:auto}
+.eyebrow{font-size:8pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);margin:0 0 1mm}
+h2{font-size:13.5pt;margin:6mm 0 2mm;letter-spacing:-.01em;break-after:avoid}
+h3{font-size:11pt;margin:4mm 0 1.5mm;break-after:avoid}
+p{margin:0 0 2.5mm}
+ul,ol{margin:0 0 3mm;padding-left:5mm}li{margin-bottom:1mm}
+table{width:100%;border-collapse:collapse;margin:2mm 0 4mm;font-size:9pt;break-inside:auto}
+th{background:var(--ink);color:#fff;text-align:left;padding:4px 7px;font-weight:600}
+td{padding:4px 7px;border-bottom:1px solid var(--line);vertical-align:top}
+tr{break-inside:avoid}
+tr:nth-child(even) td{background:#fafaf7}
+.callout{background:var(--volt);border-radius:10px;padding:3.5mm 4.5mm;margin:3mm 0;break-inside:avoid}
+.callout.dark{background:var(--ink);color:#fff}
+.callout.warn{background:#fff3cd;border-left:5px solid #e0a800}
+.callout b.t{display:block;font-size:8pt;letter-spacing:.12em;text-transform:uppercase;margin-bottom:1mm}
+.grid{display:grid;gap:3mm;margin:3mm 0}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}.g4{grid-template-columns:repeat(4,1fr)}
+.card{border:1px solid var(--line);border-radius:12px;padding:3.5mm 4mm;background:#fff;break-inside:avoid}
+.card.ink{background:var(--ink);color:#fff;border:0}.card.volt{background:var(--volt);border:0}
+.card h3{margin:0 0 1mm}.card p{margin:0;font-size:9pt}
+.big{font-size:22pt;font-weight:800;letter-spacing:-.03em;line-height:1}
+.small{font-size:8pt;color:var(--mute)}
+.ink .small,.card.ink .small{color:#a9a9a1}
+code,.mono{font-family:"Geist Mono",Consolas,monospace;font-size:8.6pt;background:#efefe9;padding:0 3px;border-radius:3px}
+pre{font-family:"Geist Mono",Consolas,monospace;font-size:8pt;background:var(--ink);color:#e9ffa0;padding:3mm 4mm;border-radius:8px;white-space:pre-wrap;break-inside:avoid;margin:2mm 0 4mm}
+.pill{display:inline-block;background:var(--ink);color:#fff;font-size:7.5pt;font-weight:700;padding:1px 8px;border-radius:99px}
+.pill.v{background:var(--volt);color:var(--ink)}
+.toc{columns:2;column-gap:10mm;font-size:10pt}.toc li{margin-bottom:1.5mm}
+.fn{font-size:8pt;color:var(--mute);margin-top:4mm}

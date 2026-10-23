@@ -1,0 +1,23 @@
+/* Marca Gregal Tech (endoso) y tipografía común a todos los documentos de Potrero.
+   Fuente: C:\dev\gregal\marca (identidad "Nordeste 45°"). */
+@font-face{font-family:"Geist";src:url("brand/fonts/Geist-Regular.ttf");font-weight:400}
+@font-face{font-family:"Geist";src:url("brand/fonts/Geist-Medium.ttf");font-weight:500}
+@font-face{font-family:"Geist";src:url("brand/fonts/Geist-SemiBold.ttf");font-weight:600}
+@font-face{font-family:"Geist";src:url("brand/fonts/Geist-Bold.ttf");font-weight:700}
+@font-face{font-family:"Geist";src:url("brand/fonts/Geist-ExtraBold.ttf");font-weight:800}
+@font-face{font-family:"Geist Mono";src:url("brand/fonts/GeistMono-Regular.ttf");font-weight:400}
+@font-face{font-family:"Geist Mono";src:url("brand/fonts/GeistMono-Medium.ttf");font-weight:500}
+:root{--gt-carbon:#0A0F0D;--gt-verde:#12C28A;--gt-niebla:#F5F8F6;--gt-salvia:#8A9A93;--gt-aux:#5B6862;--gt-linea:#DCE3DF}
+body{font-family:"Geist",Arial,sans-serif}
+code,.mono,pre{font-family:"Geist Mono",Consolas,monospace}
+
+/* Endoso en portada: "Un producto de gregal.tech" */
+.gt-by{display:flex;align-items:center;gap:3mm;font-family:"Geist Mono",monospace;font-size:7.5pt;letter-spacing:.08em;text-transform:uppercase;color:var(--gt-salvia)}
+.gt-by img{height:7mm;width:auto;display:block}
+
+/* Colofón al final de cada documento */
+.gt-colofon{margin-top:10mm;padding:5mm 6mm;border-radius:10px;background:var(--gt-carbon);color:var(--gt-niebla);display:flex;justify-content:space-between;align-items:center;gap:8mm;break-inside:avoid;position:relative;overflow:hidden}
+.gt-colofon img{height:8mm;width:auto;display:block}
+.gt-colofon p{margin:2mm 0 0;font-size:8.5pt;line-height:1.45;color:var(--gt-salvia);max-width:110mm}
+.gt-colofon .gt-datos{font-family:"Geist Mono",monospace;font-size:7.5pt;letter-spacing:.06em;text-align:right;color:var(--gt-niebla);line-height:1.8;white-space:nowrap}
+.gt-colofon::after{content:"";position:absolute;right:-26mm;top:50%;width:40mm;height:1.2px;background:var(--gt-verde);transform:rotate(-45deg);opacity:.5}

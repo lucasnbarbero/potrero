@@ -1,0 +1,138 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Potrero · Legal y cumplimiento</title><link rel="stylesheet" href="gregal.css"><link rel="stylesheet" href="base.css"><style>@page{@top-left{content:"POTRERO · LEGAL Y CUMPLIMIENTO · DOC 6/6";font-family:"Geist Mono",monospace;font-size:7pt;letter-spacing:.07em;color:#6b6b66;vertical-align:bottom;padding-bottom:3mm}}</style></head><body>
+<section class="cover"><div class="brand"><span class="dot"></span>Potrero</div><div class="gt-by">Un producto de<img src="brand/gregal-oscuro.svg" alt="Gregal Tech"></div>
+<span class="tag">Legal, datos y cumplimiento</span><h1>Lo que hay que<br>resolver con <span>un abogado.</span></h1>
+<p>Mapa de obligaciones, riesgos y documentos a preparar antes de recibir datos de personas y dinero de ligas.</p>
+<div class="foot"><span>Documento 6 de 6 · Nombre provisorio</span><span>Octubre 2026</span></div></section>
+
+<h1 class="sec first"><p class="eyebrow">Aviso</p>Cómo usar este documento</h1>
+<div class="callout warn"><b class="t">No es asesoramiento legal</b>Este documento ordena preguntas y tareas para llevar a un abogado especialista en datos personales, comercio electrónico y derecho societario/tributario de Argentina, y a un contador. Las referencias a normas son orientativas y <b>deben verificarse en su versión vigente</b>. En nuestra investigación no pudimos confirmar los requisitos actuales de inscripción de bases de datos ni el tratamiento específico de datos de menores: son prioridad de consulta.</div>
+<p>Potrero trata <b>datos personales (incluidos DNI, fotos, aptos físicos y datos de menores)</b>, intermedia <b>dinero</b> y comunica por <b>WhatsApp</b> a miles de personas. Es el área de mayor riesgo legal y reputacional del producto. Tiene que estar resuelta antes de la beta con ligas reales.</p>
+<h2>Prioridades</h2>
+<table><tr><th>Prioridad</th><th>Tema</th><th>Cuándo</th></tr>
+<tr><td><span class="pill">1</span></td><td>Datos de menores, DNI y aptos físicos (consentimiento, base legal, seguridad)</td><td>Antes de la beta</td></tr>
+<tr><td><span class="pill">1</span></td><td>Rol de la plataforma frente al dinero (marketplace con Mercado Pago) y régimen fiscal</td><td>Antes de cobrar la primera comisión</td></tr>
+<tr><td><span class="pill">1</span></td><td>Términos de servicio, privacidad y contrato con ligas</td><td>Antes de la beta</td></tr>
+<tr><td><span class="pill">2</span></td><td>Marca y nombre</td><td>Ya, antes de invertir en identidad</td></tr>
+<tr><td><span class="pill">2</span></td><td>Mensajería (WhatsApp, email, push) y consentimiento de comunicaciones</td><td>Antes del envío masivo</td></tr>
+<tr><td><span class="pill">2</span></td><td>Sponsors y publicidad</td><td>Antes de vender espacios</td></tr>
+<tr><td><span class="pill">3</span></td><td>Seguros, propiedad intelectual del software, empleo y contratistas</td><td>Antes del lanzamiento</td></tr></table>
+
+<h1 class="sec"><p class="eyebrow">1</p>Datos personales</h1>
+<h2>Marco de referencia (a verificar)</h2>
+<ul><li><b>Ley 25.326 de Protección de los Datos Personales</b> y su decreto reglamentario. La Agencia de Acceso a la Información Pública (AAIP) es la autoridad de aplicación y puede sancionar.</li>
+<li>Verificar si existe normativa más reciente o proyectos de reforma que cambien los requisitos de consentimiento, transferencias y seguridad.</li>
+<li>Normas sobre protección de niñas, niños y adolescentes y capacidad de menores (Código Civil y Comercial). Definir con el abogado <b>a qué edad un adolescente puede consentir por sí mismo y cuándo se requiere al tutor</b>. Recomendación inicial conservadora: exigir autorización de padre, madre o tutor para toda persona menor de 18 años.</li></ul>
+<h2>Roles de tratamiento</h2>
+<table><tr><th>Quién</th><th>Posible rol</th><th>Consecuencia</th></tr>
+<tr><td>Organizador / liga</td><td>Responsable del tratamiento de los datos de sus equipos y jugadores</td><td>Decide qué documentación pide y para qué.</td></tr>
+<tr><td>Potrero</td><td>Encargado (en lo que procesa por cuenta de la liga) y responsable (de sus propios datos: cuentas, perfiles, métricas)</td><td>Necesita contrato de tratamiento con cada liga y una política propia.</td></tr>
+<tr><td>Mercado Pago, WhatsApp/BSP, nube</td><td>Subencargados</td><td>Cláusulas contractuales, transferencia internacional de datos.</td></tr></table>
+<p>El abogado debe confirmar si Potrero es responsable, encargado o ambos según cada flujo, porque determina quién registra la base, quién responde a los pedidos de los titulares y quién responde ante un incidente.</p>
+<h2>Obligaciones a cubrir</h2>
+<table><tr><th>Obligación</th><th>Qué hay que hacer</th><th>Dónde se implementa</th></tr>
+<tr><td>Inscripción de bases de datos</td><td>Confirmar si la base debe inscribirse ante la AAIP y quién la inscribe (liga, Potrero, ambos), y plazos de actualización.</td><td>Trámite legal</td></tr>
+<tr><td>Consentimiento informado</td><td>Texto claro, finalidad, destinatarios, derechos, datos sensibles; guardar versión, fecha y origen del consentimiento.</td><td>Registro <code>Consent</code>; flujo de alta</td></tr>
+<tr><td>Consentimiento de tutores</td><td>Flujo de autorización para menores, con prueba (quién, cuándo, cómo se verificó).</td><td>Rol Tutor; documento 1</td></tr>
+<tr><td>Datos sensibles</td><td>Salud (apto físico) y otros: determinar si son datos sensibles y las condiciones especiales; minimizar (guardar solo el resultado y la fecha de vencimiento si es posible).</td><td>Modelo de datos</td></tr>
+<tr><td>Calidad y finalidad</td><td>Usar los datos solo para organizar el torneo; no reutilizarlos para publicidad sin consentimiento.</td><td>Política y permisos</td></tr>
+<tr><td>Derechos de los titulares</td><td>Acceso, rectificación, supresión y oposición con proceso y plazos.</td><td>Procedimiento interno + herramienta de soporte</td></tr>
+<tr><td>Seguridad</td><td>Medidas técnicas y organizativas (cifrado, accesos, auditoría), registro de incidentes y aviso.</td><td>Documento 1, sección 8</td></tr>
+<tr><td>Transferencias internacionales</td><td>Si la nube, el BSP o el proveedor de verificación está fuera del país, verificar el nivel de protección y firmar cláusulas.</td><td>Contratos con proveedores</td></tr>
+<tr><td>Retención y borrado</td><td>Plazos por tipo de dato (ej. documentos de identidad y aptos); eliminación segura.</td><td>Jobs de borrado</td></tr>
+<tr><td>Imagen y fotos</td><td>Consentimiento para publicar fotos y tarjetas, especialmente de menores.</td><td>Permisos de perfil y de partido</td></tr></table>
+<h2>Reglas de producto derivadas (propuestas)</h2>
+<ul><li>No publicar nunca DNI, fecha de nacimiento exacta, teléfono ni domicilio. Los perfiles públicos de menores son opcionales y con apodo.</li>
+<li>Pedir el mínimo de documentación; el organizador elige qué es obligatorio por torneo.</li>
+<li>Acceso a documentos solo para roles autorizados y con registro.</li>
+<li>La selfie y la comparación facial son datos biométricos: requieren consentimiento expreso y evaluación legal específica antes de implementarlas. Por defecto, revisión humana.</li>
+<li>Los jugadores que se dan de baja pueden pedir que se borren sus datos; se conserva solo lo imprescindible por obligación legal o para la integridad de los resultados deportivos (dato anonimizado).</li></ul>
+
+<h1 class="sec"><p class="eyebrow">2</p>Dinero, pagos e impuestos</h1>
+<h2>Modelo de cobro</h2>
+<p>Potrero usa Mercado Pago Marketplace con split: el equipo paga, el dinero acredita en la cuenta del organizador y Mercado Pago retiene la comisión de la plataforma. La plataforma <b>no custodia fondos del organizador</b> en este diseño. Confirmar con el abogado y con Mercado Pago:</p>
+<ul><li>Que ese esquema no convierte a Potrero en una entidad que requiera autorización o registro financiero (por ejemplo, como proveedor de servicios de pago u otros regímenes).</li>
+<li>Obligaciones frente a la <b>UIF</b> (prevención de lavado de dinero): si Potrero, como plataforma, es sujeto obligado o solo lo es la pasarela. Prever procedimientos de conocimiento del cliente razonables para organizadores.</li>
+<li>Condiciones de Mercado Pago: aprobación de la aplicación, requisitos de cada vendedor (identificación nivel KYC 6), responsabilidad por contracargos, reembolsos, plazos de acreditación, tarifas y prohibiciones de uso.</li>
+<li>Tratamiento del <b>retiro de dinero</b> de la caja del torneo: si es solo un registro contable del organizador o un movimiento real de fondos. En el segundo caso, el esquema legal cambia de manera importante.</li></ul>
+<h2>Impuestos y facturación de Potrero</h2>
+<table><tr><th>Tema</th><th>Pregunta para el contador</th></tr>
+<tr><td>Régimen</td><td>¿Monotributo, responsable inscripto, o sociedad? Impacto de la comisión y de ingresos del exterior si hay clientes en otros países.</td></tr>
+<tr><td>IVA</td><td>La comisión de Potrero, ¿lleva IVA? ¿El organizador lo puede computar o es consumidor final? Cambia el precio efectivo.</td></tr>
+<tr><td>Ingresos Brutos</td><td>Alta por jurisdicción, alícuotas según provincia de los clientes.</td></tr>
+<tr><td>Facturación electrónica</td><td>Emisión mensual de comprobantes por cada organización; integración o proceso manual.</td></tr>
+<tr><td>Retenciones y percepciones</td><td>Retenciones que pueda aplicar Mercado Pago al organizador y su efecto en la rendición.</td></tr>
+<tr><td>Tipo de cambio</td><td>Costos en dólares (nube, mensajería) frente a ingresos en pesos: tratamiento y cobertura.</td></tr></table>
+<h2>Tareas del organizador (informar, no asumir)</h2>
+<p>Cada organizador responde por su propia situación fiscal respecto de lo que cobra a los equipos (facturación, monotributo, etc.). Potrero debe aclarar en los términos que <b>no presta asesoramiento fiscal ni contable</b> al organizador, aunque la caja facilite los reportes.</p>
+
+<h1 class="sec"><p class="eyebrow">3</p>Contratos y documentos a preparar</h1>
+<table><tr><th>Documento</th><th>Contenido mínimo</th><th>Estado</th></tr>
+<tr><td>Términos y condiciones para organizadores</td><td>Servicio, precios y comisiones, pagos, responsabilidades, uso aceptable, propiedad de datos, suspensión, baja, ley aplicable y jurisdicción, límites de responsabilidad, nivel de servicio.</td><td>Pendiente</td></tr>
+<tr><td>Contrato de tratamiento de datos (con cada liga)</td><td>Quién es responsable/encargado, instrucciones, seguridad, subencargados, devolución y borrado al finalizar, auditoría, notificación de incidentes.</td><td>Pendiente</td></tr>
+<tr><td>Acuerdo de liga fundadora</td><td>Beneficios (2,5 % de por vida, condiciones), obligaciones (torneo piloto, datos de cobros, feedback, testimonio), plazo, confidencialidad, qué pasa si se cambia el modelo.</td><td>Pendiente</td></tr>
+<tr><td>Términos para capitanes, jugadores y público</td><td>Uso de la cuenta, reglas de conducta, contenido, pagos y reembolsos del equipo.</td><td>Pendiente</td></tr>
+<tr><td>Política de privacidad (pública)</td><td>Qué datos se recogen, para qué, con quién se comparten, derechos, plazos, contacto.</td><td>Pendiente</td></tr>
+<tr><td>Política de cookies y analítica</td><td>Qué se mide y cómo se informa.</td><td>Pendiente</td></tr>
+<tr><td>Consentimiento de tutor</td><td>Autorización para participar, tratar datos y publicar imagen; versionado.</td><td>Pendiente</td></tr>
+<tr><td>Política de reembolsos y reclamos de pago</td><td>Quién reembolsa, plazos, qué hace Potrero y qué el organizador.</td><td>Pendiente</td></tr>
+<tr><td>Acuerdo para sponsors</td><td>Espacios, medición, categorías prohibidas, derechos de uso de marca.</td><td>Pendiente</td></tr>
+<tr><td>Contratos con proveedores</td><td>Mercado Pago, BSP de WhatsApp, nube, email: confidencialidad, datos, niveles de servicio.</td><td>Pendiente</td></tr>
+<tr><td>Contratos de personal y colaboradores</td><td>Confidencialidad, propiedad intelectual del código y diseño, acceso a datos sensibles.</td><td>Pendiente</td></tr></table>
+<h2>Defensa del consumidor y comercio electrónico</h2>
+<p>Los equipos y jugadores que pagan por internet pueden ser consumidores frente al organizador y a la plataforma. Consultar: información clara de precios y cargos, <b>botón de arrepentimiento</b> y plazos de revocación aplicables, atención de reclamos y condiciones de reembolso de inscripciones, y si las reglas cambian cuando quien cobra es el organizador y no la plataforma.</p>
+
+<h1 class="sec"><p class="eyebrow">4</p>Marca, nombre y propiedad intelectual</h1>
+<ul><li><b>Nombre:</b> buscar "Potrero" en el registro de marcas del INPI (clases de software y servicios deportivos) y en dominios <code>.com.ar</code>/<code>.com</code> y redes. Si está tomado o es muy similar a una marca existente, cambiar antes de invertir en identidad.</li>
+<li><b>Registro:</b> presentar la solicitud de marca (nombre y logo) en las clases relevantes; considerar registro en otros países si se prevé expansión.</li>
+<li><b>Propiedad del código y diseño:</b> contratos que cedan a la empresa los derechos de lo creado por empleados y contratistas; registro del software si se considera conveniente.</li>
+<li><b>Licencias de terceros:</b> inventario de bibliotecas open source y sus licencias; tipografías (Geist es de licencia abierta; verificar), imágenes e íconos.</li>
+<li><b>Contenido de usuarios:</b> escudos, fotos y textos: los términos deben otorgar la licencia necesaria para mostrarlos y a la vez exigir que el usuario tenga derecho a subirlos.</li></ul>
+
+<h1 class="sec"><p class="eyebrow">5</p>Comunicaciones y marketing</h1>
+<table><tr><th>Canal</th><th>Requisito / riesgo</th><th>Acción</th></tr>
+<tr><td>WhatsApp Business</td><td>Políticas de Meta: consentimiento previo (opt-in), plantillas aprobadas, calidad de mensajes; riesgo de bloqueo del número.</td><td>Recoger opt-in explícito; plantillas transaccionales; mantener la calidad.</td></tr>
+<tr><td>Email</td><td>Consentimiento para comunicaciones comerciales; opción de baja; separación entre transaccional y marketing.</td><td>Preferencias de comunicación por usuario.</td></tr>
+<tr><td>Llamadas y mensajes comerciales</td><td>Verificar si aplica el registro "No Llame" y otras limitaciones a la prospección de nuevos clientes.</td><td>Revisar con el abogado antes de campañas masivas.</td></tr>
+<tr><td>Publicidad de Potrero</td><td>No afirmar comparaciones con la competencia sin respaldo; no prometer funciones inexistentes.</td><td>Revisión de piezas; guía de ventas, documento 4.</td></tr>
+<tr><td>Testimonios y casos de éxito</td><td>Autorización por escrito de la liga y de las personas que aparezcan.</td><td>Formulario de autorización.</td></tr></table>
+
+<h1 class="sec"><p class="eyebrow">6</p>Sponsors y contenido</h1>
+<ul><li><b>Categorías sensibles:</b> apuestas, alcohol, tabaco y otras en torneos con menores. Propuesta: no aceptarlas donde haya menores; para las apuestas en línea, verificar la normativa provincial aplicable.</li>
+<li><b>Publicidad dirigida a menores:</b> restringida; definir reglas de exhibición según el público de cada torneo.</li>
+<li><b>Transparencia:</b> señalar claramente cuándo algo es publicidad.</li>
+<li><b>Uso de marcas de terceros:</b> sponsors que aportan logos; revisar derechos y condiciones.</li>
+<li><b>Datos para reportes:</b> reportes de impresiones y clics son agregados; no entregar datos personales a sponsors sin consentimiento.</li></ul>
+<h2>Responsabilidad por el contenido</h2>
+<p>Crónicas automáticas, fotos y comentarios pueden generar reclamos (honor, imagen, derechos). Preparar: política de contenido, canal de denuncias, moderación y proceso de retiro rápido.</p>
+
+<h1 class="sec"><p class="eyebrow">7</p>Responsabilidad, seguros y riesgos deportivos</h1>
+<ul><li><b>Lesiones y accidentes:</b> Potrero no organiza los partidos ni controla la cancha. Los términos deben dejar claro que la responsabilidad deportiva, de seguridad y de seguros es de la liga y del organizador. Aun así, verificar con el abogado la exposición por exigir o verificar documentación (aptos físicos): la plataforma registra el documento, pero no certifica la aptitud médica.</li>
+<li><b>Seguro de responsabilidad civil y ciber:</b> cotizar cobertura para la empresa (errores y omisiones, protección de datos).</li>
+<li><b>Decisiones disciplinarias:</b> la plataforma ejecuta las reglas definidas por la liga; las sanciones son decisión del tribunal del organizador. Dejarlo expreso para que los reclamos de jugadores y equipos se dirijan a la liga.</li>
+<li><b>Fallas del servicio:</b> definir límites de responsabilidad e indemnización razonables, nivel de servicio y compensaciones (por ejemplo, créditos) ante caídas en fechas críticas.</li>
+<li><b>Fraude:</b> pagos con tarjetas robadas, equipos que reclaman un pago; definir quién responde con Mercado Pago y cómo se reparte entre plataforma, organizador y equipo.</li></ul>
+
+<h1 class="sec"><p class="eyebrow">8</p>Plan de trabajo legal</h1>
+<table><tr><th>#</th><th>Tarea</th><th>Responsable</th><th>Plazo</th></tr>
+<tr><td>1</td><td>Elegir estudio jurídico y contador con experiencia en tecnología y datos personales.</td><td>Dirección</td><td>Noviembre 2026</td></tr>
+<tr><td>2</td><td>Búsqueda de marca en INPI y verificación de dominios y redes; decisión de nombre.</td><td>Dirección + abogado</td><td>Noviembre 2026</td></tr>
+<tr><td>3</td><td>Definir forma societaria y régimen fiscal.</td><td>Abogado + contador</td><td>Noviembre–diciembre 2026</td></tr>
+<tr><td>4</td><td>Consulta sobre menores, DNI, aptos físicos y biometría; definir consentimientos y edad.</td><td>Abogado</td><td>Diciembre 2026</td></tr>
+<tr><td>5</td><td>Acuerdo con Mercado Pago y revisión del esquema marketplace/UIF.</td><td>Dirección + abogado</td><td>Diciembre 2026 – enero 2027</td></tr>
+<tr><td>6</td><td>Redactar términos, privacidad, contrato de datos y acuerdo de liga fundadora.</td><td>Abogado</td><td>Enero–febrero 2027</td></tr>
+<tr><td>7</td><td>Registro de bases de datos, si corresponde.</td><td>Abogado</td><td>Antes de la beta (abril 2027)</td></tr>
+<tr><td>8</td><td>Seguros y contratos con proveedores.</td><td>Dirección</td><td>Marzo 2027</td></tr>
+<tr><td>9</td><td>Auditoría de privacidad y revisión final antes del lanzamiento.</td><td>Abogado + tech lead</td><td>Septiembre–octubre 2027</td></tr></table>
+<h2>Preguntas para la primera reunión con el abogado</h2>
+<ol><li>¿Debemos registrar bases de datos? ¿Quién (liga, Potrero o ambos) y cuándo?</li>
+<li>¿Qué consentimientos exigimos para menores de 13, 13–17 y mayores? ¿Cómo se acredita la relación con el tutor?</li>
+<li>¿Un apto físico es dato sensible? ¿Guardamos el archivo o solo el estado y la fecha?</li>
+<li>¿Podemos usar selfie y comparación facial? ¿Con qué consentimiento y proveedor?</li>
+<li>Con el esquema de split de Mercado Pago, ¿qué autorizaciones necesitamos y cuáles son nuestras obligaciones frente a la UIF?</li>
+<li>¿Qué forma jurídica conviene para empezar y para recibir inversión?</li>
+<li>¿Cómo repartimos la responsabilidad entre liga, plataforma y Mercado Pago en reembolsos y fraude?</li>
+<li>¿Qué requisitos tiene la publicidad de apuestas o alcohol en torneos con menores?</li>
+<li>¿Qué cláusulas son indispensables en los términos con las ligas fundadoras?</li></ol>
+<p class="fn">Las normas y plazos mencionados son referencias a verificar con profesionales matriculados. Documento de trabajo, no es una opinión legal.</p>
+<div class="gt-colofon"><div><img src="brand/gregal-oscuro.svg" alt="Gregal Tech"><p>Potrero es un producto de Gregal Tech. Este documento forma parte del set de 6 documentos de trabajo del proyecto; ante cualquier diferencia con otro material, vale lo que dicen estos documentos.</p></div><div class="gt-datos">gregal.tech<br>gregaltech.sf@gmail.com<br>San Francisco, Córdoba</div></div>
+</body></html>

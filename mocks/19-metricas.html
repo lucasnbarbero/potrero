@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Métricas · Potrero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/tw.css">
+<style>.cols{display:flex;align-items:flex-end;gap:.6rem;height:180px}.cols>div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:.4rem;height:100%;font-size:11px;color:#6b6b66}.cols i{width:100%;border-radius:.9rem .9rem .3rem .3rem;background:#0a0a0a;opacity:.12;transform-origin:bottom;animation:up .9s cubic-bezier(.2,.8,.2,1) both}.cols .hi i{background:#d6ff3d;opacity:1}.cols .dk i{opacity:1}@keyframes up{from{transform:scaleY(0)}to{transform:none}}
+.heat{display:grid;grid-template-columns:50px repeat(7,1fr);gap:4px;font-size:11px}.heat span{height:28px;border-radius:8px}</style></head>
+<body data-shell="org" data-on="19"><div id="side"></div><div class="lg:pl-[17rem]"><div id="top"></div>
+<main class="mx-auto max-w-[1400px] px-4 pb-32 pt-6 sm:px-6">
+  <div class="rise mb-6 flex flex-wrap items-end justify-between gap-4"><div><p class="eyebrow">Temporada 2026</p><h1 class="mt-1 text-4xl font-bold tracking-tight sm:text-5xl">Métricas</h1></div><div class="flex gap-2"><div class="seg"><button>30 días</button><button class="on">Temporada</button><button>Histórico</button></div><button class="btn-glass"><span data-i="download"></span>Reporte</button></div></div>
+
+  <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <section class="tile-volt rise" style="--d:1"><span class="eyebrow !text-ink/60">Retención de equipos</span><div class="mt-2 text-5xl font-bold tracking-tighter num">78%</div><p class="text-sm text-ink/70">se reinscribe en el siguiente torneo</p></section>
+    <section class="tile rise" style="--d:2"><span class="eyebrow">Tasa de cobro</span><div class="mt-2 text-5xl font-bold tracking-tighter num">91%</div><p class="text-sm text-mute">pagado antes del inicio</p></section>
+    <section class="tile rise" style="--d:3"><span class="eyebrow">Ocupación de canchas</span><div class="mt-2 text-5xl font-bold tracking-tighter num">86%</div><p class="text-sm text-mute">promedio por jornada</p></section>
+    <section class="tile-ink rise" style="--d:4"><span class="eyebrow !text-white/50">Asistencia a partidos</span><div class="mt-2 text-5xl font-bold tracking-tighter num">97%</div><p class="text-sm text-white/50">3 W.O. en 124 partidos</p></section>
+  </div>
+
+  <div class="mt-4 grid items-start gap-4 xl:grid-cols-[1.4fr_1fr]">
+    <section class="tile rise" style="--d:5"><div class="mb-4 flex items-center justify-between"><h2 class="text-xl font-bold">Equipos inscriptos por torneo</h2><span class="pill-volt"><span data-i="trend"></span>+31% interanual</span></div>
+      <div class="cols"><div><i style="height:30%"></i>Ap 24</div><div><i style="height:42%"></i>Cl 24</div><div><i style="height:55%"></i>Ap 25</div><div class="dk"><i style="height:68%"></i>Cl 25</div><div class="hi"><i style="height:92%"></i>Ap 26</div></div></section>
+    <section class="tile rise" style="--d:6"><h2 class="mb-3 text-xl font-bold">Horarios más pedidos</h2>
+      <div class="heat" aria-label="Mapa de calor por día y hora"><b></b><b class="text-center text-mute">L</b><b class="text-center text-mute">M</b><b class="text-center text-mute">M</b><b class="text-center text-mute">J</b><b class="text-center text-mute">V</b><b class="text-center text-mute">S</b><b class="text-center text-mute">D</b>
+        <b class="pt-1.5 text-mute">10 hs</b><span class="bg-black/5"></span><span class="bg-black/5"></span><span class="bg-black/5"></span><span class="bg-black/5"></span><span class="bg-black/10"></span><span class="bg-volt/70"></span><span class="bg-volt"></span>
+        <b class="pt-1.5 text-mute">14 hs</b><span class="bg-black/5"></span><span class="bg-black/5"></span><span class="bg-black/5"></span><span class="bg-black/10"></span><span class="bg-black/10"></span><span class="bg-volt"></span><span class="bg-volt/70"></span>
+        <b class="pt-1.5 text-mute">18 hs</b><span class="bg-black/10"></span><span class="bg-black/10"></span><span class="bg-volt/40"></span><span class="bg-volt/40"></span><span class="bg-volt/70"></span><span class="bg-volt"></span><span class="bg-black/10"></span>
+        <b class="pt-1.5 text-mute">21 hs</b><span class="bg-volt/40"></span><span class="bg-volt/70"></span><span class="bg-volt"></span><span class="bg-volt/70"></span><span class="bg-volt/40"></span><span class="bg-black/5"></span><span class="bg-black/5"></span></div>
+      <p class="mt-3 text-sm text-mute">Insight: los sábados 14 a 18 hs se llenan primero. Abre una cancha extra.</p></section>
+  </div>
+</main></div>
+<script src="assets/app.js"></script></body></html>

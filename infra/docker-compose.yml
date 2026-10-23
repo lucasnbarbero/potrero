@@ -1,0 +1,21 @@
+# Servicios locales de desarrollo. `pnpm db:up` los levanta.
+name: potrero
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: potrero_admin
+      POSTGRES_PASSWORD: potrero_admin
+      POSTGRES_DB: potrero
+    ports:
+      - "55432:5432"
+    volumes:
+      - potrero-pg:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U potrero_admin -d potrero"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+volumes:
+  potrero-pg:

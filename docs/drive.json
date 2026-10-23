@@ -1,0 +1,17 @@
+{
+  "$comentario": "Carpeta de Google Drive del proyecto (cuenta gregaltech.sf@gmail.com). Usado por la skill docs-publicar.",
+  "ruta": "Mi unidad/Desarrollos/Potrero",
+  "carpetas": {
+    "potrero": "1E5ZWoMMk4UmD0Zkc1jKyigbtVivnyM9Q",
+    "documentacion": "1h6Yd67YLct-NSCDSQlkYfsA6FRnF-KqD",
+    "obsoletos": "1aacTSLmEPrx7xEmOjwbvxfiPdxL1P0eN"
+  },
+  "archivos": {
+    "01-guia-desarrollo.pdf": "18_ebJUn3A7lV_Sa2pfbg59F16m1tdz-V",
+    "02-modelo-de-negocio.pdf": "105SMlPBwvRSQv3nN94WmsCtdvryQ8enk",
+    "03-presentacion-organizadores.pdf": "1NoXfReU6OswEZQjxiep_qhpQdfmT2NV6",
+    "04-manual-ventas.pdf": "1Lvb3VSgmi5oI8OlYUq5XNdq0G3LdrN6T",
+    "05-plan-lanzamiento-operaciones.pdf": "1HnmV4aROswXcyNGItAk5bYcWFGlpHZ9B",
+    "06-legal-cumplimiento.pdf": "1jh-dyANyBcEQyGJdJvPjA59g9eanh5by"
+  }
+}

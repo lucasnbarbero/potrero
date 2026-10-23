@@ -1,0 +1,5 @@
+docs/
+mocks/
+pnpm-lock.yaml
+**/generated/
+packages/shared/src/datos.ts

@@ -1,0 +1,74 @@
+{
+  "$comentario": "Cifras oficiales de Potrero. Única fuente para docs, mocks, landing y código. Si cambia algo, se cambia acá, se corre `pnpm datos` y `pnpm check:alineacion`.",
+  "moneda": "ARS",
+  "tipoDeCambioReferencia": 1500,
+  "planes": {
+    "LIGA": {
+      "nombre": "Liga",
+      "comisionPct": 3.5,
+      "cuotaMensual": 0,
+      "descripcion": "Sin cuota fija. Todos los módulos."
+    },
+    "FUNDADORA": {
+      "nombre": "Ligas fundadoras",
+      "comisionPct": 2.5,
+      "cuotaMensual": 0,
+      "cupo": 15,
+      "descripcion": "De por vida, primeras 15 ligas."
+    },
+    "PRO": {
+      "nombre": "Pro",
+      "comisionPct": 2,
+      "cuotaMensual": 24900,
+      "descripcion": "Marca y dominio propio, WhatsApp ampliado, sponsors y métricas avanzadas."
+    }
+  },
+  "pagosManualesConComision": false,
+  "umbralRecomendarPro": 20000000,
+  "ejemploTorneo": {
+    "equipos": 16,
+    "inscripcion": 60000,
+    "comisionMercadoPagoPct": 8,
+    "costoMercadoPago": 76700
+  },
+  "metas": {
+    "minutosParaArmarTorneo": 30,
+    "ligasFundadoras": 15,
+    "ligas12Meses": 60,
+    "ligas24Meses": 250
+  },
+  "construccion": {
+    "semanasMin": 36,
+    "semanasMax": 47
+  },
+  "reglamentoPorDefecto": {
+    "puntosVictoria": 3,
+    "puntosEmpate": 1,
+    "puntosDerrota": 0,
+    "desempates": [
+      "DIFERENCIA_GOL",
+      "GOLES_FAVOR",
+      "ENTRE_SI",
+      "JUEGO_LIMPIO",
+      "SORTEO"
+    ],
+    "suspensionRojaDirecta": 1,
+    "suspensionDobleAmarilla": 1,
+    "umbralAmarillas": 5,
+    "suspensionAcumulacion": 1,
+    "golesWO": 3,
+    "toleranciaWOMinutos": 15
+  },
+  "terminosProhibidos": [
+    "Esencial",
+    "Premium",
+    "4,5%",
+    "4,5 %",
+    "19.900",
+    "30 días gratis",
+    "Crear mi liga gratis",
+    "V1.5",
+    "Empezás en 5 minutos",
+    "listo en 5 minutos"
+  ]
+}

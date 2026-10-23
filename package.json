@@ -1,0 +1,33 @@
+{
+  "name": "potrero",
+  "private": true,
+  "description": "Potrero: sistema para organizar ligas y torneos de fútbol amateur. Un producto de Gregal Tech.",
+  "packageManager": "pnpm@12.6.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "turbo run dev --filter=@potrero/api --filter=@potrero/web --filter=@potrero/shared",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "db:up": "docker compose -f infra/docker-compose.yml up -d --wait",
+    "db:down": "docker compose -f infra/docker-compose.yml down",
+    "db:reset": "pnpm --filter @potrero/api db:reset",
+    "db:seed": "pnpm --filter @potrero/api db:seed",
+    "demo": "node scripts/demo.mjs",
+    "datos": "node scripts/gen-datos.mjs",
+    "check:alineacion": "node scripts/check-alineacion.mjs",
+    "docs:pdf": "node docs/src/build.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "eslint": "^10.13.0",
+    "prettier": "^3.9.10",
+    "turbo": "^2.11.10",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.0"
+  }
+}
