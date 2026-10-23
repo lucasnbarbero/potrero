@@ -4,6 +4,8 @@ import { defineConfig, devices } from '@playwright/test';
 // Usa el Chrome instalado en la máquina: no descarga navegadores.
 export default defineConfig({
   testDir: 'e2e',
+  // El recorrido de la demo pública corre contra otro entorno: ver playwright.publica.config.ts.
+  testIgnore: /demo-publica/,
   fullyParallel: false,
   use: {
     baseURL: process.env.WEB_URL ?? 'http://localhost:3000',

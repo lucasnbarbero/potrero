@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/cliente';
+import { limpiarSinConexion } from '@/lib/sin-conexion';
 import { iniciales } from '@/lib/formato';
 
 type Item = [href: string, icono: NombreIcono, texto: string];
@@ -13,13 +14,15 @@ const MENU: Item[] = [
   ['/panel/torneos', 'trophy', 'Torneos'],
   ['/panel/equipos', 'users', 'Equipos'],
   ['/panel/canchas', 'pin', 'Canchas'],
+  ['/panel/arbitros', 'whistle', 'Árbitros'],
+  ['/panel/caja', 'wallet', 'Caja'],
+  ['/panel/sanciones', 'card', 'Sanciones'],
+  ['/panel/documentacion', 'id', 'Documentación'],
+  ['/panel/reprogramaciones', 'cloud', 'Reprogramar'],
+  ['/panel/comunicacion', 'whatsapp', 'Comunicación'],
 ];
 /** Módulos del producto completo que todavía no están en la demo (ver docs/backlog.md). */
 const PROXIMAMENTE: [NombreIcono, string][] = [
-  ['cloud', 'Reprogramar'],
-  ['id', 'Documentación'],
-  ['wallet', 'Caja'],
-  ['whatsapp', 'Comunicación'],
   ['star', 'Sponsors'],
   ['trend', 'Métricas'],
 ];
@@ -56,6 +59,7 @@ export function BarraLateral({
             title="Cerrar sesión"
             onClick={async () => {
               await api('POST', '/auth/salir');
+              await limpiarSinConexion();
               window.location.href = '/ingresar';
             }}
           >

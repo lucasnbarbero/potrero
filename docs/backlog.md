@@ -14,7 +14,7 @@ Fuente: documentos 1 a 6 (`docs/src`). Si algo de este backlog contradice esos d
 
 ## Avance
 
-Última actualización: 22/10/2026. Hecho: 53 tareas · parciales: 31. Resumen de lo que funciona: `docs/contexto/estado-actual.md`.
+Última actualización: 23/10/2026. Hecho: 96 tareas · parciales: 56. Resumen de lo que funciona: `docs/contexto/estado-actual.md`.
 
 ## Mapa de épicas
 
@@ -56,6 +56,7 @@ Fuente: documentos 1 a 6 (`docs/src`). Si algo de este backlog contradice esos d
 | E33 | Beta cerrada con ligas fundadoras | Beta | — | E13 en adelante |
 | E34 | Lanzamiento público | Lanzamiento | — | todo |
 | E36 | Backoffice de Gregal (`apps/admin`) | H0 a H7, junto a cada módulo | — | E04 |
+| E37 | Demo pública con sandbox por visitante | H6 (cierra en H7) | landing | E27, E06-18, E02-11 |
 | E35 | Fuera de alcance del lanzamiento | Después | — | — |
 
 Notas sobre el orden:
@@ -147,7 +148,7 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 - [x] **E05-01** `dev` `Ruleset` versionado: puntos, desempates ordenados, umbrales de tarjetas, reglas de W.O., límites de plantel, duración del partido. El torneo fija una versión.
 - [ ] **E05-02** `dev` Plantillas de reglamento por modalidad (F5, F7, F8, F11) para empezar rápido.
 - [x] **E05-03** `dev` `Tournament` con modalidad, formato (liga, copa, grupos + playoffs, liga + playoffs), temporada, estados (borrador, inscripción, en curso, finalizado) y reglas de aranceles.
-- [ ] **E05-04** `dev` `Stage` y `Group` con reglas de avance a llaves.
+- [~] **E05-04** `dev` `Stage` y `Group` con reglas de avance a llaves. _Hecho: grupos y avance a llaves, guardados en el torneo. Falta: etapas configurables y reglas de avance propias._
 - [x] **E05-05** `dev` Vista previa del formato: grupos, llaves y cantidad estimada de partidos según los equipos.
 - [x] **E05-06** `dev` `Team` a nivel organización, reutilizable entre torneos (nombre, escudo, colores, capitán).
 - [~] **E05-07** `dev` `Player` con identidad única entre equipos (`dni_hash`), fecha de nacimiento, foto, preferencias de privacidad.
@@ -170,7 +171,7 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 - [x] **E06-11** `dev` Estado de pago por equipo y deuda en tiempo real.
 - [ ] **E06-12** `dev` Reembolsos, contemplando el rechazo por falta de saldo del vendedor y el aviso al organizador.
 - [ ] **E06-13** `dev` Contracargos: registro, estado y aviso.
-- [ ] **E06-14** `dev` Recordatorios de pago (se conectan a E16 cuando exista; hasta entonces, por email).
+- [~] **E06-14** `dev` Recordatorios de pago (se conectan a E16 cuando exista; hasta entonces, por email). _Hecho: recordatorios de cobro escalonados por la mensajería simulada. Falta: canales reales._
 - [x] **E06-15** `dev` Pantalla de inscripciones y pagos del organizador (mock 03).
 - [x] **E06-16** `dev` Flujo público de pago del equipo: pantalla, resultado y comprobante.
 - [ ] **E06-17** `dev` Plan B sin split: cobro con link de la cuenta del organizador y conciliación manual (detrás de un feature flag).
@@ -178,56 +179,56 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 - [ ] **E06-19** `dev` Contract tests contra el sandbox de Mercado Pago.
 
 ## E07 · Caja del torneo · módulo 14
-- [ ] **E07-01** `dev` Ledger de partida doble (`LedgerEntry`): cuentas, débitos, créditos, categoría, referencia.
-- [ ] **E07-02** `dev` Cada cobro, pago manual, reembolso y comisión genera asientos automáticamente.
-- [ ] **E07-03** `dev` Egresos por rubro (cancha, árbitros, premios, otros) con comprobante.
-- [ ] **E07-04** `dev` Cargos automáticos por partido (árbitro, cancha). _Depende de:_ E08.
-- [ ] **E07-05** `dev` Resultado del torneo en vivo: ingresos, egresos, ganancia.
-- [ ] **E07-06** `dev` Saldo y registro de retiros a cuenta bancaria (definir con legal si es solo registro: E00-05).
-- [ ] **E07-07** `dev` Exportación de movimientos (CSV y PDF).
-- [ ] **E07-08** `dev` Pantalla de caja (mock 14).
+- [x] **E07-01** `dev` Ledger de partida doble (`LedgerEntry`): cuentas, débitos, créditos, categoría, referencia.
+- [~] **E07-02** `dev` Cada cobro, pago manual, reembolso y comisión genera asientos automáticamente. _Hecho: cada pago aprobado y su comisión se asientan solos. Falta: reembolsos (E06-12)._
+- [~] **E07-03** `dev` Egresos por rubro (cancha, árbitros, premios, otros) con comprobante. _Hecho: egresos por rubro con comprobante como texto, y anulación. Falta: comprobante como archivo (E02-14)._
+- [x] **E07-04** `dev` Cargos automáticos por partido (árbitro, cancha). _Depende de:_ E08.
+- [x] **E07-05** `dev` Resultado del torneo en vivo: ingresos, egresos, ganancia.
+- [~] **E07-06** `dev` Saldo y registro de retiros a cuenta bancaria (definir con legal si es solo registro: E00-05). _Hecho: saldo y registro de retiros (solo el dueño). Falta: verificación en dos pasos (E04-11) y lo que defina legal (E00-05)._
+- [~] **E07-07** `dev` Exportación de movimientos (CSV y PDF). _Hecho: exportación a CSV para Excel. Falta: PDF._
+- [x] **E07-08** `dev` Pantalla de caja (mock 14).
 
 ## E08 · Canchas y árbitros · módulo 15
-- [~] **E08-01** `dev` `Venue` y `Pitch`: dirección, superficie, costo, disponibilidad por franja.
-- [ ] **E08-02** `dev` `Referee`: datos, disponibilidad, tarifa, valoración.
-- [ ] **E08-03** `dev` Designación manual de árbitros por partido.
-- [ ] **E08-04** `dev` Designación automática respetando disponibilidad y una franja por árbitro.
-- [ ] **E08-05** `dev` Pagos a árbitros (se conectan a la caja).
-- [ ] **E08-06** `dev` Ocupación por cancha y franja.
-- [ ] **E08-07** `dev` Pantalla de árbitros y canchas (mock 15).
+- [~] **E08-01** `dev` `Venue` y `Pitch`: dirección, superficie, costo, disponibilidad por franja. _Hecho: costo por partido, superficie y bloqueo de cancha. Falta: disponibilidad por franja horaria._
+- [x] **E08-02** `dev` `Referee`: datos, disponibilidad, tarifa, valoración.
+- [x] **E08-03** `dev` Designación manual de árbitros por partido.
+- [x] **E08-04** `dev` Designación automática respetando disponibilidad y una franja por árbitro.
+- [x] **E08-05** `dev` Pagos a árbitros (se conectan a la caja).
+- [x] **E08-06** `dev` Ocupación por cancha y franja.
+- [x] **E08-07** `dev` Pantalla de árbitros y canchas (mock 15).
 
 ## E09 · Motor de fixture · módulo 04
 - [ ] **E09-01** `dev` Prueba técnica del motor: 24 equipos en menos de 10 s con restricciones reales. _Hecho cuando:_ el ADR "heurística propia o CP-SAT" queda decidido.
 - [x] **E09-02** `dev` Cruces con el método de rotación (circle method) para liga y grupos; ida y vuelta opcional; fecha libre con cantidad impar.
-- [ ] **E09-03** `dev` Sorteo con cabezas de serie para copa.
-- [~] **E09-04** `dev` Asignación de fecha, cancha y horario: restricciones duras (sin partidos simultáneos ni descanso insuficiente, una cancha y un árbitro por franja).
+- [x] **E09-03** `dev` Sorteo con cabezas de serie para copa.
+- [~] **E09-04** `dev` Asignación de fecha, cancha y horario: restricciones duras (sin partidos simultáneos ni descanso insuficiente, una cancha y un árbitro por franja). _Hecho: sin choques de cancha ni de equipo; un árbitro por franja en la designación. Falta: descanso mínimo y restricciones blandas._
 - [ ] **E09-05** `dev` Optimización de restricciones blandas: balance local/visitante, preferencias, menos huecos.
 - [ ] **E09-06** `dev` Restricciones por equipo (por ejemplo, "no juega los domingos").
 - [ ] **E09-07** `dev` Mover un partido a mano: re-evaluación y explicación de cada conflicto, con advertencia y sin bloqueo.
-- [ ] **E09-08** `dev` Publicar el fixture (aviso a capitanes cuando exista E16).
+- [~] **E09-08** `dev` Publicar el fixture (aviso a capitanes cuando exista E16). _Hecho: plantilla Fixture publicado para avisar a los capitanes a mano. Falta: aviso automático al publicar._
 - [~] **E09-09** `dev` Pantalla de fixture: grilla por cancha y conflictos (mock 04).
 - [~] **E09-10** `dev` Tests con casos límite reales y prueba de rendimiento en CI.
 
 ## E10 · Llaves y playoffs · módulo 17
-- [ ] **E10-01** `dev` Clasificación de grupos o liga a llaves según las reglas de avance.
-- [ ] **E10-02** `dev` Cuadro eliminatorio que se completa solo con los resultados.
-- [ ] **E10-03** `dev` Definición por penales y partidos de ida y vuelta en llaves.
-- [ ] **E10-04** `dev` Publicación en tiempo real.
-- [ ] **E10-05** `dev` Pantalla de llaves (mock 17).
+- [x] **E10-01** `dev` Clasificación de grupos o liga a llaves según las reglas de avance.
+- [x] **E10-02** `dev` Cuadro eliminatorio que se completa solo con los resultados.
+- [~] **E10-03** `dev` Definición por penales y partidos de ida y vuelta en llaves. _Hecho: penales. Falta: ida y vuelta en llaves._
+- [~] **E10-04** `dev` Publicación en tiempo real. _Hecho: el sitio público muestra el cuadro y se actualiza solo cada pocos segundos. Falta: tiempo real (E02-15)._
+- [x] **E10-05** `dev` Pantalla de llaves (mock 17).
 
 ## E11 · Partidos y acta digital · módulo 05
 - [x] **E11-01** `dev` `Match` con estados (programado, en juego, finalizado, suspendido, W.O.) y transiciones válidas.
 - [x] **E11-02** `dev` `MatchEvent` solo de agregado (gol, tarjeta, cambio) con `client_uuid`; las correcciones son eventos de anulación.
 - [x] **E11-03** `dev` Planilla del acta con la habilitación de cada jugador en tiempo real (suspendido o sin documentación, marcado).
 - [x] **E11-04** `dev` Carga en vivo de goles, tarjetas y cambios, con botones grandes y alto contraste.
-- [ ] **E11-05** `dev` Un solo dueño del acta por partido (el delegado asignado); aviso al segundo dispositivo.
-- [ ] **E11-06** `dev` Acta offline: service worker, IndexedDB, cola de eventos ordenada y sincronización al recuperar señal.
+- [x] **E11-05** `dev` Un solo dueño del acta por partido (el delegado asignado); aviso al segundo dispositivo.
+- [x] **E11-06** `dev` Acta offline: service worker, IndexedDB, cola de eventos ordenada y sincronización al recuperar señal.
 - [x] **E11-07** `dev` Cierre con firma de ambos capitanes o justificación del árbitro.
 - [~] **E11-08** `dev` Cadena al cerrar: tabla → goleadores → sanciones → sitio público → notificaciones.
 - [ ] **E11-09** `dev` Informe del árbitro.
 - [ ] **E11-10** `dev` Edición de actas cerradas solo por el administrador, con auditoría.
 - [ ] **E11-11** `dev` Marcador en vivo en el panel y la página de partido.
-- [~] **E11-12** `dev` Pantalla del acta en el celular, instalable como PWA (mock 05).
+- [~] **E11-12** `dev` Pantalla del acta en el celular, instalable como PWA (mock 05). _Hecho: acta instalable (manifiesto, íconos) que funciona sin señal. Falta probarla en celulares reales (E11-13)._
 - [ ] **E11-13** `dev` Prueba en 3–4 celulares de gama media o baja con conexión mala.
 
 ## E12 · Tabla de posiciones y estadísticas
@@ -245,55 +246,55 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 - [ ] **E13-05** `dev` Dominio propio para el plan Pro. _Depende de:_ E26.
 - [x] **E13-06** `dev` Principio de mínimo dato: nunca se publica DNI, edad exacta de menores ni teléfono.
 - [x] **E13-07** `dev` "Creado con Potrero" con llamado a organizadores.
-- [ ] **E13-08** `dev` PWA: manifiesto, íconos, instalación, actualización.
+- [~] **E13-08** `dev` PWA: manifiesto, íconos, instalación, actualización. _Hecho: manifiesto, íconos y service worker del acta. Falta el aviso de actualización y extender a todo el sitio._
 - [x] **E13-09** `dev` Pantalla del sitio público (mock 06).
 
 ## E14 · Sanciones y tribunal · módulo 12
 - [x] **E14-01** `dev` Sanciones automáticas desde el acta: roja directa (por defecto 1 partido), doble amarilla (1), acumulación (por defecto 5 = 1 partido).
 - [x] **E14-02** `dev` Conteo en partidos oficiales del equipo; un partido suspendido o un W.O. no descuenta.
-- [~] **E14-03** `dev` Bloqueo en el acta y expediente automático por "jugador no habilitado" si se lo carga igual.
-- [ ] **E14-04** `dev` Expedientes: informe del árbitro, descargo del capitán, resolución del tribunal (puede ampliar o reducir).
-- [ ] **E14-05** `dev` Multas que generan cargos al equipo.
-- [ ] **E14-06** `dev` Historial disciplinario por jugador y por equipo.
-- [~] **E14-07** `dev` Pantalla de sanciones y tribunal (mock 12).
+- [x] **E14-03** `dev` Bloqueo en el acta y expediente automático por "jugador no habilitado" si se lo carga igual.
+- [~] **E14-04** `dev` Expedientes: informe del árbitro, descargo del capitán, resolución del tribunal (puede ampliar o reducir). _Hecho: informe del árbitro, descargo, resolución que amplía o reduce, registrados por el organizador. Falta: que el capitán cargue su descargo desde su panel (E19)._
+- [x] **E14-05** `dev` Multas que generan cargos al equipo.
+- [x] **E14-06** `dev` Historial disciplinario por jugador y por equipo.
+- [~] **E14-07** `dev` Pantalla de sanciones y tribunal (mock 12). _Hecho: pantalla con contadores, expedientes, automáticas, historial y reglamento aplicado. Falta: editar el reglamento desde la pantalla y elegir jugador al abrir un expediente a mano._
 
 ## E15 · Documentación, identidad y consentimientos · módulo 13
-- [ ] **E15-01** `dev` Tipos de documento (DNI, apto físico, autorización de menor) y cuáles son obligatorios por torneo.
-- [ ] **E15-02** `dev` Carga a bucket privado y acceso por URL firmada con registro de quién lo pidió.
-- [ ] **E15-03** `dev` Cifrado a nivel de campo del número de DNI y de los datos médicos; hash del DNI para duplicados.
-- [ ] **E15-04** `dev` Revisión humana de documentos: aprobar o rechazar con motivo.
-- [ ] **E15-05** `dev` Vencimientos y alertas (apto físico).
-- [ ] **E15-06** `dev` Detección de duplicados entre equipos.
-- [ ] **E15-07** `dev` Habilitación del jugador: documentación vigente + sin sanción activa + sin duplicado abierto.
-- [ ] **E15-08** `dev` `Consent` versionado y flujo del tutor para menores (con la edad que defina E00-05).
-- [ ] **E15-09** `dev` Consentimiento para publicar imagen, especialmente de menores.
-- [ ] **E15-10** `dev` Retención y borrado automático por tipo de dato.
-- [ ] **E15-11** `dev` Verificación por selfie con un proveedor externo, detrás de un feature flag y solo con aprobación legal.
-- [ ] **E15-12** `dev` Pantalla de documentación (mock 13).
+- [x] **E15-01** `dev` Tipos de documento (DNI, apto físico, autorización de menor) y cuáles son obligatorios por torneo.
+- [~] **E15-02** `dev` Carga a bucket privado y acceso por URL firmada con registro de quién lo pidió. _Hecho: almacenamiento privado detrás de una interfaz (disco local), link firmado de pocos minutos y registro de accesos. Falta: bucket real y antivirus._
+- [x] **E15-03** `dev` Cifrado a nivel de campo del número de DNI y de los datos médicos; hash del DNI para duplicados.
+- [x] **E15-04** `dev` Revisión humana de documentos: aprobar o rechazar con motivo.
+- [~] **E15-05** `dev` Vencimientos y alertas (apto físico). _Hecho: vencimiento con aviso a 30 días, alerta en la pantalla y bloqueo si vence. Falta: aviso automático por mensaje antes del vencimiento._
+- [x] **E15-06** `dev` Detección de duplicados entre equipos.
+- [x] **E15-07** `dev` Habilitación del jugador: documentación vigente + sin sanción activa + sin duplicado abierto.
+- [~] **E15-08** `dev` `Consent` versionado y flujo del tutor para menores (con la edad que defina E00-05). _Hecho: consentimientos versionados y autorización del tutor en línea con link de un solo uso. Falta: edad definida por legal (E00-05) y marcar al jugador cuando cumple la mayoría._
+- [~] **E15-09** `dev` Consentimiento para publicar imagen, especialmente de menores. _Hecho: consentimiento de imagen registrado y calculado por jugador (menor = ambos). Falta: aplicarlo en el sitio público cuando haya fotos._
+- [x] **E15-10** `dev` Retención y borrado automático por tipo de dato.
+- [~] **E15-11** `dev` Verificación por selfie con un proveedor externo, detrás de un feature flag y solo con aprobación legal. _Hecho: bandera apagada y tarjeta en la pantalla. Falta: proveedor y aprobación legal._
+- [x] **E15-12** `dev` Pantalla de documentación (mock 13).
 
 ## E16 · Mensajería y comunicación · módulo 16
-- [ ] **E16-01** `dev` Capa de mensajería con canales intercambiables: email, Web Push, WhatsApp.
-- [ ] **E16-02** `dev` Email transaccional con el proveedor elegido y plantillas.
-- [ ] **E16-03** `dev` WhatsApp Business por el BSP: plantillas versionadas y aprobadas (recordatorio, cobro, contingencia, resultado).
+- [~] **E16-01** `dev` Capa de mensajería con canales intercambiables: email, Web Push, WhatsApp. _Hecho: interfaz de canal con implementación simulada (ADR-022). Falta: canales reales._
+- [~] **E16-02** `dev` Email transaccional con el proveedor elegido y plantillas. _Hecho: plantillas y variables. Falta: proveedor de email._
+- [~] **E16-03** `dev` WhatsApp Business por el BSP: plantillas versionadas y aprobadas (recordatorio, cobro, contingencia, resultado). _Hecho: plantillas versionadas. Falta: BSP y aprobación de Meta._
 - [ ] **E16-04** `dev` Web Push (VAPID) y suscripción desde la PWA.
-- [ ] **E16-05** `dev` Opt-in explícito y preferencias por usuario; separación de mensajes transaccionales y de marketing.
-- [ ] **E16-06** `dev` Regla de costo: WhatsApp solo para capitanes, delegados y quienes dieron opt-in; push o email por defecto.
-- [ ] **E16-07** `dev` Segmentación de destinatarios y variables en plantillas.
-- [ ] **E16-08** `dev` Vista previa con costo estimado antes de cada envío masivo.
-- [ ] **E16-09** `dev` Topes mensuales por plan y packs de mensajes adicionales.
-- [ ] **E16-10** `dev` Automatizaciones: recordatorio 24 h antes del partido, cobro escalonado.
-- [ ] **E16-11** `dev` Webhooks de entrega, historial y costo por mensaje.
-- [ ] **E16-12** `dev` Pantalla de comunicación (mock 16).
+- [~] **E16-05** `dev` Opt-in explícito y preferencias por usuario; separación de mensajes transaccionales y de marketing. _Hecho: consentimiento de WhatsApp y baja de novedades por capitán, transaccional separado de marketing. Falta: preferencias por usuario._
+- [x] **E16-06** `dev` Regla de costo: WhatsApp solo para capitanes, delegados y quienes dieron opt-in; push o email por defecto.
+- [x] **E16-07** `dev` Segmentación de destinatarios y variables en plantillas.
+- [x] **E16-08** `dev` Vista previa con costo estimado antes de cada envío masivo.
+- [~] **E16-09** `dev` Topes mensuales por plan y packs de mensajes adicionales. _Hecho: topes mensuales por plan. Falta: packs de mensajes adicionales._
+- [x] **E16-10** `dev` Automatizaciones: recordatorio 24 h antes del partido, cobro escalonado.
+- [x] **E16-11** `dev` Webhooks de entrega, historial y costo por mensaje.
+- [x] **E16-12** `dev` Pantalla de comunicación (mock 16).
 
 ## E17 · Contingencias, reprogramaciones y W.O. · módulo 11
-- [ ] **E17-01** `dev` Contingencia por partido, fecha, cancha o torneo: mover, suspender, cambiar de cancha.
-- [ ] **E17-02** `dev` Propuesta calculada antes de aplicar, con conflictos resueltos y pendientes (usa el motor de E09).
-- [ ] **E17-03** `dev` Aplicar la propuesta y registrar la `Contingency` (qué se movió y quién confirmó).
-- [ ] **E17-04** `dev` Aviso masivo con botones "Confirmo" y "No puedo"; los "No puedo" vuelven como alerta.
-- [~] **E17-05** `dev` W.O. con tolerancia configurable (por defecto 15 min), cuenta regresiva en el acta y resolución automática.
-- [ ] **E17-06** `dev` Alerta de clima con opciones sugeridas (proveedor de pronóstico a elegir).
-- [ ] **E17-07** `dev` Pantalla de reprogramaciones (mock 11).
-- [ ] **E17-08** `dev` Prueba de aceptación: lluvia simulada con 9 partidos movidos, aviso y confirmaciones.
+- [~] **E17-01** `dev` Contingencia por partido, fecha, cancha o torneo: mover, suspender, cambiar de cancha. _Hecho: mover días y pasar a otras canchas, por día, fecha o partidos. Falta: alcance por cancha._
+- [x] **E17-02** `dev` Propuesta calculada antes de aplicar, con conflictos resueltos y pendientes (usa el motor de E09).
+- [x] **E17-03** `dev` Aplicar la propuesta y registrar la `Contingency` (qué se movió y quién confirmó).
+- [x] **E17-04** `dev` Aviso masivo con botones "Confirmo" y "No puedo"; los "No puedo" vuelven como alerta.
+- [~] **E17-05** `dev` W.O. con tolerancia configurable (por defecto 15 min), cuenta regresiva en el acta y resolución automática. _Hecho: tolerancia del reglamento y cuenta regresiva en el acta; el W.O. se declara a mano. Falta: resolución automática._
+- [~] **E17-06** `dev` Alerta de clima con opciones sugeridas (proveedor de pronóstico a elegir). _Hecho: alerta con proveedor simulado. Falta: proveedor real de pronóstico._
+- [x] **E17-07** `dev` Pantalla de reprogramaciones (mock 11).
+- [x] **E17-08** `dev` Prueba de aceptación: lluvia simulada con 9 partidos movidos, aviso y confirmaciones.
 
 ## E18 · Panel del organizador · módulo 01
 - [~] **E18-01** `dev` Partido en vivo con goleadores y acceso directo al acta.
@@ -368,6 +369,7 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 ## E27 · Landing y sitio de marketing
 - [x] **E27-01** `dev` Landing en la app real a partir de `mocks/landing.html`, con los precios de `docs/datos.json`.
 - [ ] **E27-02** `dev` Lista de espera y formulario de ligas fundadoras (alimenta el CRM).
+- La demo pública y el acceso a la liga real se resuelven en E37 (ADR-019).
 - [ ] **E27-03** `dev` Ejemplo de cuentas por torneo calculado con los valores vigentes.
 - [ ] **E27-04** `dev` Analítica con aviso de cookies.
 - [ ] **E27-05** `dev` Casos de éxito y testimonios (cuando existan, con autorización escrita).
@@ -403,7 +405,7 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 - [ ] **E30-06** `dev` Datos de prueba sintéticos para staging; nunca datos reales fuera de producción.
 
 ## E31 · Plataforma, despliegue y operación
-- [ ] **E31-01** `ops` Entornos: local, preview por merge request, staging y producción.
+- [ ] **E31-01** `ops` Entornos: local, preview por merge request, staging y producción. Más el entorno de demo pública (E37-08, ADR-019).
 - [ ] **E31-02** `ops` Infraestructura en el proveedor elegido: base de datos y Redis gestionados, almacenamiento, región cercana.
 - [ ] **E31-03** `ops` Despliegue continuo a staging y aprobado a producción; migraciones seguras.
 - [ ] **E31-04** `ops` Monitoreo de errores, trazas, métricas y alertas (webhook de pago fallido, cola atrasada, error de sincronización del acta, errores del sitio público).
@@ -456,6 +458,19 @@ Aplicación interna separada del producto (`apps/admin`), solo para el equipo de
 - [ ] **E36-11** `dev` Moderación y datos personales: fotos, crónicas, mercado de pases, sponsors, denuncias, pedidos de acceso, rectificación y supresión, y auditoría de accesos a documentos (E28-04).
 - [ ] **E36-12** `dev` Métricas del negocio: ligas activas, GMV, take rate, retención, embudo de ventas y partidos cerrados por semana (E24-05).
 - [ ] **E36-13** `dev` Exportaciones para dirección y contabilidad (CSV) y reporte mensual.
+
+## E37 · Demo pública con sandbox por visitante
+La landing ofrece "Probá la demo" y, en la misma landing, el acceso a la liga real. Mismo monorepo y mismo código, desplegado como un entorno aparte con su propia base (ADR-019). Los datos de la demo nunca conviven con los de producción.
+
+- [~] **E37-01** `dev` Modo demo por configuración (`DEMO_MODE`): pasarela simulada forzada, mensajería apagada o capturada, subida de archivos limitada, `noindex`, banner fijo "Demo". La lógica de negocio no conoce la demo. _Depende de:_ E02-11. _Hecho cuando:_ con el modo encendido no sale ningún email, WhatsApp ni pago real, y con el modo apagado el módulo ni se carga. _Hecho: pasarela simulada obligatoria, banner y `noindex`, módulo de sandboxes solo con el modo encendido. Falta: mensajería y subida de archivos apagadas cuando existan (E16, E02-14)._
+- [x] **E37-02** `dev` Plantilla de datos sintéticos reutilizable (torneo, equipos, fixture, partidos jugados y pendientes), compartida con las semillas de `pnpm demo`. _Hecho cuando:_ `pnpm demo` y la sandbox salen de la misma plantilla.
+- [x] **E37-03** `dev` Módulo `apps/api/src/demo`: crear una sandbox (organización propia y usuario temporal) desde la plantilla, aislada por RLS. _Hecho cuando:_ dos visitantes en simultáneo no ven ni pisan los datos del otro (test de integración).
+- [x] **E37-04** `dev` Expiración: la sandbox vence a las 24 h y un job la elimina; botón "Reiniciar demo". _Hecho cuando:_ una sandbox vencida desaparece con todos sus datos y archivos.
+- [~] **E37-05** `dev` Protecciones de abuso: límite de sandboxes por IP, captcha al crearla, tope de tamaño por sandbox. _Hecho cuando:_ superar el límite devuelve un error claro y queda registrado. _Hecho: tope por IP, tope de sandboxes activas, captcha Turnstile opcional y log de rechazos. El captcha está en la web pero falta probarlo con una clave real de Turnstile. Falta: tope de tamaño por sandbox._
+- [x] **E37-06** `dev` Landing con dos puertas: "Probá la demo" (lleva al entorno de demo) e "Ingresar" (lleva a la app real). Llamado a "Crear mi liga" al final de la demo, con consentimiento si se pide el email (alimenta el CRM, E27-02). _Hecho cuando:_ ambos caminos funcionan desde la misma landing.
+- [x] **E37-07** `dev` Separación de sesiones entre entornos: cookies por subdominio, sin que una sesión de demo sirva en producción ni al revés; indicador visual de en cuál entorno se está. _Hecho cuando:_ un test comprueba que la cookie de un entorno es rechazada en el otro.
+- [ ] **E37-08** `ops` Despliegue del entorno de demo: base, Redis y almacenamiento propios, dominio propio, misma imagen que producción con otra configuración. _Depende de:_ E00-06, E31-01. _Hecho cuando:_ el entorno responde y no comparte ningún recurso con producción.
+- [~] **E37-09** `dev` Pruebas E2E del recorrido: entrar a la demo desde la landing, jugar un partido en el acta, ver la tabla y el sitio público, y vencer la sandbox. _Hecho cuando:_ el recorrido pasa en Playwright. _Hecho: recorridos landing → sandbox, copa con penales, acta sin conexión y dueño único (pnpm --filter @potrero/web test:e2e:publica). Falta: vencimiento de la sandbox en el navegador (hoy lo cubre el test de integración de la API)._
 
 ## E35 · Fuera de alcance del lanzamiento
 No se construye para el lanzamiento. Queda registrado para no perderlo.

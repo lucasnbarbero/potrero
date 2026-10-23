@@ -1,11 +1,12 @@
 import { Icono } from '@potrero/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Llave } from '@/componentes/Llave';
 import { MarcoPublico } from '@/componentes/MarcoPublico';
 import { Escudo, Estado } from '@/componentes/ui';
 import { apiPublica } from '@/lib/api';
 import { fechaCorta, hora, pesos } from '@/lib/formato';
-import type { Estadisticas, Partido } from '@/lib/tipos';
+import type { Estadisticas, Llave as LlaveDatos, Partido } from '@/lib/tipos';
 
 interface SitioTorneo {
   organizacion: { nombre: string; slug: string };
@@ -13,6 +14,7 @@ interface SitioTorneo {
     nombre: string;
     slug: string;
     modalidad: string;
+    formato: string;
     estado: string;
     cupo: number;
     inscripcion: number;
@@ -20,6 +22,8 @@ interface SitioTorneo {
   };
   partidos: Partido[];
   tabla: Estadisticas['tabla'];
+  grupos: Estadisticas['grupos'];
+  llave: LlaveDatos | null;
   goleadores: Estadisticas['goleadores'];
   suspendidos: { jugador: string; equipo: string; restantes: number }[];
 }
@@ -31,6 +35,74 @@ export async function generateMetadata({ params }: PageProps<'/t/[org]/[torneo]'
     title: `${s.torneo.nombre} · ${s.organizacion.nombre}`,
     description: `Tabla, fixture y goleadores de ${s.torneo.nombre}.`,
   };
+}
+
+function TablaPosiciones({
+  titulo,
+  filas,
+  clasifican = 0,
+}: {
+  titulo: string;
+  filas: Estadisticas['tabla'];
+  clasifican?: number;
+}) {
+  return (
+    <section className="tile !p-0">
+      <div className="flex items-center justify-between px-5 pt-5">
+        <b className="text-lg">{titulo}</b>
+      </div>
+      <div className="scrollx">
+        <table className="w-full min-w-[480px] text-sm">
+          <thead>
+            <tr>
+              {['#', 'Equipo', 'PJ', 'G', 'E', 'P', 'DG', 'Pts'].map((h) => (
+                <th key={h} className="th">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="[&>tr]:border-t [&>tr]:border-black/5">
+            {filas.map((f) => (
+              <tr
+                key={f.equipoId}
+                className={
+                  clasifican
+                    ? f.posicion <= clasifican
+                      ? 'bg-volt/30'
+                      : ''
+                    : f.posicion === 1
+                      ? 'bg-volt/30'
+                      : ''
+                }
+              >
+                <td className="td font-bold">{f.posicion}</td>
+                <td className="td">
+                  <span className="flex items-center gap-2 font-semibold">
+                    <Escudo nombre={f.equipo} className="!size-7 !text-[9px]" />
+                    {f.equipo}
+                  </span>
+                </td>
+                {[f.pj, f.pg, f.pe, f.pp, f.dg].map((v, i) => (
+                  <td key={i} className="td num">
+                    {v}
+                  </td>
+                ))}
+                <td className="td num font-bold">{f.pts}</td>
+              </tr>
+            ))}
+            {filas.length === 0 && (
+              <tr>
+                <td className="td text-mute" colSpan={8}>
+                  La tabla aparece cuando arranque el torneo.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
 }
 
 export default async function SitioDelTorneo({ params }: PageProps<'/t/[org]/[torneo]'>) {
@@ -71,50 +143,34 @@ export default async function SitioDelTorneo({ params }: PageProps<'/t/[org]/[to
       )}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_22rem]">
-        <section className="tile !p-0">
-          <div className="flex items-center justify-between px-5 pt-5">
-            <b className="text-lg">Tabla de posiciones</b>
-          </div>
-          <div className="scrollx">
-            <table className="w-full min-w-[480px] text-sm">
-              <thead>
-                <tr>
-                  {['#', 'Equipo', 'PJ', 'G', 'E', 'P', 'DG', 'Pts'].map((h) => (
-                    <th key={h} className="th">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="[&>tr]:border-t [&>tr]:border-black/5">
-                {s.tabla.map((f) => (
-                  <tr key={f.equipoId} className={f.posicion === 1 ? 'bg-volt/30' : ''}>
-                    <td className="td font-bold">{f.posicion}</td>
-                    <td className="td">
-                      <span className="flex items-center gap-2 font-semibold">
-                        <Escudo nombre={f.equipo} className="!size-7 !text-[9px]" />
-                        {f.equipo}
-                      </span>
-                    </td>
-                    {[f.pj, f.pg, f.pe, f.pp, f.dg].map((v, i) => (
-                      <td key={i} className="td num">
-                        {v}
-                      </td>
-                    ))}
-                    <td className="td num font-bold">{f.pts}</td>
-                  </tr>
-                ))}
-                {s.tabla.length === 0 && (
-                  <tr>
-                    <td className="td text-mute" colSpan={8}>
-                      La tabla aparece cuando arranque el torneo.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        <div className="min-w-0 space-y-4">
+          {s.torneo.formato === 'COPA' && s.llave ? (
+            <section>
+              <b className="mb-2 block text-lg">Cuadro del torneo</b>
+              <Llave llave={s.llave} />
+            </section>
+          ) : (s.grupos ?? []).length > 0 ? (
+            (s.grupos ?? []).map((g) => (
+              <TablaPosiciones
+                key={g.grupo}
+                titulo={`Grupo ${g.grupo}`}
+                filas={g.tabla}
+                clasifican={s.llave ? undefined : 2}
+              />
+            ))
+          ) : (
+            <TablaPosiciones titulo="Tabla de posiciones" filas={s.tabla} />
+          )}
+          {s.torneo.formato !== 'COPA' && s.llave && (
+            <section>
+              <b className="mb-2 block text-lg">Playoffs</b>
+              <Llave llave={s.llave} />
+            </section>
+          )}
+          {s.torneo.formato === 'COPA' && !s.llave && (
+            <p className="tile text-sm text-mute">El cuadro se publica cuando se hace el sorteo.</p>
+          )}
+        </div>
 
         <div className="space-y-4">
           <section className="tile-ink">
@@ -177,7 +233,7 @@ export default async function SitioDelTorneo({ params }: PageProps<'/t/[org]/[to
                 <div className="flex items-center justify-between">
                   <b className="text-lg">{titulo}</b>
                   <span className="text-sm text-mute">
-                    Fecha {fecha} · {fechaCorta(ps[0]!.inicio)}
+                    {ps[0]!.fase === 'LLAVE' ? 'Playoffs' : `Fecha ${fecha}`} · {fechaCorta(ps[0]!.inicio)}
                   </span>
                 </div>
                 <ul className="mt-2">
@@ -187,7 +243,7 @@ export default async function SitioDelTorneo({ params }: PageProps<'/t/[org]/[to
                       <span className="flex-1 truncate text-right font-semibold">{p.local}</span>
                       <span className="num w-14 shrink-0 rounded-full bg-black/5 py-1 text-center font-bold">
                         {p.estado === 'FINALIZADO'
-                          ? `${p.golesLocal}-${p.golesVisitante}`
+                          ? `${p.golesLocal}-${p.golesVisitante}${p.penalesLocal !== null ? ` (${p.penalesLocal}-${p.penalesVisitante})` : ''}`
                           : p.estado === 'WO'
                             ? 'W.O.'
                             : 'vs'}

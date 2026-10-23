@@ -10,4 +10,6 @@ Leé también `AGENTS.md` (lo genera Next): esta versión de Next tiene cambios 
 - Formularios: `useEnvio`, `Campo`, `Selector`, `MensajeError` (`src/componentes/formulario.tsx`).
 - Formatos: `pesos`, `fechaCorta`, `hora` (24 h, zona de Buenos Aires) en `src/lib/formato.ts`.
 - Textos con voseo. Precios: siempre desde `DATOS` de `@potrero/shared`, nunca escritos a mano.
+- Demo pública (ADR-019): `/demo` crea la sandbox del visitante; `NEXT_PUBLIC_DEMO_MODE` muestra el banner y pone `noindex`; las direcciones de los dos entornos salen de `src/lib/entornos.ts`. Con `pnpm demo --publica` corre el entorno de demo y su E2E es `pnpm --filter @potrero/web test:e2e:publica`.
 - E2E: `e2e/demo.spec.ts` (Playwright con el Chrome instalado). `CAPTURAS=<carpeta>` guarda capturas.
+- Acta sin conexión (ADR-020): `ActaDigital` es "primero offline". Cada toque va a la cola (`src/lib/acta-offline.ts`, IndexedDB) y se ve al instante con `vistaLocal` (de `@potrero/shared`); `src/lib/acta-sync.ts` la envía. El service worker `public/sw.js` guarda solo la pantalla del acta y `/_next/static`, **nunca respuestas de la API**. Para probar sin conexión usar la compilación de producción (`pnpm build` + `next start`): en `next dev` la página no se hidrata sin el servidor.

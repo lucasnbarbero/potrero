@@ -22,3 +22,9 @@ Formato de la plantilla GT-D2 de Gregal Tech. Una decisión por archivo. Para un
 | [ADR-016](016-app-nativa-en-el-lanzamiento.md) | App nativa en el lanzamiento | Propuesta (abierta) |
 | [ADR-017](017-equipo-y-forma-de-construccion.md) | Equipo y forma de construcción | Aceptada |
 | [ADR-018](018-aviso-de-consultas-concurrentes-de-prisma-7.md) | Aviso de consultas concurrentes de Prisma 7 | Aceptada |
+| [ADR-019](019-demo-publica-como-entorno-aparte.md) | Demo pública como entorno aparte con sandbox por visitante | Aceptada |
+| [ADR-020](020-acta-sin-conexion-cola-local-y-service-worker-acotado.md) | Acta sin conexión: cola local en IndexedDB y service worker acotado | Aceptada |
+| [ADR-021](021-llaves-con-cuadro-guardado-y-cruces-creados-al-definirse.md) | Llaves: cuadro guardado y cruces creados cuando se conocen los equipos | Aceptada |
+| [ADR-022](022-mensajeria-con-canales-intercambiables-y-envios-simulados.md) | Mensajería con canales intercambiables y envíos simulados | Aceptada |
+| [ADR-023](023-libro-de-caja-de-partida-doble-inmutable.md) | Libro de caja de partida doble, inmutable y con asientos automáticos | Aceptada |
+| [ADR-025](025-documentacion-con-cifrado-de-campos-revision-humana-y-links-firmados.md) | Documentación con cifrado de campos, revisión humana y links firmados | Aceptada |

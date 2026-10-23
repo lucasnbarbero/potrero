@@ -31,6 +31,19 @@ export default tseslint.config(
     },
   },
   {
+    // Service worker de la web (E11-06): corre en su propio contexto, con sus propios globales.
+    files: ['apps/web/public/sw.js'],
+    languageOptions: {
+      globals: {
+        self: 'readonly',
+        caches: 'readonly',
+        fetch: 'readonly',
+        URL: 'readonly',
+        Promise: 'readonly',
+      },
+    },
+  },
+  {
     files: ['**/*.mjs'],
     languageOptions: {
       globals: { console: 'readonly', process: 'readonly', URL: 'readonly', setTimeout: 'readonly' },

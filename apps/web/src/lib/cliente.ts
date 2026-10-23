@@ -3,6 +3,8 @@ export class ErrorCliente extends Error {
   constructor(
     mensaje: string,
     readonly campos?: Record<string, string>,
+    /** Código HTTP con el que respondió el servidor. Sin él, el pedido ni llegó (no hay conexión). */
+    readonly estado?: number,
   ) {
     super(mensaje);
   }
@@ -33,6 +35,7 @@ export async function api<T = unknown>(
     throw new ErrorCliente(
       datos?.mensaje ?? 'No pudimos completar la acción. Probá de nuevo.',
       datos?.campos,
+      r.status,
     );
   return datos as T;
 }

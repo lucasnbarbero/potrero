@@ -1,6 +1,7 @@
 // Landing de Potrero. Origen visual: mocks/landing.html. Precios y comisiones salen de docs/datos.json.
 import { DATOS, type Plan } from '@potrero/shared';
 import { Icono } from '@potrero/ui';
+import { enlaceDemo } from '@/lib/entornos';
 import { pesos } from '@/lib/formato';
 
 const pct = (plan: Plan) => `${String(DATOS.planes[plan].comisionPct).replace('.', ',')}%`;
@@ -32,6 +33,12 @@ export default function Landing() {
           </a>
         </nav>
         <div className="ml-auto flex items-center gap-2">
+          <a
+            href={enlaceDemo}
+            className="hidden rounded-full px-4 py-2 text-sm font-semibold hover:bg-black/5 md:block"
+          >
+            Probá la demo
+          </a>
           <a
             href="/ingresar"
             className="hidden rounded-full px-4 py-2 text-sm font-semibold hover:bg-black/5 sm:block"
@@ -74,9 +81,9 @@ export default function Landing() {
               Quiero ser liga fundadora
               <Icono nombre="arrow" />
             </a>
-            <a href="/ingresar" className="btn-glass btn-lg">
+            <a href={enlaceDemo} className="btn-glass btn-lg">
               <Icono nombre="eye" />
-              Ver la demo
+              Probá la demo
             </a>
           </div>
           <p
@@ -584,8 +591,8 @@ export default function Landing() {
                   Quiero ser liga fundadora
                   <Icono nombre="arrow" />
                 </a>
-                <a href="/ingresar" className="btn-glass btn-lg !bg-white/10 !text-white !border-white/10">
-                  Ver la demo
+                <a href={enlaceDemo} className="btn-glass btn-lg !bg-white/10 !text-white !border-white/10">
+                  Probá la demo
                 </a>
               </div>
             </div>

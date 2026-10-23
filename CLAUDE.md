@@ -4,7 +4,7 @@ Sistema para organizar ligas y torneos de fútbol amateur en Argentina: cobros c
 
 ## Reglas de trabajo
 - Idioma: español rioplatense con voseo en UI, docs, comentarios y commits. Dominio en español, framework en inglés (ADR-008).
-- Claude implementa todo (frontend y backend). Guía: `docs/backlog.md` (E00–E36, en orden). Al terminar una tarea, marcala `[x]` con su ID.
+- Claude implementa todo (frontend y backend). Guía: `docs/backlog.md` (E00–E37, en orden). Al terminar una tarea, marcala `[x]` con su ID.
 - Fuente de verdad: documentos 1–6 en `docs/src/*.html` (los PDF se generan). Si algo contradice esos documentos, se corrige lo otro o se actualiza el documento a propósito.
 - Cifras (precios, comisiones, metas, reglamento por defecto): solo en `docs/datos.json`. Después de cambiarlo: `pnpm datos` y `pnpm check:alineacion`.
 - Decisiones técnicas: `docs/adr/` (formato GT-D2). Nueva decisión → skill `adr`. Abiertas: 011–016.
@@ -25,6 +25,7 @@ Sistema para organizar ligas y torneos de fútbol amateur en Argentina: cobros c
 
 ## Comandos
 - `pnpm demo` — levanta todo (Docker, migraciones, datos de demo, API :4000 y web :3000). Usuario: demo@potrero.app / potrero-demo-2026.
+- `pnpm demo --publica` — entorno de la demo pública (ADR-019): una sandbox por visitante en `/demo`, base aparte `potrero_demo_publica`. E2E: `pnpm --filter @potrero/web test:e2e:publica`.
 - `pnpm test` (dominio + integración API, base `potrero_test`) · `pnpm typecheck` · `pnpm lint` · `pnpm check:alineacion`
 - E2E: `pnpm --filter @potrero/web test:e2e` (requiere demo corriendo)
 - `pnpm docs:pdf` regenera los PDF de `docs/src`.

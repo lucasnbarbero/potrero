@@ -3,15 +3,34 @@ import Link from 'next/link';
 import { Encabezado, Escudo, Estado, Vacio } from '@/componentes/ui';
 import { apiServidor } from '@/lib/api';
 import { fechaCorta, hora, pesos } from '@/lib/formato';
-import type { DetalleTorneo, Equipo, Estadisticas, Inscripcion, Partido, Sede } from '@/lib/tipos';
-import { AccionesCobro, GenerarFixture, InscribirEquipo } from './acciones';
+import { Llave } from '@/componentes/Llave';
+import type {
+  DetalleTorneo,
+  Equipo,
+  Estadisticas,
+  Inscripcion,
+  Llave as LlaveDatos,
+  Partido,
+  Sede,
+} from '@/lib/tipos';
+import {
+  AccionesCobro,
+  GenerarFixture,
+  GenerarLlaves,
+  InscribirEquipo,
+  VencimientoInscripcion,
+} from './acciones';
 
-const PESTANAS = [
-  ['inscripciones', 'Inscripciones y pagos'],
-  ['fixture', 'Fixture'],
-  ['tabla', 'Tabla'],
-  ['sanciones', 'Sanciones'],
-] as const;
+const pestanasDe = (formato: string) =>
+  [
+    ['inscripciones', 'Inscripciones y pagos'],
+    ...(formato === 'COPA'
+      ? []
+      : [['fixture', formato === 'GRUPOS_PLAYOFFS' ? 'Fase de grupos' : 'Fixture']]),
+    ...(formato === 'LIGA' ? [] : [['llaves', 'Llaves']]),
+    ...(formato === 'COPA' ? [] : [['tabla', 'Tabla']]),
+    ['sanciones', 'Sanciones'],
+  ] as [string, string][];
 
 export default async function DetalleTorneoPagina({
   params,
@@ -22,7 +41,7 @@ export default async function DetalleTorneoPagina({
   const sp = await searchParams;
   const tab =
     (typeof sp.tab === 'string' ? sp.tab : null) ??
-    (t.estado === 'INSCRIPCION' ? 'inscripciones' : 'fixture');
+    (t.estado === 'INSCRIPCION' ? 'inscripciones' : t.formato === 'COPA' ? 'llaves' : 'fixture');
   const urlPublica = `/t/${t.organizacionSlug}/${t.slug}`;
 
   return (
@@ -45,7 +64,7 @@ export default async function DetalleTorneoPagina({
       </Encabezado>
 
       <nav className="tabs rise w-fit max-w-full">
-        {PESTANAS.map(([clave, texto]) => (
+        {pestanasDe(t.formato).map(([clave, texto]) => (
           <Link key={clave} href={`?tab=${clave}`} className={tab === clave ? 'on' : ''}>
             {texto}
           </Link>
@@ -54,6 +73,7 @@ export default async function DetalleTorneoPagina({
 
       {tab === 'inscripciones' && <PestanaInscripciones torneo={t} />}
       {tab === 'fixture' && <PestanaFixture torneo={t} />}
+      {tab === 'llaves' && <PestanaLlaves torneo={t} />}
       {tab === 'tabla' && <PestanaTabla id={id} />}
       {tab === 'sanciones' && <PestanaSanciones id={id} />}
     </div>
@@ -153,6 +173,11 @@ async function PestanaInscripciones({ torneo }: { torneo: DetalleTorneo }) {
       </div>
       {torneo.estado === 'INSCRIPCION' && (
         <div className="tile">
+          <VencimientoInscripcion torneoId={torneo.id} inicial={torneo.venceInscripcion} />
+        </div>
+      )}
+      {torneo.estado === 'INSCRIPCION' && (
+        <div className="tile">
           <InscribirEquipo torneoId={torneo.id} equipos={equipos.filter((e) => !inscriptos.has(e.id))} />
         </div>
       )}
@@ -161,7 +186,9 @@ async function PestanaInscripciones({ torneo }: { torneo: DetalleTorneo }) {
 }
 
 async function PestanaFixture({ torneo }: { torneo: DetalleTorneo }) {
-  const partidos = await apiServidor<Partido[]>(`/torneos/${torneo.id}/partidos`);
+  const partidos = (await apiServidor<Partido[]>(`/torneos/${torneo.id}/partidos`)).filter(
+    (p) => p.fase !== 'LLAVE',
+  );
   if (partidos.length === 0) {
     const [sedes, inscripciones] = [
       await apiServidor<Sede[]>('/canchas'),
@@ -170,16 +197,23 @@ async function PestanaFixture({ torneo }: { torneo: DetalleTorneo }) {
     return (
       <div className="tile space-y-4">
         <div>
-          <b className="text-lg">Generar el fixture automático</b>
+          <b className="text-lg">
+            {torneo.formato === 'GRUPOS_PLAYOFFS'
+              ? 'Armar los grupos y su fixture'
+              : 'Generar el fixture automático'}
+          </b>
           <p className="text-sm text-mute">
-            Todos contra todos con los equipos confirmados, sin choques de cancha ni de horario. Al generarlo,
-            el torneo pasa a &quot;En curso&quot;.
+            {torneo.formato === 'GRUPOS_PLAYOFFS'
+              ? 'Reparte los equipos confirmados en grupos y arma todos contra todos dentro de cada uno, sin choques de cancha ni de horario.'
+              : 'Todos contra todos con los equipos confirmados, sin choques de cancha ni de horario.'}{' '}
+            Al generarlo, el torneo pasa a &quot;En curso&quot;.
           </p>
         </div>
         <GenerarFixture
           torneoId={torneo.id}
           sedes={sedes}
           confirmados={inscripciones.filter((i) => i.estado === 'CONFIRMADA').length}
+          conGrupos={torneo.formato === 'GRUPOS_PLAYOFFS'}
         />
       </div>
     );
@@ -197,6 +231,7 @@ async function PestanaFixture({ torneo }: { torneo: DetalleTorneo }) {
             {ps.map((p) => (
               <li key={p.id} className="list-row text-sm">
                 <span className="w-12 shrink-0 font-semibold">{hora(p.inicio)}</span>
+                {p.grupo && <span className="pill !px-2 !py-0.5 text-xs">{p.grupo}</span>}
                 <span className="flex min-w-0 flex-1 items-center justify-end gap-2 text-right">
                   <span className="truncate">{p.local}</span>
                 </span>
@@ -229,44 +264,50 @@ async function PestanaTabla({ id }: { id: string }) {
     return (
       <Vacio titulo="Sin posiciones todavía" texto="La tabla se arma sola cuando se cierran las actas." />
     );
+  const tablas = e.grupos.length ? e.grupos : [{ grupo: '', tabla: e.tabla }];
   return (
     <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
-      <div className="tile !p-0">
-        <div className="scrollx">
-          <table className="w-full min-w-[560px] text-sm">
-            <thead>
-              <tr>
-                {['#', 'Equipo', 'PJ', 'PG', 'PE', 'PP', 'GF', 'GC', 'DG', 'Pts'].map((h) => (
-                  <th key={h} className="th">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="[&>tr]:border-t [&>tr]:border-black/5">
-              {e.tabla.map((f) => (
-                <tr key={f.equipoId}>
-                  <td className="td font-bold">{f.posicion}</td>
-                  <td className="td">
-                    <span className="flex items-center gap-2 font-semibold">
-                      <Escudo nombre={f.equipo} className="!size-7 !text-[9px]" />
-                      {f.equipo}
-                    </span>
-                  </td>
-                  {[f.pj, f.pg, f.pe, f.pp, f.gf, f.gc, f.dg].map((v, i) => (
-                    <td key={i} className="td num">
-                      {v}
-                    </td>
+      <div className="space-y-4">
+        {tablas.map((g) => (
+          <div key={g.grupo} className="tile !p-0">
+            {g.grupo && <p className="eyebrow px-5 pt-4">Grupo {g.grupo}</p>}
+            <div className="scrollx">
+              <table className="w-full min-w-[560px] text-sm">
+                <thead>
+                  <tr>
+                    {['#', 'Equipo', 'PJ', 'PG', 'PE', 'PP', 'GF', 'GC', 'DG', 'Pts'].map((h) => (
+                      <th key={h} className="th">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="[&>tr]:border-t [&>tr]:border-black/5">
+                  {g.tabla.map((f) => (
+                    <tr key={f.equipoId}>
+                      <td className="td font-bold">{f.posicion}</td>
+                      <td className="td">
+                        <span className="flex items-center gap-2 font-semibold">
+                          <Escudo nombre={f.equipo} className="!size-7 !text-[9px]" />
+                          {f.equipo}
+                        </span>
+                      </td>
+                      {[f.pj, f.pg, f.pe, f.pp, f.gf, f.gc, f.dg].map((v, i) => (
+                        <td key={i} className="td num">
+                          {v}
+                        </td>
+                      ))}
+                      <td className="td num font-bold">{f.pts}</td>
+                    </tr>
                   ))}
-                  <td className="td num font-bold">{f.pts}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p className="px-4 pb-4 text-xs text-mute">
-          Calculada automáticamente desde las actas cerradas. No se edita a mano.
-        </p>
+                </tbody>
+              </table>
+            </div>
+            <p className="px-4 pb-4 text-xs text-mute">
+              Calculada automáticamente desde las actas cerradas. No se edita a mano.
+            </p>
+          </div>
+        ))}
       </div>
       <div className="tile">
         <span className="eyebrow">Goleadores</span>
@@ -328,6 +369,47 @@ async function PestanaSanciones({ id }: { id: string }) {
       <p className="px-5 pb-4 text-xs text-mute">
         Generadas automáticamente al cerrar cada acta. Expedientes y descargos: próximamente (E14).
       </p>
+    </div>
+  );
+}
+
+async function PestanaLlaves({ torneo }: { torneo: DetalleTorneo }) {
+  const llave = await apiServidor<LlaveDatos | null>(`/torneos/${torneo.id}/llave`);
+  if (llave) {
+    return (
+      <div className="space-y-4">
+        <Llave llave={llave} enlazarActa />
+        <p className="text-xs text-mute">
+          La llave se completa sola: al cerrar el acta de un cruce, el ganador avanza y se programa el
+          siguiente. Si hay empate, el acta pide los penales.
+        </p>
+      </div>
+    );
+  }
+  const [sedes, inscripciones] = [
+    await apiServidor<Sede[]>('/canchas'),
+    await apiServidor<Inscripcion[]>(`/torneos/${torneo.id}/inscripciones`),
+  ];
+  const confirmados = inscripciones.filter((i) => i.estado === 'CONFIRMADA').map((i) => i.equipo);
+  const texto: Record<string, string> = {
+    COPA: 'Sorteo de los equipos confirmados con cabezas de serie. Si la cantidad no es potencia de dos, las mejores cabezas pasan la primera ronda libres.',
+    LIGA_PLAYOFFS:
+      'Cuando termina la fase regular, clasifican los primeros de la tabla: 1º contra último, 2º contra anteúltimo…',
+    GRUPOS_PLAYOFFS:
+      'Cuando terminan los grupos, avanzan los mejores de cada uno y se cruzan 1º de un grupo con 2º del vecino.',
+  };
+  return (
+    <div className="tile space-y-4">
+      <div>
+        <b className="text-lg">Armar la llave</b>
+        <p className="text-sm text-mute">{texto[torneo.formato]}</p>
+      </div>
+      <GenerarLlaves
+        torneoId={torneo.id}
+        formato={torneo.formato}
+        sedes={sedes}
+        equipos={confirmados.map((e) => ({ id: e.id, nombre: e.nombre }))}
+      />
     </div>
   );
 }

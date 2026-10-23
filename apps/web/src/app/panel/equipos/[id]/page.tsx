@@ -1,13 +1,16 @@
 import Link from 'next/link';
 import { Encabezado, Escudo, Estado } from '@/componentes/ui';
 import { apiServidor } from '@/lib/api';
-import { NuevoJugador } from '../formularios';
+import { ContactoCapitan, NuevoJugador } from '../formularios';
 
 interface DetalleEquipo {
   id: string;
   nombre: string;
   capitanNombre: string | null;
   capitanTelefono: string | null;
+  capitanEmail: string | null;
+  capitanOptInWhatsapp: boolean;
+  capitanBajaMarketing: boolean;
   plantel: { id: string; numero: number | null; jugador: { id: string; nombre: string; apellido: string } }[];
   inscripciones: { id: string; estado: string; torneo: { id: string; nombre: string } }[];
 }
@@ -45,6 +48,9 @@ export default async function Equipo({ params }: PageProps<'/panel/equipos/[id]'
               <b className="block">{e.capitanNombre ?? 'Sin capitán'}</b>
               <span className="text-mute">{e.capitanTelefono ?? ''}</span>
             </div>
+          </div>
+          <div className="tile">
+            <ContactoCapitan equipoId={e.id} inicial={e} />
           </div>
           <div className="tile">
             <span className="eyebrow">Torneos</span>

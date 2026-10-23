@@ -31,6 +31,33 @@
     "comisionMercadoPagoPct": 8,
     "costoMercadoPago": 76700
   },
+  "documentacion": {
+    "provisorio": true,
+    "mayoriaEdad": 18,
+    "avisoVencimientoDias": 30,
+    "tamanoMaximoMb": 2,
+    "vencimientoLinkTutorDias": 14,
+    "vencimientoUrlFirmadaMinutos": 5,
+    "retencionDias": {
+      "RECHAZADO": 30,
+      "VENCIDO": 365,
+      "ACCESO": 730
+    }
+  },
+  "mensajeria": {
+    "provisorio": true,
+    "costoUsdPorMensaje": {
+      "EMAIL": 0,
+      "PUSH": 0,
+      "WHATSAPP_UTILIDAD": 0.026,
+      "WHATSAPP_MARKETING": 0.06
+    },
+    "whatsappIncluidoPorMes": {
+      "LIGA": 200,
+      "FUNDADORA": 400,
+      "PRO": 2000
+    }
+  },
   "metas": {
     "minutosParaArmarTorneo": 30,
     "ligasFundadoras": 15,

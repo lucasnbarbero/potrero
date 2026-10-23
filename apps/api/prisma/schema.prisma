@@ -16,11 +16,11 @@ datasource db {
 // ───────────── Identidad y organizaciones (globales) ─────────────
 
 model Usuario {
-  id           String         @id @default(cuid())
-  email        String         @unique
+  id           String          @id @default(cuid())
+  email        String          @unique
   nombre       String
-  passwordHash String         @map("password_hash")
-  creadoEn     DateTime       @default(now()) @map("creado_en")
+  passwordHash String          @map("password_hash")
+  creadoEn     DateTime        @default(now()) @map("creado_en")
   membresias   Membresia[]
   sesiones     SesionRefresh[]
 
@@ -42,8 +42,11 @@ model Organizacion {
   /// Cuenta de Mercado Pago conectada por OAuth. En modo simulado, un identificador ficticio.
   mpCuentaId   String?     @map("mp_cuenta_id")
   creadoEn     DateTime    @default(now()) @map("creado_en")
+  /// Solo en el entorno de demo (ADR-019): las sandboxes de visitantes vencen y un job las elimina. Nulo en una liga real.
+  demoExpiraEn DateTime?   @map("demo_expira_en")
   membresias   Membresia[]
 
+  @@index([demoExpiraEn])
   @@map("organizacion")
 }
 
@@ -70,14 +73,14 @@ model Membresia {
 
 /// Token de renovación. Se guarda solo el hash; cada uso lo rota. Si se reutiliza uno ya rotado, se revoca la familia.
 model SesionRefresh {
-  id          String    @id @default(cuid())
-  usuarioId   String    @map("usuario_id")
-  familia     String
-  tokenHash   String    @unique @map("token_hash")
-  expiraEn    DateTime  @map("expira_en")
-  revocadoEn  DateTime? @map("revocado_en")
-  creadoEn    DateTime  @default(now()) @map("creado_en")
-  usuario     Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  id         String    @id @default(cuid())
+  usuarioId  String    @map("usuario_id")
+  familia    String
+  tokenHash  String    @unique @map("token_hash")
+  expiraEn   DateTime  @map("expira_en")
+  revocadoEn DateTime? @map("revocado_en")
+  creadoEn   DateTime  @default(now()) @map("creado_en")
+  usuario    Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@index([familia])
   @@map("sesion_refresh")
@@ -144,23 +147,32 @@ model Reglamento {
 }
 
 model Torneo {
-  id             String        @id @default(cuid())
-  organizacionId String        @map("organizacion_id")
-  nombre         String
-  slug           String
-  modalidad      Modalidad
-  formato        Formato
-  idaYVuelta     Boolean       @default(false) @map("ida_y_vuelta")
-  estado         EstadoTorneo  @default(BORRADOR)
-  cupo           Int
+  id                   String        @id @default(cuid())
+  organizacionId       String        @map("organizacion_id")
+  nombre               String
+  slug                 String
+  modalidad            Modalidad
+  formato              Formato
+  idaYVuelta           Boolean       @default(false) @map("ida_y_vuelta")
+  estado               EstadoTorneo  @default(BORRADOR)
+  cupo                 Int
   /// Arancel de inscripción por equipo, en pesos.
-  inscripcion    Int
-  reglamentoId   String        @map("reglamento_id")
-  creadoEn       DateTime      @default(now()) @map("creado_en")
-  reglamento     Reglamento    @relation(fields: [reglamentoId], references: [id])
-  inscripciones  Inscripcion[]
-  partidos       Partido[]
-  sanciones      Sancion[]
+  inscripcion          Int
+  reglamentoId         String        @map("reglamento_id")
+  creadoEn             DateTime      @default(now()) @map("creado_en")
+  /// Fecha límite para pagar la inscripción. Los cargos nuevos la heredan.
+  venceInscripcion     DateTime?     @map("vence_inscripcion") @db.Date
+  /// Cuadro de playoffs: lugares en orden (null = pase libre) y la programación de las rondas. Ver apps/api/src/torneos/llaves.ts.
+  llave                Json?
+  /// Grupos de la fase de grupos: [{ grupo, equipoIds }].
+  grupos               Json?
+  /// Documentos que exige el torneo a sus jugadores (ver TIPOS_DOCUMENTO). Vacío = no exige.
+  documentosRequeridos String[]      @default([]) @map("documentos_requeridos")
+  reglamento           Reglamento    @relation(fields: [reglamentoId], references: [id])
+  inscripciones        Inscripcion[]
+  partidos             Partido[]
+  sanciones            Sancion[]
+  expedientes          Expediente[]
 
   @@unique([organizacionId, slug])
   @@map("torneo")
@@ -168,16 +180,20 @@ model Torneo {
 
 /// Equipo a nivel organización: se reutiliza entre torneos.
 model Equipo {
-  id              String           @id @default(cuid())
-  organizacionId  String           @map("organizacion_id")
-  nombre          String
-  color           String?
-  capitanNombre   String?          @map("capitan_nombre")
-  capitanEmail    String?          @map("capitan_email")
-  capitanTelefono String?          @map("capitan_telefono")
-  creadoEn        DateTime         @default(now()) @map("creado_en")
-  plantel         PlantelJugador[]
-  inscripciones   Inscripcion[]
+  id                   String           @id @default(cuid())
+  organizacionId       String           @map("organizacion_id")
+  nombre               String
+  color                String?
+  capitanNombre        String?          @map("capitan_nombre")
+  capitanEmail         String?          @map("capitan_email")
+  capitanTelefono      String?          @map("capitan_telefono")
+  /// Aceptó recibir WhatsApp. Sin esto no se le escribe por ahí (E16-05).
+  capitanOptInWhatsapp Boolean          @default(false) @map("capitan_optin_whatsapp")
+  /// Pidió no recibir novedades: frena solo los mensajes de marketing.
+  capitanBajaMarketing Boolean          @default(false) @map("capitan_baja_marketing")
+  creadoEn             DateTime         @default(now()) @map("creado_en")
+  plantel              PlantelJugador[]
+  inscripciones        Inscripcion[]
 
   @@unique([organizacionId, nombre])
   @@map("equipo")
@@ -185,13 +201,21 @@ model Equipo {
 
 /// Jugador con identidad única dentro de la organización (base de duplicados y trayectoria).
 model Jugador {
-  id             String           @id @default(cuid())
-  organizacionId String           @map("organizacion_id")
-  nombre         String
-  apellido       String
-  creadoEn       DateTime         @default(now()) @map("creado_en")
-  plantel        PlantelJugador[]
+  id                  String             @id @default(cuid())
+  organizacionId      String             @map("organizacion_id")
+  nombre              String
+  apellido            String
+  creadoEn            DateTime           @default(now()) @map("creado_en")
+  fechaNacimiento     DateTime?          @map("fecha_nacimiento") @db.Date
+  /// DNI y datos de salud cifrados a nivel de campo (AES-256-GCM, ver comun/cifrado.ts). El hash permite buscar duplicados.
+  dniCifrado          String?            @map("dni_cifrado")
+  dniHash             String?            @map("dni_hash")
+  datosMedicosCifrado String?            @map("datos_medicos_cifrado")
+  plantel             PlantelJugador[]
+  documentos          DocumentoJugador[]
+  consentimientos     Consentimiento[]
 
+  @@index([organizacionId, dniHash])
   @@map("jugador")
 }
 
@@ -245,6 +269,10 @@ model Cargo {
   concepto       String
   monto          Int
   estado         EstadoCargo @default(PENDIENTE)
+  /// De qué rubro de ingresos es (INSCRIPCIONES o MULTAS): decide dónde entra en la caja.
+  categoria      String      @default("INSCRIPCIONES")
+  /// Vencimiento: de acá salen los recordatorios de cobro escalonados.
+  vence          DateTime?   @db.Date
   creadoEn       DateTime    @default(now()) @map("creado_en")
   inscripcion    Inscripcion @relation(fields: [inscripcionId], references: [id], onDelete: Cascade)
   pagos          Pago[]
@@ -265,23 +293,23 @@ enum EstadoPago {
 }
 
 model Pago {
-  id                  String     @id @default(cuid())
-  organizacionId      String     @map("organizacion_id")
-  cargoId             String     @map("cargo_id")
-  metodo              MetodoPago
-  monto               Int
+  id                 String     @id @default(cuid())
+  organizacionId     String     @map("organizacion_id")
+  cargoId            String     @map("cargo_id")
+  metodo             MetodoPago
+  monto              Int
   /// Comisión de Potrero según el plan. Cero en pagos manuales.
-  comisionPlataforma  Int        @default(0) @map("comision_plataforma")
-  estado              EstadoPago @default(PENDIENTE)
+  comisionPlataforma Int        @default(0) @map("comision_plataforma")
+  estado             EstadoPago @default(PENDIENTE)
   /// Preferencia de la pasarela (link de pago).
-  preferenciaId       String?    @unique @map("preferencia_id")
+  preferenciaId      String?    @unique @map("preferencia_id")
   /// Identificador del pago en la pasarela: da idempotencia a las notificaciones.
-  pasarelaPagoId      String?    @unique @map("pasarela_pago_id")
-  comprobante         String?
-  registradoPorId     String?    @map("registrado_por_id")
-  creadoEn            DateTime   @default(now()) @map("creado_en")
-  acreditadoEn        DateTime?  @map("acreditado_en")
-  cargo               Cargo      @relation(fields: [cargoId], references: [id], onDelete: Cascade)
+  pasarelaPagoId     String?    @unique @map("pasarela_pago_id")
+  comprobante        String?
+  registradoPorId    String?    @map("registrado_por_id")
+  creadoEn           DateTime   @default(now()) @map("creado_en")
+  acreditadoEn       DateTime?  @map("acreditado_en")
+  cargo              Cargo      @relation(fields: [cargoId], references: [id], onDelete: Cascade)
 
   @@map("pago")
 }
@@ -299,14 +327,27 @@ model Sede {
 }
 
 model Cancha {
-  id             String    @id @default(cuid())
-  organizacionId String    @map("organizacion_id")
-  sedeId         String    @map("sede_id")
-  nombre         String
-  sede           Sede      @relation(fields: [sedeId], references: [id], onDelete: Cascade)
-  partidos       Partido[]
+  id              String    @id @default(cuid())
+  organizacionId  String    @map("organizacion_id")
+  sedeId          String    @map("sede_id")
+  nombre          String
+  /// Lo que cuesta alquilarla por partido, en pesos. Con la automatización encendida, al cerrar el acta va a la caja.
+  costoPorPartido Int       @default(0) @map("costo_por_partido")
+  superficie      String?
+  /// Bloqueada (mantenimiento, clima): no se ofrece para armar fixtures.
+  bloqueada       Boolean   @default(false)
+  motivoBloqueo   String?   @map("motivo_bloqueo")
+  sede            Sede      @relation(fields: [sedeId], references: [id], onDelete: Cascade)
+  partidos        Partido[]
 
   @@map("cancha")
+}
+
+/// Fase a la que pertenece un partido: liga, grupos o llave (eliminación directa).
+enum FasePartido {
+  LIGA
+  GRUPOS
+  LLAVE
 }
 
 enum EstadoPartido {
@@ -318,24 +359,41 @@ enum EstadoPartido {
 }
 
 model Partido {
-  id             String          @id @default(cuid())
-  organizacionId String          @map("organizacion_id")
-  torneoId       String          @map("torneo_id")
-  fecha          Int
-  localId        String          @map("local_id")
-  visitanteId    String          @map("visitante_id")
-  canchaId       String?         @map("cancha_id")
-  inicio         DateTime?
-  estado         EstadoPartido   @default(PROGRAMADO)
+  id               String          @id @default(cuid())
+  organizacionId   String          @map("organizacion_id")
+  torneoId         String          @map("torneo_id")
+  fecha            Int
+  localId          String          @map("local_id")
+  visitanteId      String          @map("visitante_id")
+  canchaId         String?         @map("cancha_id")
+  inicio           DateTime?
+  estado           EstadoPartido   @default(PROGRAMADO)
   /// Resultado guardado al cerrar el acta (se deriva de los eventos).
-  golesLocal     Int?            @map("goles_local")
-  golesVisitante Int?            @map("goles_visitante")
-  ganadorWOId    String?         @map("ganador_wo_id")
-  cerradoEn      DateTime?       @map("cerrado_en")
-  torneo         Torneo          @relation(fields: [torneoId], references: [id], onDelete: Cascade)
-  cancha         Cancha?         @relation(fields: [canchaId], references: [id])
-  eventos        EventoPartido[]
+  golesLocal       Int?            @map("goles_local")
+  golesVisitante   Int?            @map("goles_visitante")
+  ganadorWOId      String?         @map("ganador_wo_id")
+  cerradoEn        DateTime?       @map("cerrado_en")
+  fase             FasePartido     @default(LIGA)
+  /// Letra del grupo (fase de grupos).
+  grupo            String?
+  /// Identificador del cruce dentro de la llave (ronda-posición). Nulo fuera de la fase de llave.
+  clave            String?
+  /// Definición por penales de un cruce de llave que terminó empatado.
+  penalesLocal     Int?            @map("penales_local")
+  penalesVisitante Int?            @map("penales_visitante")
+  /// Árbitro designado y si ya confirmó (PENDIENTE o CONFIRMADO).
+  arbitroId        String?         @map("arbitro_id")
+  arbitroEstado    String?         @map("arbitro_estado")
+  arbitro          Arbitro?        @relation(fields: [arbitroId], references: [id], onDelete: SetNull)
+  /// Dispositivo que lleva el acta (un solo dueño por partido) y quién lo tomó.
+  actaDispositivo  String?         @map("acta_dispositivo")
+  actaUsuarioId    String?         @map("acta_usuario_id")
+  actaTomadaEn     DateTime?       @map("acta_tomada_en")
+  torneo           Torneo          @relation(fields: [torneoId], references: [id], onDelete: Cascade)
+  cancha           Cancha?         @relation(fields: [canchaId], references: [id])
+  eventos          EventoPartido[]
 
+  @@unique([torneoId, clave])
   @@index([torneoId, fecha])
   @@map("partido")
 }
@@ -375,20 +433,347 @@ enum CausaSancion {
   ROJA_DIRECTA
   DOBLE_AMARILLA
   ACUMULACION
+  /// La impone el tribunal desde un expediente.
+  TRIBUNAL
 }
 
 model Sancion {
-  id               String       @id @default(cuid())
-  organizacionId   String       @map("organizacion_id")
-  torneoId         String       @map("torneo_id")
-  jugadorId        String       @map("jugador_id")
-  equipoId         String       @map("equipo_id")
-  partidoOrigenId  String       @map("partido_origen_id")
-  causa            CausaSancion
-  partidos         Int
-  creadoEn         DateTime     @default(now()) @map("creado_en")
-  torneo           Torneo       @relation(fields: [torneoId], references: [id], onDelete: Cascade)
+  id              String       @id @default(cuid())
+  organizacionId  String       @map("organizacion_id")
+  torneoId        String       @map("torneo_id")
+  jugadorId       String       @map("jugador_id")
+  equipoId        String       @map("equipo_id")
+  partidoOrigenId String       @map("partido_origen_id")
+  causa           CausaSancion
+  partidos        Int
+  creadoEn        DateTime     @default(now()) @map("creado_en")
+  torneo          Torneo       @relation(fields: [torneoId], references: [id], onDelete: Cascade)
 
   @@unique([partidoOrigenId, jugadorId, causa])
   @@map("sancion")
+}
+
+enum TipoExpediente {
+  ROJA_DIRECTA
+  AGRESION
+  INCIDENTE_HINCHADA
+  JUGADOR_NO_HABILITADO
+  OTRO
+}
+
+enum EstadoExpediente {
+  ABIERTO
+  RESUELTO
+}
+
+/// Caso que revisa el tribunal: informe del árbitro, descargo del capitán y resolución (puede ampliar o reducir lo sugerido).
+model Expediente {
+  id                String           @id @default(cuid())
+  organizacionId    String           @map("organizacion_id")
+  torneoId          String           @map("torneo_id")
+  partidoId         String?          @map("partido_id")
+  equipoId          String           @map("equipo_id")
+  jugadorId         String?          @map("jugador_id")
+  tipo              TipoExpediente
+  motivo            String
+  informeArbitro    String?          @map("informe_arbitro")
+  descargo          String?
+  descargoEn        DateTime?        @map("descargo_en")
+  /// Partidos que sugiere el reglamento (la sanción automática, si la hay).
+  sugeridos         Int              @default(0)
+  /// Sanción automática que este expediente revisa; al resolver se la modifica.
+  sancionId         String?          @map("sancion_id")
+  estado            EstadoExpediente @default(ABIERTO)
+  /// Una sola vez por partido y jugador cuando lo abre el sistema (jugador no habilitado).
+  clave             String?
+  partidosResueltos Int?             @map("partidos_resueltos")
+  multa             Int              @default(0)
+  cargoId           String?          @map("cargo_id")
+  veredicto         String?
+  resolucion        String?
+  resueltoPorId     String?          @map("resuelto_por_id")
+  resueltoEn        DateTime?        @map("resuelto_en")
+  creadoEn          DateTime         @default(now()) @map("creado_en")
+  torneo            Torneo           @relation(fields: [torneoId], references: [id], onDelete: Cascade)
+
+  @@unique([organizacionId, clave])
+  @@index([torneoId, estado])
+  @@map("expediente")
+}
+
+// ───────────── Comunicación (por organización, con RLS) ─────────────
+
+enum CanalMensaje {
+  EMAIL
+  WHATSAPP
+  PUSH
+}
+
+enum EstadoMensaje {
+  PENDIENTE
+  ENVIADO
+  ENTREGADO
+  LEIDO
+  FALLIDO
+}
+
+enum EstadoDifusion {
+  PROGRAMADA
+  ENVIADA
+}
+
+/// Un envío masivo: a quién, con qué plantilla y por qué canal se pidió.
+model Difusion {
+  id             String         @id @default(cuid())
+  organizacionId String         @map("organizacion_id")
+  plantilla      String
+  canal          CanalMensaje
+  titulo         String
+  /// A quién va: { tipo: 'TODOS' | 'TORNEO' | 'MOROSOS' | 'EQUIPOS', ... }.
+  segmento       Json
+  /// Texto del mensaje libre (las demás plantillas ya tienen el suyo).
+  texto          String?
+  programadaPara DateTime?      @map("programada_para")
+  estado         EstadoDifusion @default(ENVIADA)
+  creadaPorId    String?        @map("creada_por_id")
+  creadoEn       DateTime       @default(now()) @map("creado_en")
+  mensajes       Mensaje[]
+
+  @@index([organizacionId, creadoEn])
+  @@map("difusion")
+}
+
+/// Un mensaje a una persona. Es el historial de lo enviado, con su costo y su estado de entrega.
+model Mensaje {
+  id             String        @id @default(cuid())
+  organizacionId String        @map("organizacion_id")
+  difusionId     String?       @map("difusion_id")
+  contingenciaId String?       @map("contingencia_id")
+  equipoId       String?       @map("equipo_id")
+  /// Hace idempotente un envío automático (por ejemplo, "rec24:partido:equipo"): no se manda dos veces.
+  clave          String?
+  plantilla      String
+  version        Int
+  canal          CanalMensaje
+  destinatario   String
+  destino        String
+  asunto         String
+  cuerpo         String
+  estado         EstadoMensaje @default(PENDIENTE)
+  costoUsd       Float         @default(0) @map("costo_usd")
+  proveedorId    String?       @map("proveedor_id")
+  /// Para los botones "Confirmo" / "No puedo" de una reprogramación.
+  token          String?       @unique
+  respuesta      String?
+  respondidoEn   DateTime?     @map("respondido_en")
+  error          String?
+  enviadoEn      DateTime?     @map("enviado_en")
+  entregadoEn    DateTime?     @map("entregado_en")
+  leidoEn        DateTime?     @map("leido_en")
+  creadoEn       DateTime      @default(now()) @map("creado_en")
+  difusion       Difusion?     @relation(fields: [difusionId], references: [id], onDelete: Cascade)
+  contingencia   Contingencia? @relation(fields: [contingenciaId], references: [id], onDelete: Cascade)
+
+  @@unique([organizacionId, clave])
+  @@index([organizacionId, creadoEn])
+  @@index([contingenciaId])
+  @@map("mensaje")
+}
+
+/// Avisos automáticos que el organizador enciende o apaga.
+model Automatizacion {
+  id             String       @id @default(cuid())
+  organizacionId String       @map("organizacion_id")
+  clave          String
+  activa         Boolean      @default(false)
+  canal          CanalMensaje @default(WHATSAPP)
+
+  @@unique([organizacionId, clave])
+  @@map("automatizacion")
+}
+
+/// Una reprogramación aplicada (lluvia, cancha caída…): qué se movió y quién lo confirmó.
+model Contingencia {
+  id             String    @id @default(cuid())
+  organizacionId String    @map("organizacion_id")
+  motivo         String
+  /// MOVER, SUSPENDER o CAMBIAR_CANCHA.
+  accion         String
+  /// Los movimientos: [{ partidoId, de: {...}, a: {...} }].
+  detalle        Json
+  aplicadaPorId  String?   @map("aplicada_por_id")
+  creadoEn       DateTime  @default(now()) @map("creado_en")
+  mensajes       Mensaje[]
+
+  @@index([organizacionId, creadoEn])
+  @@map("contingencia")
+}
+
+// ───────────── Árbitros y caja (por organización, con RLS) ─────────────
+
+model Arbitro {
+  id             String    @id @default(cuid())
+  organizacionId String    @map("organizacion_id")
+  nombre         String
+  apellido       String
+  telefono       String?
+  email          String?
+  /// Honorario por partido, en pesos.
+  tarifa         Int       @default(0)
+  /// Valoración de 1 a 5.
+  valoracion     Float?
+  activo         Boolean   @default(true)
+  /// Franjas en las que puede dirigir: [{ dia: 0-6 (0 = domingo), desde: "HH:MM", hasta: "HH:MM" }]. Vacío = siempre.
+  disponibilidad Json?
+  creadoEn       DateTime  @default(now()) @map("creado_en")
+  partidos       Partido[]
+
+  @@map("arbitro")
+}
+
+/// Un movimiento de plata. Tiene líneas de debe y haber que suman lo mismo. No se edita ni se borra (lo impide la base):
+/// una corrección es otro asiento que lo revierte.
+model Asiento {
+  id             String         @id @default(cuid())
+  organizacionId String         @map("organizacion_id")
+  fecha          DateTime       @default(now())
+  descripcion    String
+  /// COBRO, COMISION, EGRESO, INGRESO, RETIRO o REVERSA.
+  tipo           String
+  torneoId       String?        @map("torneo_id")
+  referenciaTipo String?        @map("referencia_tipo")
+  referenciaId   String?        @map("referencia_id")
+  arbitroId      String?        @map("arbitro_id")
+  canchaId       String?        @map("cancha_id")
+  comprobante    String?
+  /// Hace idempotente un asiento automático (por ejemplo, "pago:<id>"): no se genera dos veces.
+  clave          String?
+  /// Si este asiento anula a otro, cuál. Un asiento se revierte una sola vez.
+  revierteAId    String?        @unique @map("revierte_a_id")
+  creadoPorId    String?        @map("creado_por_id")
+  creadoEn       DateTime       @default(now()) @map("creado_en")
+  lineas         LineaAsiento[]
+
+  @@unique([organizacionId, clave])
+  @@index([organizacionId, fecha])
+  @@map("asiento")
+}
+
+model LineaAsiento {
+  id             String  @id @default(cuid())
+  organizacionId String  @map("organizacion_id")
+  asientoId      String  @map("asiento_id")
+  cuenta         String
+  debe           Int     @default(0)
+  haber          Int     @default(0)
+  asiento        Asiento @relation(fields: [asientoId], references: [id], onDelete: Cascade)
+
+  @@index([organizacionId, cuenta])
+  @@index([asientoId])
+  @@map("linea_asiento")
+}
+
+// ───────────── Documentación, identidad y consentimientos (E15) ─────────────
+
+enum TipoDocumento {
+  DNI
+  APTO_FISICO
+  AUTORIZACION_MENOR
+}
+
+enum EstadoRevision {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}
+
+model DocumentoJugador {
+  id             String            @id @default(cuid())
+  organizacionId String            @map("organizacion_id")
+  jugadorId      String            @map("jugador_id")
+  tipo           TipoDocumento
+  estado         EstadoRevision    @default(PENDIENTE)
+  /// Clave en el almacenamiento privado. "demo:..." son documentos de muestra sin archivo real.
+  archivoClave   String            @map("archivo_clave")
+  archivoNombre  String            @map("archivo_nombre")
+  mime           String
+  tamano         Int
+  vencimiento    DateTime?         @db.Date
+  motivoRechazo  String?           @map("motivo_rechazo")
+  revisadoPorId  String?           @map("revisado_por_id")
+  revisadoEn     DateTime?         @map("revisado_en")
+  creadoEn       DateTime          @default(now()) @map("creado_en")
+  jugador        Jugador           @relation(fields: [jugadorId], references: [id], onDelete: Cascade)
+  accesos        AccesoDocumento[]
+
+  @@index([organizacionId, jugadorId])
+  @@map("documento_jugador")
+}
+
+/// Quién pidió ver un documento y cuándo. Se borra por retención.
+model AccesoDocumento {
+  id             String           @id @default(cuid())
+  organizacionId String           @map("organizacion_id")
+  documentoId    String           @map("documento_id")
+  usuarioId      String?          @map("usuario_id")
+  accion         String
+  creadoEn       DateTime         @default(now()) @map("creado_en")
+  documento      DocumentoJugador @relation(fields: [documentoId], references: [id], onDelete: Cascade)
+
+  @@index([organizacionId, documentoId])
+  @@map("acceso_documento")
+}
+
+enum EstadoDuplicado {
+  ABIERTO
+  RESUELTO
+}
+
+/// Dos jugadores de la organización con el mismo DNI.
+model DuplicadoJugador {
+  id             String          @id @default(cuid())
+  organizacionId String          @map("organizacion_id")
+  jugadorAId     String          @map("jugador_a_id")
+  jugadorBId     String          @map("jugador_b_id")
+  estado         EstadoDuplicado @default(ABIERTO)
+  resolucion     String?
+  resueltoPorId  String?         @map("resuelto_por_id")
+  creadoEn       DateTime        @default(now()) @map("creado_en")
+  resueltoEn     DateTime?       @map("resuelto_en")
+
+  @@unique([jugadorAId, jugadorBId])
+  @@index([organizacionId, estado])
+  @@map("duplicado_jugador")
+}
+
+/// Consentimiento versionado: del tutor (menores) o del propio jugador. Se revoca, no se borra.
+model Consentimiento {
+  id             String    @id @default(cuid())
+  organizacionId String    @map("organizacion_id")
+  jugadorId      String    @map("jugador_id")
+  tipo           String
+  version        Int
+  otorgante      String
+  otorganteDni   String?   @map("otorgante_dni")
+  vinculo        String?
+  otorgadoEn     DateTime  @default(now()) @map("otorgado_en")
+  revocadoEn     DateTime? @map("revocado_en")
+  jugador        Jugador   @relation(fields: [jugadorId], references: [id], onDelete: Cascade)
+
+  @@index([organizacionId, jugadorId])
+  @@map("consentimiento")
+}
+
+/// Link que se le manda al tutor para que autorice en línea. El token es la credencial.
+model SolicitudConsentimiento {
+  id             String    @id @default(cuid())
+  organizacionId String    @map("organizacion_id")
+  jugadorId      String    @map("jugador_id")
+  token          String    @unique
+  venceEn        DateTime  @map("vence_en")
+  usadaEn        DateTime? @map("usada_en")
+  creadoEn       DateTime  @default(now()) @map("creado_en")
+
+  @@index([organizacionId, jugadorId])
+  @@map("solicitud_consentimiento")
 }

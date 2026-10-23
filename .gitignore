@@ -11,3 +11,4 @@ apps/api/src/generated/
 docs/_obsoletos/
 .DS_Store
 Thumbs.db
+.almacen/

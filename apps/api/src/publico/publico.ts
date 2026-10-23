@@ -9,6 +9,7 @@ import { auditar } from '../comun/auditoria.js';
 import { type Contexto, Ctx, ErrorNegocio, noEncontrado, Publico, Zod } from '../comun/http.js';
 import { CobrosModule, CobrosService, inscribirEquipo } from '../cobros/cobros.js';
 import { DbService, enSerie } from '../db/db.service.js';
+import { llaveDelTorneo } from '../torneos/llaves.js';
 import { estadisticasDelTorneo, partidosDelTorneo } from '../torneos/torneos.js';
 
 /**
@@ -45,9 +46,10 @@ export class PublicoService {
     return this.db.enOrg(org.id, async (tx) => {
       const t = await tx.torneo.findFirst({ where: { slug: torneoSlug, estado: { not: 'BORRADOR' } } });
       if (!t) throw noEncontrado('el torneo');
-      const [partidos, est, inscriptos] = await enSerie([
+      const [partidos, est, llave, inscriptos] = await enSerie([
         () => partidosDelTorneo(tx, t.id),
         () => estadisticasDelTorneo(tx, t.id),
+        () => llaveDelTorneo(tx, t.id),
         () => tx.inscripcion.count({ where: { torneoId: t.id, estado: { not: 'BAJA' } } }),
       ]);
       return {
@@ -64,6 +66,8 @@ export class PublicoService {
         },
         partidos: partidos.map(({ localId, visitanteId, ...p }) => p),
         tabla: est.tabla,
+        grupos: est.grupos,
+        llave,
         goleadores: est.goleadores,
         suspendidos: est.sanciones
           .filter((s) => s.activa)
@@ -149,40 +153,62 @@ export class PanelController {
   resumen(@Ctx() c: Contexto) {
     return this.db.enOrg(c.organizacionId, async (tx) => {
       const ahora = new Date();
-      const [torneos, pagos, cargos, proximos, sinCerrar, sanciones, equipos] = await enSerie([
-        () =>
-          tx.torneo.findMany({
-            where: { estado: { in: ['INSCRIPCION', 'EN_CURSO'] } },
-            select: { id: true, nombre: true, estado: true },
-          }),
-        () =>
-          tx.pago.findMany({
-            where: { estado: 'APROBADO' },
-            select: { monto: true, comisionPlataforma: true, metodo: true },
-          }),
-        () =>
-          tx.cargo.findMany({
-            where: { estado: 'PENDIENTE' },
-            include: { pagos: { where: { estado: 'APROBADO' } }, inscripcion: { include: { equipo: true } } },
-          }),
-        () =>
-          tx.partido.findMany({
-            where: { estado: 'PROGRAMADO', inicio: { gte: ahora } },
-            orderBy: { inicio: 'asc' },
-            take: 6,
-            include: { cancha: true },
-          }),
-        () =>
-          tx.partido.findMany({
-            where: {
-              estado: { in: ['PROGRAMADO', 'EN_JUEGO'] },
-              inicio: { lt: new Date(ahora.getTime() - 2 * 3600_000) },
-            },
-            select: { id: true },
-          }),
-        () => tx.sancion.count(),
-        () => tx.equipo.findMany({ select: { id: true, nombre: true } }),
-      ]);
+      const [torneos, pagos, cargos, proximos, sinCerrar, sanciones, equipos, noPuedo, sinArbitro, fallidos] =
+        await enSerie([
+          () =>
+            tx.torneo.findMany({
+              where: { estado: { in: ['INSCRIPCION', 'EN_CURSO'] } },
+              select: { id: true, nombre: true, estado: true },
+            }),
+          () =>
+            tx.pago.findMany({
+              where: { estado: 'APROBADO' },
+              select: { monto: true, comisionPlataforma: true, metodo: true },
+            }),
+          () =>
+            tx.cargo.findMany({
+              where: { estado: 'PENDIENTE' },
+              include: {
+                pagos: { where: { estado: 'APROBADO' } },
+                inscripcion: { include: { equipo: true } },
+              },
+            }),
+          () =>
+            tx.partido.findMany({
+              where: { estado: 'PROGRAMADO', inicio: { gte: ahora } },
+              orderBy: { inicio: 'asc' },
+              take: 6,
+              include: { cancha: true },
+            }),
+          () =>
+            tx.partido.findMany({
+              where: {
+                estado: { in: ['PROGRAMADO', 'EN_JUEGO'] },
+                inicio: { lt: new Date(ahora.getTime() - 2 * 3600_000) },
+              },
+              select: { id: true },
+            }),
+          () => tx.sancion.count(),
+          () => tx.equipo.findMany({ select: { id: true, nombre: true } }),
+          // Capitanes que respondieron "No puedo" a una reprogramación: hay que resolverlo a mano.
+          () =>
+            tx.mensaje.findMany({
+              where: { respuesta: 'NO_PUEDO', contingenciaId: { not: null } },
+              select: { contingenciaId: true },
+            }),
+          () =>
+            tx.partido.count({
+              where: {
+                estado: 'PROGRAMADO',
+                arbitroId: null,
+                inicio: { gte: ahora, lt: new Date(ahora.getTime() + 7 * 86_400_000) },
+              },
+            }),
+          () =>
+            tx.mensaje.count({
+              where: { estado: 'FALLIDO', creadoEn: { gte: new Date(ahora.getTime() - 7 * 86_400_000) } },
+            }),
+        ]);
       const nombre = new Map(equipos.map((e) => [e.id, e.nombre]));
       const deudores = cargos.map((x) => ({
         equipo: x.inscripcion.equipo.nombre,
@@ -202,6 +228,33 @@ export class PanelController {
           : []),
         ...(deudores.length
           ? [{ tipo: 'DEUDA', mensaje: `${deudores.length} equipo(s) con pagos pendientes.` }]
+          : []),
+        ...(sinArbitro
+          ? [
+              {
+                tipo: 'SIN_ARBITRO',
+                mensaje: `${sinArbitro} partido(s) de la semana sin árbitro designado.`,
+                href: '/panel/arbitros',
+              },
+            ]
+          : []),
+        ...(noPuedo.length
+          ? [
+              {
+                tipo: 'NO_PUEDO',
+                mensaje: `${noPuedo.length} equipo(s) respondieron "No puedo" a una reprogramación.`,
+                href: `/panel/reprogramaciones/${noPuedo[0]!.contingenciaId}`,
+              },
+            ]
+          : []),
+        ...(fallidos
+          ? [
+              {
+                tipo: 'MENSAJES_FALLIDOS',
+                mensaje: `${fallidos} mensaje(s) no se pudieron enviar esta semana.`,
+                href: '/panel/comunicacion',
+              },
+            ]
           : []),
       ];
       return {

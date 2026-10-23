@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
+import { SignJWT } from 'jose';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 // @ts-expect-error: módulo compilado (ver vitest.config.ts)
@@ -92,6 +93,26 @@ describe('Potrero de punta a punta', () => {
     const yo = await org('GET', '/auth/yo');
     expect(yo.body.organizacion.slug).toBe('liga-test');
     expect(yo.body.rol).toBe('DUENO');
+  });
+
+  it('rechaza un token firmado por el otro entorno aunque el secreto coincida (ADR-019)', async () => {
+    const secreto = new TextEncoder().encode(process.env.JWT_SECRET);
+    const yo = (await org('GET', '/auth/yo')).body;
+    const firmado = (ent: string) =>
+      new SignJWT({ org: yo.organizacion.id, rol: 'DUENO', ent })
+        .setProtectedHeader({ alg: 'HS256' })
+        .setSubject(yo.usuario.id)
+        .setExpirationTime('5m')
+        .sign(secreto);
+    const conToken = (token: string) =>
+      fetch(`${base}/api/auth/yo`, { headers: { authorization: `Bearer ${token}` } });
+    expect((await conToken(await firmado('produccion'))).status).toBe(200);
+    expect((await conToken(await firmado('demo'))).status).toBe(401);
+  });
+
+  it('fuera del entorno de demo no existen las rutas de sandbox (ADR-019)', async () => {
+    expect((await publico('POST', '/demo/sandbox')).status).toBe(404);
+    expect((await org('POST', '/demo/reiniciar')).status).toBe(404);
   });
 
   it('valida los datos con mensajes en español', async () => {

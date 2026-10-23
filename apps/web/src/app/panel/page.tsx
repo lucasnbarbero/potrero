@@ -16,7 +16,7 @@ interface Resumen {
     visitante: string;
     cancha: string | null;
   }[];
-  alertas: { tipo: string; mensaje: string }[];
+  alertas: { tipo: string; mensaje: string; href?: string }[];
   sanciones: number;
 }
 
@@ -88,7 +88,16 @@ export default async function Panel() {
                 {r.alertas.map((a) => (
                   <li key={a.tipo} className="flex gap-2">
                     <Icono nombre="bell" className="mt-0.5 text-volt" />
-                    {a.mensaje}
+                    {a.href ? (
+                      <Link
+                        href={a.href}
+                        className="underline decoration-white/30 underline-offset-2 hover:decoration-volt"
+                      >
+                        {a.mensaje}
+                      </Link>
+                    ) : (
+                      a.mensaje
+                    )}
                   </li>
                 ))}
                 {r.sanciones > 0 && (

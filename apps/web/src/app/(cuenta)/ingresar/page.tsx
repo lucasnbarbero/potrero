@@ -40,10 +40,13 @@ function Formulario() {
           Creá tu liga
         </Link>
       </p>
-      <p className="rounded-2xl bg-black/5 px-4 py-3 text-xs text-mute">
-        Demo: <b className="text-ink">demo@potrero.app</b> · contraseña{' '}
-        <b className="text-ink">potrero-demo-2026</b>
-      </p>
+      {/* Credenciales de la demo local: nunca en producción. */}
+      {process.env.NODE_ENV !== 'production' && (
+        <p className="rounded-2xl bg-black/5 px-4 py-3 text-xs text-mute">
+          Demo: <b className="text-ink">demo@potrero.app</b> · contraseña{' '}
+          <b className="text-ink">potrero-demo-2026</b>
+        </p>
+      )}
     </form>
   );
 }

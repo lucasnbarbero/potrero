@@ -41,8 +41,11 @@ export const COOKIE_REFRESH = 'potrero_rt';
 
 const hash = (t: string) => createHash('sha256').update(t).digest('hex');
 
+/** Entorno que emite el token: una sesión de la demo no vale en producción ni al revés (ADR-019). */
+const ENTORNO = config.DEMO_MODE ? 'demo' : 'produccion';
+
 async function firmarAcceso(c: Contexto) {
-  return new SignJWT({ org: c.organizacionId, rol: c.rol })
+  return new SignJWT({ org: c.organizacionId, rol: c.rol, ent: ENTORNO })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(c.usuarioId)
     .setIssuedAt()
@@ -53,6 +56,7 @@ async function firmarAcceso(c: Contexto) {
 export async function verificarAcceso(token: string): Promise<Contexto | null> {
   try {
     const { payload } = await jwtVerify(token, SECRETO, { algorithms: ['HS256'] });
+    if (payload.ent !== ENTORNO) return null;
     return { usuarioId: payload.sub!, organizacionId: String(payload.org), rol: String(payload.rol) };
   } catch {
     return null;
@@ -166,7 +170,7 @@ export class AuthService {
   }
 }
 
-function ponerCookies(res: Response, s: { acceso: string; refresh: string }) {
+export function ponerCookies(res: Response, s: { acceso: string; refresh: string }) {
   const base = {
     httpOnly: true,
     sameSite: 'lax' as const,
@@ -184,6 +188,12 @@ export class AuthController {
   @Publico()
   @Post('registro')
   async registro(@Body(new Zod(registroSchema)) d: RegistroInput, @Res({ passthrough: true }) res: Response) {
+    // En la demo las cuentas nacen solo como sandboxes (con vencimiento): un registro abierto dejaría cuentas eternas.
+    if (config.DEMO_MODE)
+      throw new ErrorNegocio(
+        'En la demo no se crean cuentas. Entrá con "Probá la demo".',
+        HttpStatus.FORBIDDEN,
+      );
     ponerCookies(res, await this.auth.registrar(d));
     return { ok: true };
   }
@@ -244,5 +254,5 @@ export class GuardSesion implements CanActivate {
   }
 }
 
-@Module({ controllers: [AuthController], providers: [AuthService] })
+@Module({ controllers: [AuthController], providers: [AuthService], exports: [AuthService] })
 export class AuthModule {}

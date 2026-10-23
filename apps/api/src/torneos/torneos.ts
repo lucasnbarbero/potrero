@@ -1,14 +1,25 @@
 import { Body, Controller, Get, HttpStatus, Injectable, Module, Param, Patch, Post } from '@nestjs/common';
 import {
+  cantidadDeClasificados,
   cantidadDePartidos,
+  clasificadosDeLiga,
   crearTorneoSchema,
   type CrearTorneoInput,
+  cuadroDeGrupos,
+  cuadroDeSemillas,
   estadoSancion,
+  type Fecha,
   generarFixtureSchema,
   type GenerarFixtureInput,
+  generarLlavesSchema,
+  type GenerarLlavesInput,
+  vencimientoSchema,
+  type VencimientoInput,
   goleadores,
   programar,
   REGLAMENTO_POR_DEFECTO,
+  repartirEnGrupos,
+  sortear,
   tablaDePosiciones,
   tarjetasPorEquipo,
   todosContraTodos,
@@ -20,7 +31,8 @@ import { auditar } from '../comun/auditoria.js';
 import { type Contexto, Ctx, ErrorNegocio, noEncontrado, Permiso, Zod } from '../comun/http.js';
 import { slugUnico } from '../comun/slug.js';
 import { DbService, enSerie, type Tx } from '../db/db.service.js';
-import type { Reglamento as ReglamentoDb } from '../generated/prisma/client.js';
+import { Prisma, type Reglamento as ReglamentoDb } from '../generated/prisma/client.js';
+import { avanzarLlave, llaveDelTorneo, validarFranjas } from './llaves.js';
 
 export const aReglamento = (r: ReglamentoDb): Reglamento => ({
   ...r,
@@ -50,7 +62,12 @@ export async function partidosDelTorneo(tx: Tx, torneoId: string) {
     visitante: nombre.get(p.visitanteId) ?? '—',
     golesLocal: p.golesLocal,
     golesVisitante: p.golesVisitante,
+    penalesLocal: p.penalesLocal,
+    penalesVisitante: p.penalesVisitante,
     ganadorWOId: p.ganadorWOId,
+    fase: p.fase,
+    grupo: p.grupo,
+    clave: p.clave,
     cancha: p.cancha ? `${p.cancha.sede.nombre} · ${p.cancha.nombre}` : null,
   }));
 }
@@ -80,19 +97,36 @@ export async function estadisticasDelTorneo(tx: Tx, torneoId: string) {
     () => tx.sancion.findMany({ where: { torneoId }, orderBy: { creadoEn: 'desc' } }),
   ]);
   const cerrados = partidos.filter((p) => p.estado === 'FINALIZADO' || p.estado === 'WO');
-  const tabla = tablaDePosiciones(
+  // La tabla solo cuenta la fase de liga o de grupos: los cruces de llave no suman puntos.
+  const deTabla = cerrados.filter((p) => p.fase !== 'LLAVE');
+  const reglamento = aReglamento(torneo.reglamento);
+  const calcular = (ids: string[], de: typeof deTabla) =>
+    tablaDePosiciones(
+      ids,
+      de.map((p) => ({
+        id: p.id,
+        localId: p.localId,
+        visitanteId: p.visitanteId,
+        golesLocal: p.golesLocal ?? 0,
+        golesVisitante: p.golesVisitante ?? 0,
+        ganadorWO: p.ganadorWOId,
+        tarjetas: tarjetasPorEquipo(p.eventos),
+      })),
+      reglamento,
+    );
+  const tabla = calcular(
     equipos.map((e) => e.id),
-    cerrados.map((p) => ({
-      id: p.id,
-      localId: p.localId,
-      visitanteId: p.visitanteId,
-      golesLocal: p.golesLocal ?? 0,
-      golesVisitante: p.golesVisitante ?? 0,
-      ganadorWO: p.ganadorWOId,
-      tarjetas: tarjetasPorEquipo(p.eventos),
-    })),
-    aReglamento(torneo.reglamento),
+    deTabla,
   );
+  const gruposDelTorneo = (torneo.grupos as { grupo: string; equipoIds: string[] }[] | null) ?? [];
+  const tablasPorGrupo = gruposDelTorneo.map((g) => ({
+    grupo: g.grupo,
+    equipoIds: g.equipoIds,
+    tabla: calcular(
+      g.equipoIds,
+      deTabla.filter((p) => p.grupo === g.grupo),
+    ),
+  }));
   // Los goles de un W.O. no suman estadísticas individuales: solo cuentan los partidos jugados.
   const goles = goleadores(cerrados.filter((p) => p.estado === 'FINALIZADO').flatMap((p) => p.eventos));
   const jugadorIds = [...new Set([...goles.map((g) => g.jugadorId), ...sanciones.map((s) => s.jugadorId)])];
@@ -102,6 +136,11 @@ export async function estadisticasDelTorneo(tx: Tx, torneoId: string) {
   const fechaDe = new Map(partidos.map((p) => [p.id, p.fecha]));
   return {
     tabla: tabla.map((f) => ({ ...f, equipo: nombreEquipo.get(f.equipoId) ?? '—' })),
+    /** Solo en grupos + playoffs: una tabla por grupo. */
+    grupos: tablasPorGrupo.map((g) => ({
+      grupo: g.grupo,
+      tabla: g.tabla.map((f) => ({ ...f, equipo: nombreEquipo.get(f.equipoId) ?? '—' })),
+    })),
     goleadores: goles.map((g) => ({
       ...g,
       jugador: nombreJugador.get(g.jugadorId) ?? '—',
@@ -124,6 +163,17 @@ export async function estadisticasDelTorneo(tx: Tx, torneoId: string) {
       };
     }),
   };
+}
+
+/** Las canchas elegidas tienen que existir y no estar bloqueadas (mantenimiento, clima). */
+async function validarCanchas(tx: Tx, ids: string[]) {
+  const canchas = await tx.cancha.findMany({ where: { id: { in: ids } } });
+  if (canchas.length !== new Set(ids).size) throw noEncontrado('alguna de las canchas');
+  const bloqueada = canchas.find((x) => x.bloqueada);
+  if (bloqueada)
+    throw new ErrorNegocio(
+      `La cancha ${bloqueada.nombre} está bloqueada${bloqueada.motivoBloqueo ? ` (${bloqueada.motivoBloqueo})` : ''}. Sacala de la selección.`,
+    );
 }
 
 @Injectable()
@@ -192,6 +242,21 @@ export class TorneosService {
     });
   }
 
+  /** Fecha límite para pagar la inscripción: la heredan los cargos nuevos y se aplica a los pendientes. */
+  fijarVencimiento(c: Contexto, id: string, d: VencimientoInput) {
+    return this.db.enOrg(c.organizacionId, async (tx) => {
+      if (!(await tx.torneo.findUnique({ where: { id } }))) throw noEncontrado('el torneo');
+      const vence = d.vence ? new Date(`${d.vence}T00:00:00Z`) : null;
+      await tx.torneo.update({ where: { id }, data: { venceInscripcion: vence } });
+      const { count } = await tx.cargo.updateMany({
+        where: { estado: 'PENDIENTE', inscripcion: { torneoId: id } },
+        data: { vence },
+      });
+      await auditar(tx, c, 'torneo.vencimiento', 'torneo', id, { despues: { vence: d.vence } });
+      return { vence: d.vence, cargosActualizados: count };
+    });
+  }
+
   cambiarEstado(c: Contexto, id: string, estado: 'INSCRIPCION' | 'EN_CURSO' | 'FINALIZADO') {
     return this.db.enOrg(c.organizacionId, async (tx) => {
       const antes = await tx.torneo.findUnique({ where: { id } });
@@ -206,17 +271,15 @@ export class TorneosService {
   }
 
   /**
-   * Genera el fixture de la fase de liga con los equipos confirmados.
-   * Rehace el fixture solo si todavía no se jugó ningún partido.
+   * Genera la fase regular del torneo con los equipos confirmados: liga (todos contra todos) o fase de grupos.
+   * Rehace el fixture solo si todavía no se jugó ningún partido. La copa no tiene fase regular: va directo a las llaves.
    */
   generarFixture(c: Contexto, id: string, d: GenerarFixtureInput) {
     return this.db.enOrg(c.organizacionId, async (tx) => {
       const torneo = await tx.torneo.findUnique({ where: { id } });
       if (!torneo) throw noEncontrado('el torneo');
-      if (torneo.formato === 'COPA' || torneo.formato === 'GRUPOS_PLAYOFFS')
-        throw new ErrorNegocio(
-          'Por ahora el fixture automático arma la fase de liga. Copa y grupos llegan con las llaves (backlog E10).',
-        );
+      if (torneo.formato === 'COPA')
+        throw new ErrorNegocio('La copa no tiene fase de liga: generá directamente las llaves.');
       const jugados = await tx.partido.count({
         where: { torneoId: id, estado: { in: ['EN_JUEGO', 'FINALIZADO', 'WO'] } },
       });
@@ -225,20 +288,40 @@ export class TorneosService {
           'El torneo ya tiene partidos jugados: no se puede rehacer el fixture.',
           HttpStatus.CONFLICT,
         );
-      const canchas = await tx.cancha.count({ where: { id: { in: d.canchaIds } } });
-      if (canchas !== d.canchaIds.length) throw noEncontrado('alguna de las canchas');
+      await validarCanchas(tx, d.canchaIds);
       const equipos = await equiposDelTorneo(tx, id, true);
       if (equipos.length < 2)
         throw new ErrorNegocio('Se necesitan al menos 2 equipos con la inscripción confirmada.');
+      const ids = equipos.map((e) => e.id);
+      const conGrupos = torneo.formato === 'GRUPOS_PLAYOFFS';
+      let fechas: Fecha[];
+      let grupos: { grupo: string; equipoIds: string[] }[] | null = null;
+      const grupoDelCruce = new Map<string, string>();
+      try {
+        if (conGrupos) {
+          grupos = repartirEnGrupos(ids, d.grupos ?? 2);
+          // Todos los grupos juegan su fecha n a la vez: se juntan los cruces de cada número de fecha.
+          const porGrupo = grupos.map((g) => ({
+            g,
+            fechas: todosContraTodos(g.equipoIds, torneo.idaYVuelta),
+          }));
+          for (const p of porGrupo)
+            for (const f of p.fechas)
+              for (const x of f.cruces) grupoDelCruce.set(`${x.localId}|${x.visitanteId}`, p.g.grupo);
+          const total = Math.max(...porGrupo.map((p) => p.fechas.length));
+          fechas = Array.from({ length: total }, (_, i) => ({
+            numero: i + 1,
+            cruces: porGrupo.flatMap((p) => p.fechas[i]?.cruces ?? []),
+          }));
+        } else {
+          fechas = todosContraTodos(ids, torneo.idaYVuelta);
+        }
+      } catch (e) {
+        throw new ErrorNegocio((e as Error).message);
+      }
       let programados;
       try {
-        programados = programar(
-          todosContraTodos(
-            equipos.map((e) => e.id),
-            torneo.idaYVuelta,
-          ),
-          d,
-        );
+        programados = programar(fechas, d);
       } catch (e) {
         throw new ErrorNegocio((e as Error).message);
       }
@@ -252,14 +335,106 @@ export class TorneosService {
           visitanteId: p.visitanteId,
           canchaId: p.canchaId,
           inicio: new Date(p.inicio),
+          fase: conGrupos ? ('GRUPOS' as const) : ('LIGA' as const),
+          grupo: conGrupos ? (grupoDelCruce.get(`${p.localId}|${p.visitanteId}`) ?? null) : null,
         })),
       });
-      await tx.torneo.update({ where: { id }, data: { estado: 'EN_CURSO' } });
+      await tx.torneo.update({
+        where: { id },
+        data: { estado: 'EN_CURSO', grupos: grupos ?? Prisma.DbNull, llave: Prisma.DbNull },
+      });
       await auditar(tx, c, 'fixture.generar', 'torneo', id, {
         despues: { partidos: programados.length, ...d },
       });
       return { partidos: programados.length, fechas: Math.max(...programados.map((p) => p.fecha)) };
     });
+  }
+
+  /**
+   * Arma el cuadro de playoffs. Copa: sorteo con cabezas de serie. Liga + playoffs: clasifican los primeros de la tabla.
+   * Grupos + playoffs: avanzan los mejores de cada grupo. Después, cada cruce se crea cuando se conocen sus dos equipos.
+   */
+  generarLlaves(c: Contexto, id: string, d: GenerarLlavesInput) {
+    return this.db.enOrg(c.organizacionId, async (tx) => {
+      const torneo = await tx.torneo.findUnique({ where: { id } });
+      if (!torneo) throw noEncontrado('el torneo');
+      if (torneo.formato === 'LIGA')
+        throw new ErrorNegocio(
+          'Un torneo de liga no tiene llaves. Elegí copa, liga + playoffs o grupos + playoffs.',
+        );
+      const jugadosEnLlave = await tx.partido.count({
+        where: { torneoId: id, fase: 'LLAVE', estado: { in: ['EN_JUEGO', 'FINALIZADO', 'WO'] } },
+      });
+      if (jugadosEnLlave > 0)
+        throw new ErrorNegocio(
+          'La llave ya tiene partidos jugados: no se puede rehacer.',
+          HttpStatus.CONFLICT,
+        );
+      await validarCanchas(tx, d.canchaIds);
+      const equipos = await equiposDelTorneo(tx, id, true);
+      let cuadro: (string | null)[];
+      let baseFecha = 0;
+      try {
+        if (torneo.formato === 'COPA') {
+          if (equipos.length < 2)
+            throw new Error('Se necesitan al menos 2 equipos con la inscripción confirmada.');
+          const semilla = d.semilla ?? Math.floor(Math.random() * 2 ** 31);
+          cuadro = cuadroDeSemillas(
+            sortear(
+              equipos.map((e) => e.id),
+              d.cabezasDeSerie,
+              semilla,
+            ),
+          );
+        } else {
+          const regulares = await tx.partido.findMany({
+            where: { torneoId: id, fase: { not: 'LLAVE' } },
+            select: { estado: true, fecha: true },
+          });
+          if (regulares.length === 0)
+            throw new Error('Primero generá el fixture de la fase regular y jugala.');
+          const pendientes = regulares.filter((p) => p.estado !== 'FINALIZADO' && p.estado !== 'WO').length;
+          if (pendientes > 0)
+            throw new Error(
+              `Todavía faltan jugar ${pendientes} partido${pendientes > 1 ? 's' : ''} de la fase regular.`,
+            );
+          baseFecha = Math.max(...regulares.map((p) => p.fecha));
+          const est = await estadisticasDelTorneo(tx, id);
+          if (torneo.formato === 'LIGA_PLAYOFFS') {
+            const n = d.clasificados ?? cantidadDeClasificados(est.tabla.length);
+            cuadro = cuadroDeSemillas(clasificadosDeLiga(est.tabla, n));
+          } else {
+            cuadro = cuadroDeGrupos(
+              est.grupos.map((g) => g.tabla.slice(0, d.porGrupo).map((f) => f.equipoId)),
+            );
+          }
+        }
+      } catch (e) {
+        if (e instanceof ErrorNegocio) throw e;
+        throw new ErrorNegocio((e as Error).message);
+      }
+      const programacion = {
+        primerDia: d.primerDia,
+        diasEntreRondas: d.diasEntreRondas,
+        horarios: d.horarios,
+        canchaIds: d.canchaIds,
+      };
+      validarFranjas(cuadro, programacion);
+      await tx.partido.deleteMany({ where: { torneoId: id, fase: 'LLAVE' } });
+      await tx.torneo.update({
+        where: { id },
+        data: { llave: { cuadro, baseFecha, programacion }, estado: 'EN_CURSO' },
+      });
+      const { creados } = await avanzarLlave(tx, c, id);
+      await auditar(tx, c, 'llave.generar', 'torneo', id, {
+        despues: { cuadro, formato: torneo.formato, cabezasDeSerie: d.cabezasDeSerie, semilla: d.semilla },
+      });
+      return { equipos: cuadro.filter(Boolean).length, partidosCreados: creados };
+    });
+  }
+
+  llave(c: Contexto, id: string) {
+    return this.db.enOrg(c.organizacionId, (tx) => llaveDelTorneo(tx, id));
   }
 
   partidos(c: Contexto, id: string) {
@@ -305,6 +480,16 @@ export class TorneosController {
     return this.s.cambiarEstado(c, id, d.estado);
   }
 
+  @Patch(':id/vencimiento')
+  @Permiso('torneo.escribir')
+  vencimiento(
+    @Ctx() c: Contexto,
+    @Param('id') id: string,
+    @Body(new Zod(vencimientoSchema)) d: VencimientoInput,
+  ) {
+    return this.s.fijarVencimiento(c, id, d);
+  }
+
   @Post(':id/fixture')
   @Permiso('fixture.escribir')
   fixture(
@@ -313,6 +498,22 @@ export class TorneosController {
     @Body(new Zod(generarFixtureSchema)) d: GenerarFixtureInput,
   ) {
     return this.s.generarFixture(c, id, d);
+  }
+
+  @Post(':id/llaves')
+  @Permiso('fixture.escribir')
+  llaves(
+    @Ctx() c: Contexto,
+    @Param('id') id: string,
+    @Body(new Zod(generarLlavesSchema)) d: GenerarLlavesInput,
+  ) {
+    return this.s.generarLlaves(c, id, d);
+  }
+
+  @Get(':id/llave')
+  @Permiso('torneo.leer')
+  llave(@Ctx() c: Contexto, @Param('id') id: string) {
+    return this.s.llave(c, id);
   }
 
   @Get(':id/partidos')

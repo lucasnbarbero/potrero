@@ -11,6 +11,7 @@ import {
   Param,
   Post,
 } from '@nestjs/common';
+import { registrarPago } from '../caja/libro.js';
 import { comisionPlataforma, pagoManualSchema, type PagoManualInput, type Plan } from '@potrero/shared';
 import { z } from 'zod';
 import { auditar } from '../comun/auditoria.js';
@@ -106,6 +107,7 @@ export async function inscribirEquipo(tx: Tx, organizacionId: string, torneoId: 
             inscripcionId: inscripcion.id,
             concepto: `Inscripción ${torneo.nombre}`,
             monto: torneo.inscripcion,
+            vence: torneo.venceInscripcion,
           },
         })
       : null;
@@ -216,6 +218,7 @@ export class CobrosService {
         },
       });
       await actualizarCargo(tx, cargoId);
+      await registrarPago(tx, c.organizacionId, pago.id);
       await auditar(tx, c, 'pago.manual', 'pago', pago.id, { despues: pago });
       return pago;
     });
@@ -262,7 +265,10 @@ export class CobrosService {
           acreditadoEn: estado === 'APROBADO' ? new Date() : null,
         },
       });
-      if (estado === 'APROBADO') await actualizarCargo(tx, pago.cargoId);
+      if (estado === 'APROBADO') {
+        await actualizarCargo(tx, pago.cargoId);
+        await registrarPago(tx, ref.organizacionId, pago.id);
+      }
       await auditar(tx, { organizacionId: ref.organizacionId }, `pago.${n.estado}`, 'pago', pago.id, {
         antes: { estado: pago.estado },
         despues: { estado },
