@@ -8,6 +8,7 @@ import { CajaModule } from './caja/caja.js';
 import { CobrosModule } from './cobros/cobros.js';
 import { ContingenciasModule } from './contingencias/contingencias.js';
 import { FiltroErrores } from './comun/http.js';
+import { FixtureModule } from './fixture/fixture.js';
 import { MensajeriaModule } from './mensajeria/mensajeria.js';
 import { config } from './config.js';
 import { DemoModule } from './demo/demo.js';
@@ -32,6 +33,7 @@ import { TorneosModule } from './torneos/torneos.js';
     ArbitrosModule,
     DocumentacionModule,
     TribunalModule,
+    FixtureModule,
     // Sandboxes de la demo pública (ADR-019): fuera del entorno de demo estas rutas no existen.
     ...(config.DEMO_MODE ? [DemoModule] : []),
   ],

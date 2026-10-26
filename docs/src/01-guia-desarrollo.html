@@ -14,8 +14,8 @@
 <table><tr><th>#</th><th>Módulo</th><th>Quién lo usa</th><th>Qué debe hacer (criterio de aceptación resumido)</th></tr>
 <tr><td>01</td><td>Panel</td><td>Organizador</td><td>Partido en vivo, cobrado/pendiente/deudores, alertas accionables (suspendido que jugó, acta sin cargar, partido sin árbitro) y sugerencias.</td></tr>
 <tr><td>02</td><td>Crear torneo</td><td>Organizador</td><td>Asistente por pasos: modalidad (F5/F7/F8/F11), formato (liga, copa, grupos + playoffs, liga + playoffs), reglas, vista previa de grupos, llaves y cantidad de partidos.</td></tr>
-<tr><td>03</td><td>Inscripciones y pagos</td><td>Organizador, capitán</td><td>Link público, cupos, seña y cuotas, pago con Mercado Pago, pago registrado manual, estado por equipo, recordatorios.</td></tr>
-<tr><td>04</td><td>Fixture automático</td><td>Organizador</td><td>Genera calendario con canchas, descansos y árbitros; grilla por cancha; detecta y explica conflictos al mover un partido.</td></tr>
+<tr><td>03</td><td>Inscripciones y pagos</td><td>Organizador, capitán</td><td>Link público, cupos, seña y cuotas, cuota por fecha y seguro por jugador, pago con Mercado Pago, pago registrado manual, estado por equipo, recordatorios.</td></tr>
+<tr><td>04</td><td>Fixture automático</td><td>Organizador</td><td>Genera calendario con canchas, descansos y árbitros; grilla por cancha; ordenar a mano los horarios de una fecha; detecta y explica conflictos al mover un partido.</td></tr>
 <tr><td>05</td><td>Acta digital</td><td>Delegado, árbitro</td><td>Goles, tarjetas, cambios, firma de capitanes, <b>modo offline</b>, jugadores suspendidos o sin documentación marcados.</td></tr>
 <tr><td>06</td><td>Sitio público</td><td>Público</td><td>Tabla, fixture, goleadores, llaves; SEO; marca propia; compartible; PWA.</td></tr>
 <tr><td>07</td><td>Panel del capitán</td><td>Capitán</td><td>Plantel, convocatoria con confirmación, cuotas por jugador, documentación y sanciones del equipo.</td></tr>
@@ -23,7 +23,7 @@
 <tr><td>09</td><td>Página de partido</td><td>Público</td><td>Crónica automática, línea de tiempo, fotos, tarjeta para compartir.</td></tr>
 <tr><td>10</td><td>Mercado de pases</td><td>Equipos, jugadores</td><td>Jugadores libres y equipos que buscan, filtros por zona, posición y nivel.</td></tr>
 <tr><td>11</td><td>Reprogramaciones</td><td>Organizador</td><td>Contingencia en un clic con vista previa sin conflictos, aviso masivo y confirmación; W.O. con tolerancia y cuenta regresiva.</td></tr>
-<tr><td>12</td><td>Sanciones</td><td>Organizador</td><td>Suspensión automática desde el acta según reglamento; expedientes, informe del árbitro, descargos, resolución del tribunal.</td></tr>
+<tr><td>12</td><td>Sanciones</td><td>Organizador</td><td>Suspensión automática desde el acta según reglamento; levantar la suspensión pagando una multa (opcional); expedientes, informe del árbitro, descargos, resolución del tribunal.</td></tr>
 <tr><td>13</td><td>Documentación</td><td>Organizador, capitán</td><td>DNI, apto físico, autorización de menores, alerta de duplicados entre equipos, selfie opcional.</td></tr>
 <tr><td>14</td><td>Caja</td><td>Organizador</td><td>Ingresos, egresos por rubro, cargos automáticos (árbitro, cancha), resultado en vivo, saldo y retiro.</td></tr>
 <tr><td>15</td><td>Árbitros y canchas</td><td>Organizador</td><td>Designación manual o automática, disponibilidad, pagos, ocupación por cancha.</td></tr>
@@ -105,17 +105,20 @@
 <ul><li>Cruces: método de rotación (<i>circle method</i>) para liga y grupos, ida y vuelta opcional; sorteo con cabezas de serie para copa.</li>
 <li>Asignación: heurística (constructiva + búsqueda local) que respeta restricciones duras (un equipo no juega dos partidos a la vez ni con menos del descanso mínimo; una cancha un partido por franja; un árbitro un partido por franja) y optimiza las blandas (balance local/visitante, preferencias, mínimo de huecos).</li>
 <li>Evaluar un solver de restricciones (ej. OR-Tools CP-SAT) si la heurística no alcanza en ligas grandes. <span class="pill v">DECIDIR</span> tras prototipo.</li>
-<li>Al mover un partido a mano se re-evalúan las restricciones y se muestra cada conflicto con su causa; nunca se bloquea, se advierte.</li>
+<li>Al mover un partido a mano (otro día, cancha u horario, o intercambiar el horario con otro partido de la misma fecha) se re-evalúan las restricciones y se muestra cada conflicto con su causa; nunca se bloquea, se advierte.</li>
 <li>Rendimiento objetivo: fixture de 24 equipos en menos de 10 segundos.</li></ul>
 <h2>5.3 Sanciones automáticas</h2>
 <ul><li>Roja directa: partidos de suspensión según reglamento (por defecto 1, ampliable por el tribunal). Doble amarilla: 1 partido.</li>
 <li>Acumulación de amarillas: umbral configurable (por defecto 5, 1 partido).</li>
 <li>La suspensión se cuenta en <b>partidos oficiales del equipo</b>; si el partido se suspende o es W.O., no descuenta.</li>
-<li>Un jugador suspendido aparece bloqueado en la planilla del acta; si se lo carga igual, el sistema lo marca y abre un expediente por "jugador no habilitado".</li></ul>
+<li>Un jugador suspendido aparece bloqueado en la planilla del acta; si se lo carga igual, el sistema lo marca y abre un expediente por "jugador no habilitado".</li>
+<li>Levantar la suspensión pagando (opcional, apagado por defecto): el reglamento del torneo define qué sanciones se pueden levantar (por defecto acumulación de amarillas y doble amarilla; nunca la roja directa ni lo resuelto por el tribunal) y el monto por partido. Cada pago levanta un partido de suspensión; genera un cargo al equipo (rubro Multas) y el jugador queda habilitado recién cuando el pago está acreditado.</li></ul>
 <h2>5.4 Elegibilidad del jugador</h2>
 <p>Estado = documentación vigente (DNI validado, apto físico no vencido, autorización si es menor) + sin sanción activa + sin duplicado abierto. La planilla del acta muestra el estado en tiempo real. El organizador define qué documentos son obligatorios por torneo.</p>
 <h2>5.5 Cobros</h2>
 <ul><li>El organizador define arancel, seña y cuotas. El equipo (o cada jugador, si el capitán lo habilita) paga por link de Mercado Pago.</li>
+<li>Cuota por fecha: monto fijo que cada equipo paga en cada fecha para jugar, con o sin inscripción. Se genera un cargo por equipo y por fecha que vence el día del partido. Por defecto no se cobra la fecha libre ni el partido suspendido, y sí el W.O. La deuda genera alerta y recordatorio; bloquear al equipo deudor es una opción del reglamento (apagada por defecto). Si se activa con el torneo empezado, se cobra desde la próxima fecha: nunca las ya jugadas (lo mismo para el seguro).</li>
+<li>Seguro por jugador: monto por cada jugador del plantel en cada fecha que el equipo juega, juegue o no ese jugador. Es un cargo aparte de la cuota, al equipo, y entra a la caja en el rubro Seguros para que el organizador vea cuánto le debe a la aseguradora.</li>
 <li>Pagos manuales (efectivo, transferencia) los registra el organizador con comprobante; <b>no generan comisión de plataforma</b>.</li>
 <li>El costo de procesamiento de Mercado Pago se muestra al pagador como "cargo por servicio" o lo absorbe el organizador (configurable). <span class="pill v">DECIDIR</span> valor por defecto.</li>
 <li>Reembolsos: en split 1:1 requieren saldo del vendedor; el flujo debe prever el rechazo y avisar al organizador.</li></ul>

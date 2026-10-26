@@ -27,7 +27,6 @@ import {
   enmascararDni,
   esMenor,
   estadoDeDocumento,
-  estadoSancion,
   habilitacionDelJugador,
   type Habilitacion,
   identidadSchema,
@@ -57,6 +56,7 @@ import { type Contexto, Ctx, ErrorNegocio, noEncontrado, Permiso, Publico, Zod }
 import { config } from '../config.js';
 import { DbService, enSerie, type Tx } from '../db/db.service.js';
 import { MensajeriaModule, MensajeriaService } from '../mensajeria/mensajeria.js';
+import { acreditadosPorSancion, cumplimiento, SELECT_PARTIDO_SANCION } from '../tribunal/levantar.js';
 import { ALMACEN, type AlmacenArchivos, AlmacenLocal } from './almacen.js';
 import { cifrar, descifrar, firmarToken, hashDeDni, verificarToken } from './seguridad.js';
 
@@ -72,28 +72,18 @@ const DIA_MS = 86_400_000;
 const dia = (f: Date | null) => (f ? f.toISOString().slice(0, 10) : null);
 const nombreDe = (j: { nombre: string; apellido: string }) => `${j.nombre} ${j.apellido}`;
 
-/** Suspensiones vigentes hoy en un torneo: se descuentan con partidos oficiales del equipo jugados después. */
+/**
+ * Suspensiones vigentes hoy en un torneo: se descuentan con partidos oficiales del equipo jugados después y con los
+ * partidos levantados pagando (E14-08).
+ */
 async function sancionesActivas(tx: Tx, torneoId: string) {
-  const [sanciones, partidos] = await enSerie([
+  const [sanciones, partidos, acreditados] = await enSerie([
     () => tx.sancion.findMany({ where: { torneoId } }),
-    () =>
-      tx.partido.findMany({
-        where: { torneoId },
-        select: { id: true, fecha: true, estado: true, localId: true, visitanteId: true },
-      }),
+    () => tx.partido.findMany({ where: { torneoId }, select: SELECT_PARTIDO_SANCION }),
+    () => acreditadosPorSancion(tx, torneoId),
   ]);
-  const fechaDe = new Map(partidos.map((p) => [p.id, p.fecha]));
   const activas = new Set<string>();
-  for (const s of sanciones) {
-    const origen = fechaDe.get(s.partidoOrigenId) ?? 0;
-    const jugados = partidos.filter(
-      (p) =>
-        p.estado === 'FINALIZADO' &&
-        p.fecha > origen &&
-        (p.localId === s.equipoId || p.visitanteId === s.equipoId),
-    ).length;
-    if (estadoSancion(s.partidos, jugados).activa) activas.add(s.jugadorId);
-  }
+  for (const s of sanciones) if (cumplimiento(s, partidos, acreditados).activa) activas.add(s.jugadorId);
   return activas;
 }
 

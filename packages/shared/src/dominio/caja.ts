@@ -6,7 +6,7 @@ import type { MetodoPago } from './tipos.js';
 export const RUBROS_EGRESO = ['CANCHAS', 'ARBITROS', 'PREMIOS', 'OTROS'] as const;
 export type RubroEgreso = (typeof RUBROS_EGRESO)[number];
 
-export const CATEGORIAS_INGRESO = ['INSCRIPCIONES', 'MULTAS', 'SPONSORS', 'OTROS'] as const;
+export const CATEGORIAS_INGRESO = ['INSCRIPCIONES', 'MULTAS', 'SEGUROS', 'SPONSORS', 'OTROS'] as const;
 export type CategoriaIngreso = (typeof CATEGORIAS_INGRESO)[number];
 
 /** Dónde está la plata: Mercado Pago, efectivo en mano o cuenta bancaria. */
@@ -25,6 +25,8 @@ export const NOMBRE_RUBRO: Record<RubroEgreso, string> = {
 export const NOMBRE_CATEGORIA: Record<CategoriaIngreso, string> = {
   INSCRIPCIONES: 'Inscripciones',
   MULTAS: 'Multas',
+  /** Seguro por jugador (E06-21): se les cobra a los equipos y se le debe a la aseguradora. */
+  SEGUROS: 'Seguros',
   SPONSORS: 'Sponsors',
   OTROS: 'Otros ingresos',
 };
@@ -149,6 +151,11 @@ export function egresosPorRubro(
     const m = s[`EGRESOS:${rubro}`] ?? 0;
     return { rubro, monto: m, pct: total > 0 ? Math.round((m / total) * 100) : 0 };
   }).filter((r) => r.monto > 0);
+}
+
+/** Lo cobrado en una categoría de ingresos (por ejemplo, SEGUROS: lo que hay que pasarle a la aseguradora). */
+export function ingresoDeCategoria(s: Record<string, number>, categoria: CategoriaIngreso): number {
+  return 0 - (s[`INGRESOS:${categoria}`] ?? 0);
 }
 
 /** Cuánto hay disponible en cada lugar donde está la plata. */

@@ -47,6 +47,7 @@ export const TABLAS_DE_ORGANIZACION = [
   'automatizacion',
   'evento_partido',
   'expediente',
+  'levantamiento_sancion',
   'sancion',
   'pago',
   'cargo',

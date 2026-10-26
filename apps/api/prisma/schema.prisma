@@ -140,6 +140,10 @@ model Reglamento {
   umbralAmarillas         Int      @map("umbral_amarillas")
   suspensionAcumulacion   Int      @map("suspension_acumulacion")
   golesWO                 Int      @map("goles_wo")
+  /// Levantar una suspensión pagando (E14-08): opcional, qué tipos y cuánto por partido (pesos; 0 = no disponible).
+  levantarSancionPagando  Boolean  @default(false) @map("levantar_sancion_pagando")
+  levantarSancionTipos    String[] @default(["ACUMULACION", "DOBLE_AMARILLA"]) @map("levantar_sancion_tipos")
+  levantarSancionMonto    Int      @default(0) @map("levantar_sancion_monto")
   creadoEn                DateTime @default(now()) @map("creado_en")
   torneos                 Torneo[]
 
@@ -168,6 +172,8 @@ model Torneo {
   grupos               Json?
   /// Documentos que exige el torneo a sus jugadores (ver TIPOS_DOCUMENTO). Vacío = no exige.
   documentosRequeridos String[]      @default([]) @map("documentos_requeridos")
+  /// Cuota por fecha y seguro por jugador (E06-20/21): ConfigCobrosPorFecha de @potrero/shared. Nulo = valores por defecto.
+  cobrosPorFecha       Json?         @map("cobros_por_fecha")
   reglamento           Reglamento    @relation(fields: [reglamentoId], references: [id])
   inscripciones        Inscripcion[]
   partidos             Partido[]
@@ -269,14 +275,20 @@ model Cargo {
   concepto       String
   monto          Int
   estado         EstadoCargo @default(PENDIENTE)
-  /// De qué rubro de ingresos es (INSCRIPCIONES o MULTAS): decide dónde entra en la caja.
+  /// De qué rubro de ingresos es (INSCRIPCIONES, MULTAS o SEGUROS): decide dónde entra en la caja.
   categoria      String      @default("INSCRIPCIONES")
   /// Vencimiento: de acá salen los recordatorios de cobro escalonados.
   vence          DateTime?   @db.Date
   creadoEn       DateTime    @default(now()) @map("creado_en")
   inscripcion    Inscripcion @relation(fields: [inscripcionId], references: [id], onDelete: Cascade)
   pagos          Pago[]
+  /// Cuota por fecha y seguro (E06-20/21): número de fecha y partido que lo originan. Nulos en los demás cargos.
+  fecha          Int?
+  partidoId      String?     @map("partido_id")
+  /// Hace idempotente un cargo automático (por ejemplo, "cuota:<torneo>:<equipo>:<fecha>"): no se genera dos veces.
+  clave          String?
 
+  @@unique([organizacionId, clave])
   @@map("cargo")
 }
 
@@ -438,19 +450,37 @@ enum CausaSancion {
 }
 
 model Sancion {
-  id              String       @id @default(cuid())
-  organizacionId  String       @map("organizacion_id")
-  torneoId        String       @map("torneo_id")
-  jugadorId       String       @map("jugador_id")
-  equipoId        String       @map("equipo_id")
-  partidoOrigenId String       @map("partido_origen_id")
+  id              String                 @id @default(cuid())
+  organizacionId  String                 @map("organizacion_id")
+  torneoId        String                 @map("torneo_id")
+  jugadorId       String                 @map("jugador_id")
+  equipoId        String                 @map("equipo_id")
+  partidoOrigenId String                 @map("partido_origen_id")
   causa           CausaSancion
   partidos        Int
-  creadoEn        DateTime     @default(now()) @map("creado_en")
-  torneo          Torneo       @relation(fields: [torneoId], references: [id], onDelete: Cascade)
+  creadoEn        DateTime               @default(now()) @map("creado_en")
+  torneo          Torneo                 @relation(fields: [torneoId], references: [id], onDelete: Cascade)
+  levantamientos  LevantamientoSancion[]
 
   @@unique([partidoOrigenId, jugadorId, causa])
   @@map("sancion")
+}
+
+/// Pedido de levantar un partido de suspensión pagando (E14-08). Es un cargo al equipo en el rubro MULTAS: levanta el
+/// partido recién cuando el cargo queda PAGADO (pago acreditado). Si el cargo o el pedido se anulan, no levanta nada.
+model LevantamientoSancion {
+  id              String    @id @default(cuid())
+  organizacionId  String    @map("organizacion_id")
+  sancionId       String    @map("sancion_id")
+  cargoId         String    @unique @map("cargo_id")
+  monto           Int
+  solicitadoPorId String?   @map("solicitado_por_id")
+  anuladoEn       DateTime? @map("anulado_en")
+  creadoEn        DateTime  @default(now()) @map("creado_en")
+  sancion         Sancion   @relation(fields: [sancionId], references: [id], onDelete: Cascade)
+
+  @@index([sancionId])
+  @@map("levantamiento_sancion")
 }
 
 enum TipoExpediente {

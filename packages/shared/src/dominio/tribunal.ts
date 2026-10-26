@@ -70,6 +70,8 @@ export interface FilaDisciplina {
   amarillas: number;
   rojas: number;
   partidosSancionados: number;
+  /** Partidos de suspensión levantados pagando (E14-08): no cuentan como cumplidos. */
+  partidosLevantados: number;
   multas: number;
   expedientes: number;
 }
@@ -85,6 +87,7 @@ export function historialDisciplinario(
     amarillas?: number;
     rojas?: number;
     partidos?: number;
+    levantados?: number;
     multa?: number;
     expediente?: boolean;
   }[],
@@ -97,12 +100,14 @@ export function historialDisciplinario(
       amarillas: 0,
       rojas: 0,
       partidosSancionados: 0,
+      partidosLevantados: 0,
       multas: 0,
       expedientes: 0,
     };
     f.amarillas += i.amarillas ?? 0;
     f.rojas += i.rojas ?? 0;
     f.partidosSancionados += i.partidos ?? 0;
+    f.partidosLevantados += i.levantados ?? 0;
     f.multas += i.multa ?? 0;
     if (i.expediente) f.expedientes++;
     filas.set(i.clave, f);

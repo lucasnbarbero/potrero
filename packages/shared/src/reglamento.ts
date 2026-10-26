@@ -12,4 +12,8 @@ export const REGLAMENTO_POR_DEFECTO: Reglamento = {
   umbralAmarillas: DATOS.reglamentoPorDefecto.umbralAmarillas,
   suspensionAcumulacion: DATOS.reglamentoPorDefecto.suspensionAcumulacion,
   golesWO: DATOS.reglamentoPorDefecto.golesWO,
+  levantarSancionPagando: DATOS.reglamentoPorDefecto.levantarSancionPagando,
+  levantarSancionTipos: [...DATOS.reglamentoPorDefecto.levantarSancionTipos],
+  // Sin monto no hay nada que cobrar: el organizador lo fija al encender la opción en el torneo.
+  levantarSancionMonto: DATOS.reglamentoPorDefecto.levantarSancionMonto,
 };

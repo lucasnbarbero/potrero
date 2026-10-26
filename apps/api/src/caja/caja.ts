@@ -33,6 +33,7 @@ import {
   formatoPesos,
   ingresoSchema,
   type IngresoInput,
+  ingresoDeCategoria,
   invertir,
   NOMBRE_CATEGORIA,
   NOMBRE_RUBRO,
@@ -109,6 +110,7 @@ export class CajaService {
       const debe = cargos
         .map((x) => ({
           equipoId: x.inscripcion.equipoId,
+          categoria: x.categoria,
           falta: x.monto - x.pagos.reduce((t, p) => t + p.monto, 0),
         }))
         .filter((x) => x.falta > 0);
@@ -121,6 +123,11 @@ export class CajaService {
         resultado: resultadoDeCaja(sVista),
         porRubro: egresosPorRubro(sVista).map((r) => ({ ...r, nombre: NOMBRE_RUBRO[r.rubro] })),
         porCobrar: { monto: porCobrar, equipos: new Set(debe.map((x) => x.equipoId)).size },
+        // Seguro por jugador (E06-21): lo cobrado es plata que se le debe a la aseguradora.
+        seguros: {
+          cobrado: ingresoDeCategoria(sVista, 'SEGUROS'),
+          porCobrar: debe.filter((x) => x.categoria === 'SEGUROS').reduce((s, x) => s + x.falta, 0),
+        },
         automatizaciones: (Object.keys(AUTOMATIZACIONES_CAJA) as ClaveAutomatizacionCaja[]).map((clave) => ({
           clave,
           ...AUTOMATIZACIONES_CAJA[clave],

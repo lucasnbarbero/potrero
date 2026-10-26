@@ -54,8 +54,11 @@ export function sumarDiasAlInstante(inicio: string, dias: number): string {
   return new Date(new Date(inicio).getTime() + dias * MS_DIA).toISOString();
 }
 
-/** Qué choca con los partidos ya fijados (los que no se mueven y los que ya se movieron en esta propuesta). */
-function conflictosDe(
+/**
+ * Qué choca con los partidos ya fijados (los que no se mueven y los que ya se movieron en esta propuesta).
+ * También la usa el fixture al mover un partido a mano (E09-07).
+ */
+export function conflictosDeCalendario(
   movidos: readonly (PartidoCalendario & { nuevo: Lugar })[],
   resto: readonly PartidoCalendario[],
 ): ConflictoReprogramacion[] {
@@ -128,7 +131,7 @@ export function proponerReprogramacion(
       de: { inicio: m.inicio, canchaId: m.canchaId },
       a: m.nuevo,
     })),
-    conflictos: conflictosDe(movidos, resto),
+    conflictos: conflictosDeCalendario(movidos, resto),
     sinResolver,
   };
 }

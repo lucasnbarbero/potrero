@@ -208,6 +208,17 @@ export default async function Caja({ searchParams }: PageProps<'/panel/caja'>) {
             </ul>
           </section>
 
+          {caja.seguros.cobrado + caja.seguros.porCobrar > 0 && (
+            <section className="tile rise" style={{ '--d': 5 } as React.CSSProperties} data-testid="seguros">
+              <span className="eyebrow">Seguros</span>
+              <b className="num mt-2 block text-3xl tracking-tighter">{pesos(caja.seguros.cobrado)}</b>
+              <p className="mt-1 text-sm text-mute">
+                Cobrado a los equipos: es lo que le tenés que pasar a la aseguradora. Falta cobrar{' '}
+                {pesos(caja.seguros.porCobrar)}.
+              </p>
+            </section>
+          )}
+
           <AutomatizacionesCaja inicial={caja.automatizaciones} />
 
           <section className="tile rise" style={{ '--d': 6 } as React.CSSProperties}>

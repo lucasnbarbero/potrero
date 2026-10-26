@@ -84,7 +84,19 @@
     "umbralAmarillas": 5,
     "suspensionAcumulacion": 1,
     "golesWO": 3,
-    "toleranciaWOMinutos": 15
+    "toleranciaWOMinutos": 15,
+    "levantarSancionPagando": false,
+    "levantarSancionTipos": ["ACUMULACION", "DOBLE_AMARILLA"],
+    "levantarSancionMonto": 0
+  },
+  "cobrosPorFechaPorDefecto": {
+    "cuotaPorFecha": 0,
+    "seguroPorJugadorPorFecha": 0,
+    "cobrarFechaLibre": false,
+    "cobrarPartidoSuspendido": false,
+    "cobrarWO": true,
+    "deudaBloqueaJugar": false,
+    "anticipacionDias": 7
   },
   "terminosProhibidos": [
     "Esencial",

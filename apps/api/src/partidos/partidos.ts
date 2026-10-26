@@ -1,7 +1,6 @@
 import { Body, Controller, Get, HttpStatus, Injectable, Module, Param, Post } from '@nestjs/common';
 import {
   amarillasQueAcumulan,
-  estadoSancion,
   dispositivoSchema,
   type DispositivoInput,
   eventoSchema,
@@ -19,33 +18,29 @@ import { DbService, enSerie, type Tx } from '../db/db.service.js';
 import { CajaModule, CajaService } from '../caja/caja.js';
 import { motivosDeNoHabilitacion } from '../documentacion/documentacion.js';
 import { MensajeriaModule, MensajeriaService } from '../mensajeria/mensajeria.js';
+import { acreditadosPorSancion, cumplimiento, SELECT_PARTIDO_SANCION } from '../tribunal/levantar.js';
 import { abrirPorNoHabilitado, abrirPorRoja } from '../tribunal/tribunal.js';
 import { avanzarLlave } from '../torneos/llaves.js';
 import { aReglamento } from '../torneos/torneos.js';
+import { sincronizarCobrosPorFecha } from '../cobros/por-fecha.js';
 
-/** Jugadores suspendidos de un torneo al momento de jugar la fecha indicada. */
-async function suspendidosParaFecha(tx: Tx, torneoId: string, fecha: number) {
-  const [sanciones, partidos] = await enSerie([
+/**
+ * Jugadores suspendidos de un torneo al momento de jugar la fecha indicada. Una suspensión levantada pagando (pago
+ * acreditado, E14-08) deja al jugador habilitado.
+ * @param cerradoEn si el partido ya se cerró, los pagos acreditados después no cambian su acta.
+ */
+async function suspendidosParaFecha(tx: Tx, torneoId: string, fecha: number, cerradoEn?: Date | null) {
+  const [sanciones, partidos, acreditados] = await enSerie([
     () => tx.sancion.findMany({ where: { torneoId } }),
-    () =>
-      tx.partido.findMany({
-        where: { torneoId },
-        select: { id: true, fecha: true, estado: true, localId: true, visitanteId: true },
-      }),
+    () => tx.partido.findMany({ where: { torneoId }, select: SELECT_PARTIDO_SANCION }),
+    () => acreditadosPorSancion(tx, torneoId),
   ]);
   const fechaDe = new Map(partidos.map((p) => [p.id, p.fecha]));
   const suspendidos = new Map<string, { causa: string; restantes: number }>();
   for (const s of sanciones) {
     const origen = fechaDe.get(s.partidoOrigenId) ?? 0;
     if (origen >= fecha) continue;
-    const jugadosAntes = partidos.filter(
-      (p) =>
-        p.estado === 'FINALIZADO' &&
-        p.fecha > origen &&
-        p.fecha < fecha &&
-        (p.localId === s.equipoId || p.visitanteId === s.equipoId),
-    ).length;
-    const e = estadoSancion(s.partidos, jugadosAntes);
+    const e = cumplimiento(s, partidos, acreditados, { antesDeFecha: fecha, acreditadosHasta: cerradoEn });
     if (e.activa) suspendidos.set(s.jugadorId, { causa: s.causa, restantes: e.restantes });
   }
   return suspendidos;
@@ -86,7 +81,7 @@ export class PartidosService {
             where: { id: { in: [p.localId, p.visitanteId] } },
             include: { plantel: { include: { jugador: true }, orderBy: { numero: 'asc' } } },
           }),
-        () => suspendidosParaFecha(tx, p.torneoId, p.fecha),
+        () => suspendidosParaFecha(tx, p.torneoId, p.fecha, p.cerradoEn),
       ]);
       // Documentación incompleta o duplicado abierto (E15-07): también impide jugar.
       const sinDocumentacion = await motivosDeNoHabilitacion(
@@ -377,6 +372,8 @@ export class PartidosService {
         data: { estado: 'WO', ganadorWOId: ganadorId, cerradoEn: new Date() },
       });
       if (p.fase === 'LLAVE') await avanzarLlave(tx, c, p.torneoId);
+      // Cuota por fecha (E06-20): el W.O. se cobra o no según la configuración del torneo.
+      await sincronizarCobrosPorFecha(tx, c.organizacionId, p.torneoId);
       return cerrado;
     });
   }

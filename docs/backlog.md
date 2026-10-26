@@ -14,7 +14,7 @@ Fuente: documentos 1 a 6 (`docs/src`). Si algo de este backlog contradice esos d
 
 ## Avance
 
-Última actualización: 23/10/2026. Hecho: 96 tareas · parciales: 56. Resumen de lo que funciona: `docs/contexto/estado-actual.md`.
+Última actualización: 26/10/2026. Hecho: 100 tareas · parciales: 56. Resumen de lo que funciona: `docs/contexto/estado-actual.md`.
 
 ## Mapa de épicas
 
@@ -177,6 +177,8 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 - [ ] **E06-17** `dev` Plan B sin split: cobro con link de la cuenta del organizador y conciliación manual (detrás de un feature flag).
 - [x] **E06-18** `dev` Modo simulado de Mercado Pago para desarrollo y demos, con la misma interfaz que el real.
 - [ ] **E06-19** `dev` Contract tests contra el sandbox de Mercado Pago.
+- [x] **E06-20** `dev` Cuota por fecha: monto fijo por equipo y por fecha (con o sin inscripción) que genera un cargo por equipo en cada fecha, con vencimiento el día del partido. Por defecto no se cobra la fecha libre ni el partido suspendido, y sí el W.O.; bloquear al deudor es opcional (`docs/datos.json`, `cobrosPorFechaPorDefecto`). Pedido del socio (reunión del 22/10/2026). _Hecho cuando:_ el torneo se configura con cuota por fecha, los cargos se generan solos y aparecen en inscripciones, caja y recordatorios. _Hecho: cargos por equipo y fecha, generados 7 días antes del partido, idempotentes; acompañan reprogramaciones y movimientos a mano; aviso de deuda en el acta; activada con el torneo empezado, se cobra desde la próxima fecha (decisión del 26/10/2026). Falta: que `deudaBloqueaJugar` impida cargar al equipo en el acta (hoy solo avisa)._
+- [x] **E06-21** `dev` Seguro por jugador por fecha: monto por cada jugador del plantel en cada fecha que el equipo juega, como cargo aparte al equipo, en el rubro Seguros de la caja. Usa el mecanismo de E06-20. _Hecho cuando:_ el cargo de cada fecha refleja el plantel de ese momento y la caja muestra el total de seguros.
 
 ## E07 · Caja del torneo · módulo 14
 - [x] **E07-01** `dev` Ledger de partida doble (`LedgerEntry`): cuentas, débitos, créditos, categoría, referencia.
@@ -204,7 +206,7 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 - [~] **E09-04** `dev` Asignación de fecha, cancha y horario: restricciones duras (sin partidos simultáneos ni descanso insuficiente, una cancha y un árbitro por franja). _Hecho: sin choques de cancha ni de equipo; un árbitro por franja en la designación. Falta: descanso mínimo y restricciones blandas._
 - [ ] **E09-05** `dev` Optimización de restricciones blandas: balance local/visitante, preferencias, menos huecos.
 - [ ] **E09-06** `dev` Restricciones por equipo (por ejemplo, "no juega los domingos").
-- [ ] **E09-07** `dev` Mover un partido a mano: re-evaluación y explicación de cada conflicto, con advertencia y sin bloqueo.
+- [x] **E09-07** `dev` Mover un partido a mano (día, cancha u horario) y ordenar a mano los horarios de una fecha intercambiando partidos: re-evaluación y explicación de cada conflicto, con advertencia y sin bloqueo.
 - [~] **E09-08** `dev` Publicar el fixture (aviso a capitanes cuando exista E16). _Hecho: plantilla Fixture publicado para avisar a los capitanes a mano. Falta: aviso automático al publicar._
 - [~] **E09-09** `dev` Pantalla de fixture: grilla por cancha y conflictos (mock 04).
 - [~] **E09-10** `dev` Tests con casos límite reales y prueba de rendimiento en CI.
@@ -257,6 +259,7 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 - [x] **E14-05** `dev` Multas que generan cargos al equipo.
 - [x] **E14-06** `dev` Historial disciplinario por jugador y por equipo.
 - [~] **E14-07** `dev` Pantalla de sanciones y tribunal (mock 12). _Hecho: pantalla con contadores, expedientes, automáticas, historial y reglamento aplicado. Falta: editar el reglamento desde la pantalla y elegir jugador al abrir un expediente a mano._
+- [x] **E14-08** `dev` Levantar una suspensión pagando una multa (opcional por torneo, apagado por defecto): el reglamento define qué sanciones se pueden levantar (por defecto acumulación y doble amarilla; nunca roja directa ni lo resuelto por el tribunal) y el monto por partido. Cada pago acreditado levanta un partido y habilita al jugador en el acta. Pedido del socio (reunión del 22/10/2026). _Hecho cuando:_ un suspendido por acumulación paga y queda habilitado para la fecha siguiente; una roja directa no ofrece la opción.
 
 ## E15 · Documentación, identidad y consentimientos · módulo 13
 - [x] **E15-01** `dev` Tipos de documento (DNI, apto físico, autorización de menor) y cuáles son obligatorios por torneo.

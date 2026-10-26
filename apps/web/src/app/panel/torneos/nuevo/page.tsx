@@ -1,5 +1,5 @@
 'use client';
-import { cantidadDePartidos, type Formato, type Modalidad } from '@potrero/shared';
+import { cantidadDePartidos, DATOS, type Formato, type Modalidad } from '@potrero/shared';
 import { Icono } from '@potrero/ui';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -28,6 +28,8 @@ export default function NuevoTorneo() {
   const [cupo, setCupo] = useState(16);
   const [idaYVuelta, setIdaYVuelta] = useState(false);
   const [inscripcion, setInscripcion] = useState(60000);
+  const [cuotaPorFecha, setCuotaPorFecha] = useState<number>(DATOS.cobrosPorFechaPorDefecto.cuotaPorFecha);
+  const [seguro, setSeguro] = useState<number>(DATOS.cobrosPorFechaPorDefecto.seguroPorJugadorPorFecha);
   const partidos = cantidadDePartidos(cupo, formato, idaYVuelta);
 
   return (
@@ -44,6 +46,7 @@ export default function NuevoTorneo() {
             idaYVuelta,
             cupo,
             inscripcion,
+            cobrosPorFecha: { cuotaPorFecha, seguroPorJugadorPorFecha: seguro },
             puntosVictoria: Number(f.get('puntosVictoria')),
             puntosEmpate: Number(f.get('puntosEmpate')),
             umbralAmarillas: Number(f.get('umbralAmarillas')),
@@ -124,6 +127,28 @@ export default function NuevoTorneo() {
             onChange={(e) => setInscripcion(Number(e.target.value))}
             error={campos.inscripcion}
           />
+          <Campo
+            etiqueta="Cuota por fecha, por equipo ($)"
+            type="number"
+            min={0}
+            step={500}
+            value={cuotaPorFecha}
+            onChange={(e) => setCuotaPorFecha(Number(e.target.value))}
+            ayuda="Lo que paga cada equipo en cada fecha que juega. 0 = no se cobra."
+          />
+          <Campo
+            etiqueta="Seguro por jugador, por fecha ($)"
+            type="number"
+            min={0}
+            step={100}
+            value={seguro}
+            onChange={(e) => setSeguro(Number(e.target.value))}
+            ayuda="Por cada jugador del plantel, juegue o no. Cargo aparte, rubro Seguros."
+          />
+          <p className="text-xs text-mute sm:col-span-2">
+            Por defecto no se cobra la fecha libre ni el partido suspendido, y el W.O. sí. Lo cambiás después
+            en Inscripciones y pagos.
+          </p>
         </section>
 
         <section className="tile grid gap-4 sm:grid-cols-3">
@@ -164,6 +189,12 @@ export default function NuevoTorneo() {
               <span className="text-white/60">Recaudación con cupo lleno</span>
               <b className="num">{pesos(cupo * inscripcion)}</b>
             </div>
+            {cuotaPorFecha > 0 && (
+              <div className="mt-2 flex justify-between">
+                <span className="text-white/60">Cuotas por fecha con cupo lleno</span>
+                <b className="num">{pesos(cupo * cuotaPorFecha)}</b>
+              </div>
+            )}
           </div>
           <button className="btn-volt btn-lg w-full" disabled={enviando}>
             <Icono nombre="check" />

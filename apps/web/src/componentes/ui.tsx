@@ -58,6 +58,7 @@ const ESTADOS: Record<string, [string, string]> = {
   PENDIENTE: ['pill-amber', 'Pendiente'],
   CONFIRMADA: ['pill-volt', 'Confirmada'],
   PAGADO: ['pill-volt', 'Pagado'],
+  ANULADO: ['pill', 'Anulado'],
   PROGRAMADO: ['pill', 'Programado'],
   EN_JUEGO: ['pill-live', 'En juego'],
   SUSPENDIDO: ['pill-red', 'Suspendido'],

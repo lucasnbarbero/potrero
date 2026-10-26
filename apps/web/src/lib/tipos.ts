@@ -1,6 +1,13 @@
 // Formas de las respuestas de la API que usa la web.
 // Pendiente (backlog E02-06): reemplazarlas por el cliente tipado generado desde OpenAPI.
-import type { FilaTabla, Formato, Modalidad, TipoEvento } from '@potrero/shared';
+import type {
+  ConfigCobrosPorFecha,
+  DeudaPorFecha,
+  FilaTabla,
+  Formato,
+  Modalidad,
+  TipoEvento,
+} from '@potrero/shared';
 
 export interface Torneo {
   id: string;
@@ -56,6 +63,7 @@ export interface Estadisticas {
     partidos: number;
     cumplidos: number;
     restantes: number;
+    levantados: number;
     activa: boolean;
   }[];
 }
@@ -67,7 +75,19 @@ export interface Inscripcion {
   total: number;
   pagado: number;
   debe: number;
-  cargos: { id: string; concepto: string; monto: number; estado: string }[];
+  /** Cuotas y seguros que vencen hasta hoy y siguen impagos (E06-20). */
+  deudaPorFecha: DeudaPorFecha;
+  cargos: {
+    id: string;
+    concepto: string;
+    monto: number;
+    estado: string;
+    categoria: string;
+    /** Número de fecha: solo en cuotas por fecha y seguros. */
+    fecha: number | null;
+    vence: string | null;
+    pagado: number;
+  }[];
   pagos: { id: string; metodo: string; monto: number; estado: string; comision: number; fecha: string }[];
 }
 
@@ -278,6 +298,8 @@ export interface ResumenCaja {
   resultado: { ingresos: number; comision: number; egresos: number; resultado: number };
   porRubro: { rubro: string; nombre: string; monto: number; pct: number }[];
   porCobrar: { monto: number; equipos: number };
+  /** Seguro por jugador (E06-21): lo cobrado se le debe a la aseguradora. */
+  seguros: { cobrado: number; porCobrar: number };
   automatizaciones: { clave: string; nombre: string; detalle: string; activa: boolean }[];
 }
 
@@ -373,6 +395,9 @@ export interface ResumenTribunal {
     suspensionAcumulacion: number;
     suspensionDobleAmarilla: number;
     suspensionRojaDirecta: number;
+    levantarSancionPagando: boolean;
+    levantarSancionTipos: string[];
+    levantarSancionMonto: number;
   };
   contadores: { suspendidos: number; automaticas: number; abiertos: number; descargos: number };
   expedientes: ExpedienteVista[];
@@ -383,6 +408,10 @@ export interface ResumenTribunal {
     causa: string;
     partidos: number;
     restantes: number;
+    /** Partidos levantados pagando (E14-08) y pedidos con el cargo todavía sin pagar. */
+    levantados: number;
+    pendientes: { id: string; cargoId: string; monto: number }[];
+    levantar: { ok: true; monto: number } | { ok: false; motivo: string; mensaje: string };
   }[];
   automaticas: {
     id: string;
@@ -391,6 +420,7 @@ export interface ResumenTribunal {
     causa: string;
     partidos: number;
     restantes: number;
+    levantados: number;
     activa: boolean;
   }[];
 }
@@ -401,6 +431,7 @@ export interface FilaDisciplina {
   amarillas: number;
   rojas: number;
   partidosSancionados: number;
+  partidosLevantados: number;
   multas: number;
   expedientes: number;
 }
@@ -476,4 +507,84 @@ export interface FichaJugador {
     otorgadoEn: string;
     revocadoEn: string | null;
   }[];
+}
+
+// ───────────── Cuota por fecha y seguro por jugador (E06-20, E06-21) ─────────────
+
+export interface CargoPorFechaVista {
+  id: string;
+  fecha: number;
+  tipo: 'CUOTA' | 'SEGURO';
+  equipo: { id: string; nombre: string };
+  concepto: string;
+  monto: number;
+  pagado: number;
+  estado: string;
+  vence: string | null;
+}
+
+export interface CobrosPorFechaTorneo {
+  config: ConfigCobrosPorFecha;
+  anticipacionDias: number;
+  totales: Record<'cuotas' | 'seguros', { total: number; cobrado: number; pendiente: number }>;
+  cargos: CargoPorFechaVista[];
+}
+
+export interface DeudaEquipoPartido extends DeudaPorFecha {
+  equipoId: string;
+  nombre: string;
+  habilitado: boolean;
+}
+
+export interface DeudaDelPartido {
+  deudaBloqueaJugar: boolean;
+  local: DeudaEquipoPartido;
+  visitante: DeudaEquipoPartido;
+}
+
+// ───────────── Fixture a mano (E09-07) ─────────────
+
+export interface ProgramacionTorneo {
+  partidos: {
+    id: string;
+    fecha: number;
+    fase: 'LIGA' | 'GRUPOS' | 'LLAVE';
+    grupo: string | null;
+    inicio: string | null;
+    canchaId: string | null;
+    estado: string;
+    local: string;
+    visitante: string;
+    golesLocal: number | null;
+    golesVisitante: number | null;
+    arbitro: string | null;
+    /** Por qué no se puede mover (jugado, acta en curso, sin horario), o nulo. */
+    noMovible: string | null;
+  }[];
+  canchas: {
+    id: string;
+    nombre: string;
+    superficie: string | null;
+    bloqueada: boolean;
+    motivoBloqueo: string | null;
+  }[];
+}
+
+export interface PropuestaCambioFixture {
+  movimientos: {
+    partidoId: string;
+    torneo: string;
+    local: string;
+    visitante: string;
+    de: { inicio: string; cancha: string | null };
+    a: { inicio: string; cancha: string | null };
+  }[];
+  conflictos: { tipo: string; mensaje: string; partido: string; con: string | null }[];
+  aviso: {
+    mensajes: number;
+    omitidos: number;
+    porCanal: Record<CanalMensaje, number>;
+    costoArs: number;
+    tope: { restantes: number; excedente: number };
+  };
 }

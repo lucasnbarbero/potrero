@@ -1,3 +1,10 @@
+import { estaDisponible, type FranjaDisponible } from './arbitros.js';
+import {
+  conflictosDeCalendario,
+  type Lugar,
+  type Movimiento,
+  type PartidoCalendario,
+} from './reprogramacion.js';
 import type { Formato } from './tipos.js';
 
 export interface Cruce {
@@ -169,4 +176,150 @@ export function detectarConflictos(partidos: readonly PartidoProgramado[]): Conf
     }
   }
   return conflictos;
+}
+
+// ───────────── Mover a mano (E09-07) ─────────────
+// El organizador mueve un partido a otro día, cancha u horario, o intercambia el lugar de dos partidos de la misma
+// fecha. Se re-evalúan las restricciones y se explica cada conflicto; nunca se bloquea (documento 1, sección 5.2).
+
+export interface PartidoDeLaGrilla extends PartidoCalendario {
+  torneoId: string;
+  fecha: number;
+  arbitroId?: string | null;
+}
+
+export interface ArbitroDeLaGrilla {
+  id: string;
+  nombre: string;
+  disponibilidad?: readonly FranjaDisponible[] | null;
+}
+
+export interface CanchaDeLaGrilla {
+  id: string;
+  nombre: string;
+  bloqueada: boolean;
+  motivoBloqueo?: string | null;
+}
+
+export type CambioDeProgramacion =
+  /** Lleva el partido a otro lugar (día y hora en `inicio`, y cancha). */
+  | { tipo: 'MOVER'; partidoId: string; a: Lugar }
+  /** Intercambia el lugar (horario y cancha) de dos partidos de la misma fecha: "este a las 20 y aquel a las 21". */
+  | { tipo: 'INTERCAMBIAR'; partidoId: string; conPartidoId: string };
+
+export interface ConflictoDeProgramacion {
+  tipo: 'CANCHA_OCUPADA' | 'EQUIPO_DOBLE' | 'CANCHA_BLOQUEADA' | 'ARBITRO_OCUPADO' | 'ARBITRO_NO_DISPONIBLE';
+  /** El partido movido que tiene el conflicto. */
+  partidoId: string;
+  /** El otro partido involucrado, si lo hay (cancha ocupada, equipo o árbitro con dos partidos). */
+  conPartidoId: string | null;
+  mensaje: string;
+}
+
+export interface EvaluacionDeCambio {
+  movimientos: Movimiento[];
+  conflictos: ConflictoDeProgramacion[];
+}
+
+/**
+ * Cómo quedaría el calendario con el cambio pedido, sin tocar nada, y qué conflictos trae: cancha ocupada o bloqueada,
+ * equipo con dos partidos el mismo día (o a la misma hora) y árbitro designado con otro partido en la franja o fuera de
+ * su disponibilidad. `calendario` son los partidos que ocupan canchas, equipos y árbitros (de todos los torneos).
+ * Falla con un mensaje claro si el cambio no tiene sentido (mismo lugar, otra fecha, el mismo partido).
+ */
+export function evaluarCambioDeProgramacion(
+  partidos: readonly PartidoDeLaGrilla[],
+  cambio: CambioDeProgramacion,
+  contexto: { arbitros?: readonly ArbitroDeLaGrilla[]; canchas?: readonly CanchaDeLaGrilla[] } = {},
+): EvaluacionDeCambio {
+  // Los instantes se comparan normalizados (ISO en UTC), vengan como vengan.
+  const calendario = partidos.map((p) => ({ ...p, inicio: new Date(p.inicio).toISOString() }));
+  const buscar = (id: string) => {
+    const p = calendario.find((x) => x.id === id);
+    if (!p) throw new Error('No encontramos el partido en el calendario.');
+    return p;
+  };
+  const mismaHora = (a: string, b: string) => new Date(a).getTime() === new Date(b).getTime();
+  const partido = buscar(cambio.partidoId);
+  const movidos: (PartidoDeLaGrilla & { nuevo: Lugar })[] = [];
+  if (cambio.tipo === 'MOVER') {
+    if (mismaHora(cambio.a.inicio, partido.inicio) && cambio.a.canchaId === partido.canchaId)
+      throw new Error('El partido ya está en ese día, horario y cancha.');
+    movidos.push({
+      ...partido,
+      nuevo: { inicio: new Date(cambio.a.inicio).toISOString(), canchaId: cambio.a.canchaId },
+    });
+  } else {
+    if (cambio.conPartidoId === cambio.partidoId) throw new Error('Elegí otro partido para intercambiar.');
+    const otro = buscar(cambio.conPartidoId);
+    if (otro.torneoId !== partido.torneoId || otro.fecha !== partido.fecha)
+      throw new Error('Solo se pueden intercambiar partidos de la misma fecha del torneo.');
+    if (mismaHora(otro.inicio, partido.inicio) && otro.canchaId === partido.canchaId)
+      throw new Error('Los dos partidos ya están en el mismo lugar.');
+    movidos.push(
+      { ...partido, nuevo: { inicio: otro.inicio, canchaId: otro.canchaId } },
+      { ...otro, nuevo: { inicio: partido.inicio, canchaId: partido.canchaId } },
+    );
+  }
+  const ids = new Set(movidos.map((m) => m.id));
+  const resto = calendario.filter((p) => !ids.has(p.id));
+
+  // Cancha ocupada y equipo con dos partidos: la misma detección que las reprogramaciones.
+  const lugarDe = (id: string) => movidos.find((m) => m.id === id)?.nuevo.inicio ?? buscar(id).inicio;
+  const conflictos: ConflictoDeProgramacion[] = conflictosDeCalendario(movidos, resto).map((x) => ({
+    tipo: x.tipo,
+    partidoId: x.partidoId,
+    conPartidoId: x.conPartidoId,
+    mensaje:
+      x.tipo === 'EQUIPO_DOBLE' && mismaHora(lugarDe(x.partidoId), lugarDe(x.conPartidoId))
+        ? 'Un equipo juega dos partidos a la misma hora.'
+        : x.mensaje,
+  }));
+
+  const canchas = new Map((contexto.canchas ?? []).map((c) => [c.id, c]));
+  const arbitros = new Map((contexto.arbitros ?? []).map((a) => [a.id, a]));
+  const ubicados = [
+    ...resto.map((p) => ({ ...p, lugar: p.inicio })),
+    ...movidos.map((m) => ({ ...m, lugar: m.nuevo.inicio })),
+  ];
+  for (const m of movidos) {
+    const cancha = m.nuevo.canchaId ? canchas.get(m.nuevo.canchaId) : undefined;
+    if (cancha?.bloqueada)
+      conflictos.push({
+        tipo: 'CANCHA_BLOQUEADA',
+        partidoId: m.id,
+        conPartidoId: null,
+        mensaje: `La cancha ${cancha.nombre} está bloqueada${cancha.motivoBloqueo ? ` (${cancha.motivoBloqueo})` : ''}.`,
+      });
+    if (!m.arbitroId) continue;
+    const arbitro = arbitros.get(m.arbitroId);
+    const nombre = arbitro?.nombre ?? 'El árbitro designado';
+    for (const o of ubicados) {
+      if (o.id === m.id || o.arbitroId !== m.arbitroId || !mismaHora(o.lugar, m.nuevo.inicio)) continue;
+      // Entre dos partidos movidos se informa una sola vez.
+      if (ids.has(o.id) && o.id < m.id) continue;
+      conflictos.push({
+        tipo: 'ARBITRO_OCUPADO',
+        partidoId: m.id,
+        conPartidoId: o.id,
+        mensaje: `${nombre} ya dirige otro partido a esa hora. Cambiá la designación o el horario.`,
+      });
+    }
+    if (arbitro && !estaDisponible(arbitro.disponibilidad, m.nuevo.inicio))
+      conflictos.push({
+        tipo: 'ARBITRO_NO_DISPONIBLE',
+        partidoId: m.id,
+        conPartidoId: null,
+        mensaje: `${nombre} cargó que a esa hora no está disponible. Sigue designado: revisalo.`,
+      });
+  }
+
+  return {
+    movimientos: movidos.map((m) => ({
+      partidoId: m.id,
+      de: { inicio: m.inicio, canchaId: m.canchaId },
+      a: m.nuevo,
+    })),
+    conflictos,
+  };
 }

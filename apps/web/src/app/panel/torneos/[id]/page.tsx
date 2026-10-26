@@ -2,7 +2,7 @@ import { Icono } from '@potrero/ui';
 import Link from 'next/link';
 import { Encabezado, Escudo, Estado, Vacio } from '@/componentes/ui';
 import { apiServidor } from '@/lib/api';
-import { fechaCorta, hora, pesos } from '@/lib/formato';
+import { pesos } from '@/lib/formato';
 import { Llave } from '@/componentes/Llave';
 import type {
   DetalleTorneo,
@@ -11,6 +11,7 @@ import type {
   Inscripcion,
   Llave as LlaveDatos,
   Partido,
+  ProgramacionTorneo,
   Sede,
 } from '@/lib/tipos';
 import {
@@ -20,6 +21,8 @@ import {
   InscribirEquipo,
   VencimientoInscripcion,
 } from './acciones';
+import { CobrosPorFecha } from './CobrosPorFecha';
+import { GrillaFixture } from './GrillaFixture';
 
 const pestanasDe = (formato: string) =>
   [
@@ -123,6 +126,7 @@ async function PestanaInscripciones({ torneo }: { torneo: DetalleTorneo }) {
             </thead>
             <tbody className="[&>tr]:border-t [&>tr]:border-black/5">
               {inscripciones.map((i) => {
+                // El próximo cargo a cobrar (los cargos vienen ordenados por vencimiento), con lo que falta de ese cargo.
                 const cargo = i.cargos.find((c) => c.estado === 'PENDIENTE');
                 return (
                   <tr key={i.id}>
@@ -151,10 +155,24 @@ async function PestanaInscripciones({ torneo }: { torneo: DetalleTorneo }) {
                     </td>
                     <td className="td">
                       <Estado estado={i.estado} />
+                      {i.deudaPorFecha.monto > 0 && (
+                        <span
+                          className={`${i.deudaPorFecha.vencido > 0 ? 'pill-red' : 'pill-amber'} ml-1`}
+                          title={i.deudaPorFecha.cargos.map((c) => c.concepto).join(' · ')}
+                        >
+                          {i.deudaPorFecha.vencido > 0 ? 'Cuotas vencidas' : 'Cuota de hoy'}{' '}
+                          {pesos(i.deudaPorFecha.monto)}
+                        </span>
+                      )}
                     </td>
                     <td className="td">
                       {cargo ? (
-                        <AccionesCobro cargoId={cargo.id} debe={i.debe} />
+                        <div className="space-y-1">
+                          {i.cargos.filter((c) => c.estado === 'PENDIENTE').length > 1 && (
+                            <span className="block text-right text-xs text-mute">{cargo.concepto}</span>
+                          )}
+                          <AccionesCobro cargoId={cargo.id} debe={Math.max(0, cargo.monto - cargo.pagado)} />
+                        </div>
                       ) : (
                         <span className="block text-right text-mute">Al día</span>
                       )}
@@ -176,6 +194,7 @@ async function PestanaInscripciones({ torneo }: { torneo: DetalleTorneo }) {
           <VencimientoInscripcion torneoId={torneo.id} inicial={torneo.venceInscripcion} />
         </div>
       )}
+      {torneo.estado !== 'FINALIZADO' && <CobrosPorFecha torneoId={torneo.id} />}
       {torneo.estado === 'INSCRIPCION' && (
         <div className="tile">
           <InscribirEquipo torneoId={torneo.id} equipos={equipos.filter((e) => !inscriptos.has(e.id))} />
@@ -218,43 +237,12 @@ async function PestanaFixture({ torneo }: { torneo: DetalleTorneo }) {
       </div>
     );
   }
-  const fechas = Map.groupBy(partidos, (p) => p.fecha);
+  // Grilla por cancha y horario, con el armado a mano (E09-07).
+  const programacion = await apiServidor<ProgramacionTorneo>(`/torneos/${torneo.id}/programacion`);
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      {[...fechas].map(([fecha, ps]) => (
-        <section key={fecha} className="tile">
-          <div className="flex items-center justify-between">
-            <b className="text-lg">Fecha {fecha}</b>
-            <span className="text-sm text-mute">{fechaCorta(ps[0]!.inicio)}</span>
-          </div>
-          <ul className="mt-2">
-            {ps.map((p) => (
-              <li key={p.id} className="list-row text-sm">
-                <span className="w-12 shrink-0 font-semibold">{hora(p.inicio)}</span>
-                {p.grupo && <span className="pill !px-2 !py-0.5 text-xs">{p.grupo}</span>}
-                <span className="flex min-w-0 flex-1 items-center justify-end gap-2 text-right">
-                  <span className="truncate">{p.local}</span>
-                </span>
-                <span className="num w-14 shrink-0 rounded-full bg-black/5 py-1 text-center font-bold">
-                  {p.estado === 'FINALIZADO'
-                    ? `${p.golesLocal}-${p.golesVisitante}`
-                    : p.estado === 'WO'
-                      ? 'W.O.'
-                      : 'vs'}
-                </span>
-                <span className="min-w-0 flex-1 truncate">{p.visitante}</span>
-                <Link
-                  href={`/panel/partidos/${p.id}`}
-                  className={p.estado === 'FINALIZADO' ? 'btn-glass btn-sm' : 'btn btn-sm'}
-                >
-                  Acta
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
-    </div>
+    <GrillaFixture
+      datos={{ ...programacion, partidos: programacion.partidos.filter((p) => p.fase !== 'LLAVE') }}
+    />
   );
 }
 

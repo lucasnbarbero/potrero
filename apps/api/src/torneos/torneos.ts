@@ -3,11 +3,11 @@ import {
   cantidadDeClasificados,
   cantidadDePartidos,
   clasificadosDeLiga,
+  configCobrosPorFecha,
   crearTorneoSchema,
   type CrearTorneoInput,
   cuadroDeGrupos,
   cuadroDeSemillas,
-  estadoSancion,
   type Fecha,
   generarFixtureSchema,
   type GenerarFixtureInput,
@@ -23,6 +23,7 @@ import {
   tablaDePosiciones,
   tarjetasPorEquipo,
   todosContraTodos,
+  type CausaSancion,
   type Desempate,
   type Reglamento,
 } from '@potrero/shared';
@@ -32,11 +33,14 @@ import { type Contexto, Ctx, ErrorNegocio, noEncontrado, Permiso, Zod } from '..
 import { slugUnico } from '../comun/slug.js';
 import { DbService, enSerie, type Tx } from '../db/db.service.js';
 import { Prisma, type Reglamento as ReglamentoDb } from '../generated/prisma/client.js';
+import { acreditadosPorSancion, cumplimiento } from '../tribunal/levantar.js';
 import { avanzarLlave, llaveDelTorneo, validarFranjas } from './llaves.js';
+import { sincronizarCobrosPorFecha } from '../cobros/por-fecha.js';
 
 export const aReglamento = (r: ReglamentoDb): Reglamento => ({
   ...r,
   desempates: r.desempates as Desempate[],
+  levantarSancionTipos: r.levantarSancionTipos as CausaSancion[],
 });
 
 /** Partidos de un torneo con nombres de equipos y cancha. */
@@ -133,7 +137,7 @@ export async function estadisticasDelTorneo(tx: Tx, torneoId: string) {
   const jugadores = await tx.jugador.findMany({ where: { id: { in: jugadorIds } } });
   const nombreJugador = new Map(jugadores.map((j) => [j.id, `${j.nombre} ${j.apellido}`]));
   const nombreEquipo = new Map(equipos.map((e) => [e.id, e.nombre]));
-  const fechaDe = new Map(partidos.map((p) => [p.id, p.fecha]));
+  const acreditados = await acreditadosPorSancion(tx, torneoId);
   return {
     tabla: tabla.map((f) => ({ ...f, equipo: nombreEquipo.get(f.equipoId) ?? '—' })),
     /** Solo en grupos + playoffs: una tabla por grupo. */
@@ -146,22 +150,13 @@ export async function estadisticasDelTorneo(tx: Tx, torneoId: string) {
       jugador: nombreJugador.get(g.jugadorId) ?? '—',
       equipo: nombreEquipo.get(g.equipoId) ?? '—',
     })),
-    sanciones: sanciones.map((s) => {
-      const origen = fechaDe.get(s.partidoOrigenId) ?? 0;
-      // Cuenta partidos oficiales del equipo jugados después del partido de origen (W.O. y suspendidos no descuentan).
-      const jugadosDespues = partidos.filter(
-        (p) =>
-          p.estado === 'FINALIZADO' &&
-          p.fecha > origen &&
-          (p.localId === s.equipoId || p.visitanteId === s.equipoId),
-      ).length;
-      return {
-        ...s,
-        jugador: nombreJugador.get(s.jugadorId) ?? '—',
-        equipo: nombreEquipo.get(s.equipoId) ?? '—',
-        ...estadoSancion(s.partidos, jugadosDespues),
-      };
-    }),
+    // Partidos oficiales del equipo jugados después del de origen (W.O. y suspendidos no descuentan) y levantados pagando.
+    sanciones: sanciones.map((s) => ({
+      ...s,
+      jugador: nombreJugador.get(s.jugadorId) ?? '—',
+      equipo: nombreEquipo.get(s.equipoId) ?? '—',
+      ...cumplimiento(s, partidos, acreditados),
+    })),
   };
 }
 
@@ -219,6 +214,9 @@ export class TorneosService {
           inscripcion: d.inscripcion,
           reglamentoId: reglamento.id,
           estado: 'INSCRIPCION',
+          ...(d.cobrosPorFecha
+            ? { cobrosPorFecha: { ...configCobrosPorFecha(d.cobrosPorFecha) } as Prisma.InputJsonObject }
+            : {}),
         },
       });
       await auditar(tx, c, 'torneo.crear', 'torneo', torneo.id, { despues: torneo });
@@ -346,6 +344,8 @@ export class TorneosService {
       await auditar(tx, c, 'fixture.generar', 'torneo', id, {
         despues: { partidos: programados.length, ...d },
       });
+      // Cuota por fecha y seguro (E06-20/21): los cargos de las fechas próximas se generan con el fixture nuevo.
+      await sincronizarCobrosPorFecha(tx, c.organizacionId, id, { usuarioId: c.usuarioId });
       return { partidos: programados.length, fechas: Math.max(...programados.map((p) => p.fecha)) };
     });
   }
@@ -426,6 +426,7 @@ export class TorneosService {
         data: { llave: { cuadro, baseFecha, programacion }, estado: 'EN_CURSO' },
       });
       const { creados } = await avanzarLlave(tx, c, id);
+      await sincronizarCobrosPorFecha(tx, c.organizacionId, id, { usuarioId: c.usuarioId });
       await auditar(tx, c, 'llave.generar', 'torneo', id, {
         despues: { cuadro, formato: torneo.formato, cabezasDeSerie: d.cabezasDeSerie, semilla: d.semilla },
       });

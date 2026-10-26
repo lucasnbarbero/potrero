@@ -19,6 +19,10 @@ Actualizar al cerrar cada bloque de trabajo. Detalle de tareas: `docs/backlog.md
 - Árbitros y canchas: árbitros con tarifa, valoración y disponibilidad; designación manual y automática (un árbitro por franja), confirmación, costo y bloqueo de canchas, ocupación del día y alerta de partidos sin árbitro.
 - Reprogramaciones: alerta de clima, propuesta con conflictos, aplicar con aviso a los capitanes, confirmaciones por link y seguimiento de las respuestas. Cuenta regresiva de W.O. en el acta.
 
+- Cobros por fecha: cuota fija por equipo y fecha (con o sin inscripción) y seguro por jugador del plantel, generados solos 7 días antes de cada partido; rubro Seguros en la caja y aviso de deuda en el acta.
+- Fixture a mano: grilla por cancha y horario; mover un partido o intercambiar dos (arrastrando o tocando en el celular), con los conflictos explicados y aviso opcional a los capitanes.
+- Levantar una suspensión pagando (opción del reglamento, apagada por defecto): cargo de multa por partido; el jugador queda habilitado cuando el pago se acredita.
+
 - Demo pública (ADR-019, `pnpm demo --publica`): cada visitante entra desde la landing a su propia sandbox con los datos de la plantilla, aislada por RLS; vence a las 24 h y un job la elimina; botón "Reiniciar demo"; sin registro abierto; tope de sandboxes por IP y en total. Falta el despliegue del entorno (E37-08).
 
 ## Límites conocidos de la demo
@@ -26,6 +30,7 @@ Actualizar al cerrar cada bloque de trabajo. Detalle de tareas: `docs/backlog.md
 - El acta sin conexión está probada en el navegador (incluido con el servidor apagado), no en celulares reales de gama baja (E11-13). Hay que abrirla una vez con señal antes del partido.
 - Llaves sin ida y vuelta (solo partido único con penales).
 - Sin backoffice, documentación, capitán, perfiles (ver backlog).
+- Cuota por fecha: con `deudaBloqueaJugar` el acta solo avisa, todavía no impide cargar al equipo.
 - Caja: sin reembolsos (E06-12), sin PDF ni comprobantes como archivo; el retiro es solo un registro y falta la verificación en dos pasos.
 - Cliente de la API tipado a mano (`apps/web/src/lib/tipos.ts`), pendiente OpenAPI (E02-06).
 - Aviso interno de Prisma 7 sobre consultas concurrentes (ADR-018).

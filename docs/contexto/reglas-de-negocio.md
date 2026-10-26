@@ -12,6 +12,10 @@ Fuente: documento 1 (secciones 5–8) y documento 2. Cifras: `docs/datos.json`. 
 - La comisión se cobra solo sobre pagos con Mercado Pago (split 1:1, `application_fee`). Efectivo y transferencia: sin comisión.
 - Mercado Pago cobra aparte su costo; el organizador elige absorberlo o mostrarlo como "cargo por servicio" (default: ADR-013 abierto).
 - Una inscripción genera cargos; el cargo queda PAGADO cuando los pagos aprobados cubren el monto; sin cargos pendientes, la inscripción pasa a CONFIRMADA.
+- Cuota por fecha (E06-20): monto fijo por equipo y por fecha, con o sin inscripción. Un cargo por equipo y fecha, vence el día del partido. Por defecto: no se cobra la fecha libre ni el partido suspendido; el W.O. sí. La deuda alerta y recuerda; bloquear al deudor es opcional. Activada con el torneo empezado, se cobra desde la próxima fecha (la siguiente a la última con partidos jugados), nunca las ya jugadas; cuota y seguro guardan cada uno su inicio (`cuotaDesdeFecha`, `seguroDesdeFecha`). Valores en `datos.json` (`cobrosPorFechaPorDefecto`).
+- Seguro por jugador (E06-21): monto × jugadores del plantel en cada fecha que el equipo juega (juegue o no cada jugador). Cargo aparte al equipo, rubro Seguros en la caja.
+- Cuotas y seguros se generan 7 días antes del partido (`anticipacionDias`), uno por equipo, tipo y fecha (clave única: idempotente). Siguen al partido si se mueve; si se suspende, el cargo pendiente sin pagos se anula; un cargo con pagos no se toca. El monto queda fijo al generarse, salvo que el organizador cambie la configuración (se recalculan los pendientes sin pagos). La cuota entra en Inscripciones de la caja.
+- La inscripción se confirma solo con los cargos de inscripción y seña: cuotas por fecha, seguros y multas no la traban.
 - Notificaciones de pago: firma validada, idempotentes por id de pago, conciliación nocturna (pendiente).
 
 ## Tabla
@@ -22,7 +26,7 @@ Fuente: documento 1 (secciones 5–8) y documento 2. Cifras: `docs/datos.json`. 
 ## Fixture
 - Todos contra todos por rotación; impares: un libre por fecha; ida y vuelta invierte localía. Localía equilibrada.
 - Restricciones duras: una cancha por franja, un equipo una vez por fecha, árbitro una vez por franja (pendiente). Blandas y por equipo: pendientes (E09).
-- Mover un partido advierte conflictos, no bloquea. Objetivo: 24 equipos < 10 s.
+- Mover un partido (día, cancha, horario) o intercambiar horarios dentro de una fecha (E09-07) advierte conflictos, no bloquea. Objetivo: 24 equipos < 10 s.
 
 ## Llaves y playoffs
 - Eliminación directa. Si los equipos no son potencia de dos, las mejores semillas pasan la primera ronda libres. Siembra estándar: la 1ª y la 2ª solo se cruzan en la final (1-8, 4-5, 2-7, 3-6).
@@ -71,6 +75,8 @@ Fuente: documento 1 (secciones 5–8) y documento 2. Cifras: `docs/datos.json`. 
 ## Sanciones
 - Roja directa 1 partido · doble amarilla 1 (sus amarillas no acumulan) · acumulación: cada 5 amarillas, 1 partido.
 - Se cumplen con partidos oficiales del equipo jugados después; W.O. y suspendidos no descuentan. El tribunal puede modificar (E14).
+- Levantar pagando (E14-08, opcional, apagado por defecto): el reglamento elige qué tipos se levantan (por defecto ACUMULACION y DOBLE_AMARILLA; nunca roja directa, sanción del tribunal ni sanción con expediente) y el monto por partido (0 = no disponible). Cada pedido es un `LevantamientoSancion` con su cargo al equipo (rubro Multas).
+- Se acredita cuando el cargo queda PAGADO y levanta el primer partido oficial del equipo jugado después; ese partido no cuenta como cumplido. Permisos: editar el reglamento `torneo.escribir`; pedir o anular `sancion.resolver`.
 
 ## Habilitación del jugador
 Documentación vigente (DNI validado, apto físico, autorización si es menor) + sin sanción activa + sin duplicado abierto (ADR-025).

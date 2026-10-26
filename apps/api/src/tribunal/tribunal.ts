@@ -1,6 +1,18 @@
 // Tribunal de disciplina (E14): expedientes con informe del árbitro, descargo del capitán y resolución (que puede ampliar o
-// reducir lo sugerido), multas que generan un cargo al equipo e historial disciplinario. Las reglas puras viven en @potrero/shared.
-import { Body, Controller, Get, HttpStatus, Injectable, Module, Param, Post, Query } from '@nestjs/common';
+// reducir lo sugerido), multas que generan un cargo al equipo, levantar una suspensión pagando (E14-08) e historial
+// disciplinario. Las reglas puras viven en @potrero/shared.
+import {
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Injectable,
+  Module,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   descargoExpedienteSchema,
   type DescargoExpedienteInput,
@@ -11,6 +23,9 @@ import {
   historialDisciplinario,
   informeExpedienteSchema,
   type InformeExpedienteInput,
+  levantarSancion,
+  levantarSancionReglamentoSchema,
+  type LevantarSancionReglamentoInput,
   NOMBRE_TIPO_EXPEDIENTE,
   resolverExpedienteSchema,
   type ResolverExpedienteInput,
@@ -22,6 +37,31 @@ import { type Contexto, Ctx, ErrorNegocio, noEncontrado, Permiso, Zod } from '..
 import { DbService, enSerie, type Tx } from '../db/db.service.js';
 import type { Expediente } from '../generated/prisma/client.js';
 import { aReglamento, estadisticasDelTorneo } from '../torneos/torneos.js';
+import { acreditadosPorSancion, cumplimiento, SELECT_PARTIDO_SANCION } from './levantar.js';
+
+/** Pedidos de levantar todavía sin pagar (ni anulados), por sanción. */
+async function levantamientosPendientes(tx: Tx, sancionIds: string[]) {
+  const pedidos = await tx.levantamientoSancion.findMany({
+    where: { sancionId: { in: sancionIds }, anuladoEn: null },
+    orderBy: { creadoEn: 'asc' },
+  });
+  const pendientes = new Set(
+    (
+      await tx.cargo.findMany({
+        where: { id: { in: pedidos.map((p) => p.cargoId) }, estado: 'PENDIENTE' },
+        select: { id: true },
+      })
+    ).map((c) => c.id),
+  );
+  const porSancion = new Map<string, { id: string; cargoId: string; monto: number }[]>();
+  for (const p of pedidos)
+    if (pendientes.has(p.cargoId))
+      porSancion.set(p.sancionId, [
+        ...(porSancion.get(p.sancionId) ?? []),
+        { id: p.id, cargoId: p.cargoId, monto: p.monto },
+      ]);
+  return porSancion;
+}
 
 /** Expediente automático por una roja directa: el tribunal revisa lo que el reglamento ya sancionó. */
 export async function abrirPorRoja(
@@ -136,9 +176,16 @@ export class TribunalService {
       ]);
       const lista = await this.enriquecer(tx, expedientes);
       const activas = est.sanciones.filter((s) => s.activa && s.partidos > 0);
+      const reglamento = aReglamento(torneo.reglamento);
+      // Levantar pagando (E14-08): nunca lo que revisó el tribunal en un expediente.
+      const revisadas = new Set(expedientes.flatMap((e) => (e.sancionId ? [e.sancionId] : [])));
+      const pendientes = await levantamientosPendientes(
+        tx,
+        activas.map((s) => s.id),
+      );
       return {
         torneo: { id: torneo.id, nombre: torneo.nombre },
-        reglamento: aReglamento(torneo.reglamento),
+        reglamento,
         contadores: {
           suspendidos: new Set(activas.map((s) => s.jugadorId)).size,
           automaticas: est.sanciones.filter((s) => s.causa === 'ACUMULACION').length,
@@ -153,6 +200,17 @@ export class TribunalService {
           causa: s.causa,
           partidos: s.partidos,
           restantes: s.restantes,
+          levantados: s.levantados,
+          pendientes: pendientes.get(s.id) ?? [],
+          levantar: levantarSancion(
+            {
+              causa: s.causa,
+              revisadaPorTribunal: revisadas.has(s.id),
+              restantes: s.restantes,
+              pendientes: pendientes.get(s.id)?.length ?? 0,
+            },
+            reglamento,
+          ),
         })),
         automaticas: est.sanciones
           .filter((s) => s.causa !== 'TRIBUNAL')
@@ -163,6 +221,7 @@ export class TribunalService {
             causa: s.causa,
             partidos: s.partidos,
             restantes: s.restantes,
+            levantados: s.levantados,
             activa: s.activa,
           })),
       };
@@ -172,14 +231,19 @@ export class TribunalService {
   /** Historial disciplinario por jugador y por equipo del torneo. */
   historial(c: Contexto, torneoId: string) {
     return this.db.enOrg(c.organizacionId, async (tx) => {
-      const [eventos, sanciones, expedientes] = await enSerie([
+      const [eventos, sanciones, expedientes, partidos, acreditados] = await enSerie([
         () =>
           tx.eventoPartido.findMany({
             where: { partido: { torneoId, estado: 'FINALIZADO' }, tipo: { in: ['AMARILLA', 'ROJA'] } },
           }),
         () => tx.sancion.findMany({ where: { torneoId } }),
         () => tx.expediente.findMany({ where: { torneoId } }),
+        () => tx.partido.findMany({ where: { torneoId }, select: SELECT_PARTIDO_SANCION }),
+        () => acreditadosPorSancion(tx, torneoId),
       ]);
+      const levantados = new Map(
+        sanciones.map((s) => [s.id, cumplimiento(s, partidos, acreditados).levantados]),
+      );
       const jugadores = await tx.jugador.findMany({
         where: {
           id: {
@@ -217,6 +281,7 @@ export class TribunalService {
           clave: s.jugadorId,
           nombre: nj.get(s.jugadorId) ?? '—',
           partidos: s.partidos,
+          levantados: levantados.get(s.id),
         })),
         ...expedientes
           .filter((e) => e.jugadorId)
@@ -238,6 +303,7 @@ export class TribunalService {
           clave: s.equipoId,
           nombre: ne.get(s.equipoId) ?? '—',
           partidos: s.partidos,
+          levantados: levantados.get(s.id),
         })),
         ...expedientes.map((e) => ({
           clave: e.equipoId,
@@ -398,6 +464,122 @@ export class TribunalService {
       return resuelto;
     });
   }
+
+  /**
+   * Opción del reglamento del torneo: levantar una suspensión pagando (E14-08). El reglamento es versionado: el cambio
+   * crea una versión nueva y el torneo pasa a usarla.
+   */
+  reglamentoLevantar(c: Contexto, torneoId: string, d: LevantarSancionReglamentoInput) {
+    return this.db.enOrg(c.organizacionId, async (tx) => {
+      const torneo = await tx.torneo.findUnique({ where: { id: torneoId }, include: { reglamento: true } });
+      if (!torneo) throw noEncontrado('el torneo');
+      const { id: _id, creadoEn: _creadoEn, version, ...actual } = torneo.reglamento;
+      const nuevo = await tx.reglamento.create({
+        data: {
+          ...actual,
+          version: version + 1,
+          levantarSancionPagando: d.levantarSancionPagando,
+          levantarSancionTipos: [...new Set(d.levantarSancionTipos)],
+          levantarSancionMonto: d.levantarSancionMonto,
+        },
+      });
+      await tx.torneo.update({ where: { id: torneoId }, data: { reglamentoId: nuevo.id } });
+      await auditar(tx, c, 'reglamento.levantar_sancion', 'torneo', torneoId, {
+        antes: {
+          levantarSancionPagando: actual.levantarSancionPagando,
+          levantarSancionTipos: actual.levantarSancionTipos,
+          levantarSancionMonto: actual.levantarSancionMonto,
+        },
+        despues: d,
+      });
+      return aReglamento(nuevo);
+    });
+  }
+
+  /**
+   * Pedido de levantar un partido de suspensión pagando: genera un cargo al equipo en el rubro MULTAS. El jugador queda
+   * habilitado recién cuando ese cargo se paga (pago manual aprobado o acreditado por la pasarela).
+   */
+  levantar(c: Contexto, sancionId: string) {
+    return this.db.enOrg(c.organizacionId, async (tx) => {
+      const s = await tx.sancion.findUnique({
+        where: { id: sancionId },
+        include: { torneo: { include: { reglamento: true } } },
+      });
+      if (!s) throw noEncontrado('la sanción');
+      const [partidos, acreditados, revisiones, pendientes, jugador, insc] = await enSerie([
+        () => tx.partido.findMany({ where: { torneoId: s.torneoId }, select: SELECT_PARTIDO_SANCION }),
+        () => acreditadosPorSancion(tx, s.torneoId),
+        () => tx.expediente.count({ where: { sancionId } }),
+        () => levantamientosPendientes(tx, [sancionId]),
+        () => tx.jugador.findUnique({ where: { id: s.jugadorId } }),
+        () =>
+          tx.inscripcion.findUnique({
+            where: { torneoId_equipoId: { torneoId: s.torneoId, equipoId: s.equipoId } },
+          }),
+      ]);
+      const estado = cumplimiento(s, partidos, acreditados);
+      const r = levantarSancion(
+        {
+          causa: s.causa,
+          revisadaPorTribunal: revisiones > 0,
+          restantes: estado.restantes,
+          pendientes: pendientes.get(sancionId)?.length ?? 0,
+        },
+        aReglamento(s.torneo.reglamento),
+      );
+      if (!r.ok) throw new ErrorNegocio(r.mensaje);
+      if (!insc)
+        throw new ErrorNegocio('El equipo no está inscripto en el torneo: no se le puede generar el cargo.');
+      const nombre = jugador ? `${jugador.nombre} ${jugador.apellido}` : 'jugador';
+      const cargo = await tx.cargo.create({
+        data: {
+          organizacionId: c.organizacionId,
+          inscripcionId: insc.id,
+          concepto: `Levantar sanción de ${nombre} — 1 partido`,
+          monto: r.monto,
+          categoria: 'MULTAS',
+        },
+      });
+      const levantamiento = await tx.levantamientoSancion.create({
+        data: {
+          organizacionId: c.organizacionId,
+          sancionId,
+          cargoId: cargo.id,
+          monto: r.monto,
+          solicitadoPorId: c.usuarioId,
+        },
+      });
+      await auditar(tx, c, 'sancion.levantar', 'sancion', sancionId, {
+        despues: { cargoId: cargo.id, monto: formatoPesos(r.monto), partidos: 1 },
+      });
+      return { ...levantamiento, cargo };
+    });
+  }
+
+  /** Anula un pedido de levantar que todavía no se pagó: el cargo queda anulado y no se levanta nada. */
+  anularLevantamiento(c: Contexto, id: string) {
+    return this.db.enOrg(c.organizacionId, async (tx) => {
+      const l = await tx.levantamientoSancion.findUnique({ where: { id } });
+      if (!l) throw noEncontrado('el pedido');
+      if (l.anuladoEn) throw new ErrorNegocio('El pedido ya está anulado.', HttpStatus.CONFLICT);
+      const cargo = await tx.cargo.findUnique({ where: { id: l.cargoId }, include: { pagos: true } });
+      if (cargo?.estado === 'PAGADO' || cargo?.pagos.some((p) => p.estado === 'APROBADO'))
+        throw new ErrorNegocio(
+          'El cargo ya tiene pagos acreditados: no se puede anular el pedido.',
+          HttpStatus.CONFLICT,
+        );
+      if (cargo) await tx.cargo.update({ where: { id: cargo.id }, data: { estado: 'ANULADO' } });
+      const anulado = await tx.levantamientoSancion.update({
+        where: { id },
+        data: { anuladoEn: new Date() },
+      });
+      await auditar(tx, c, 'sancion.levantar_anular', 'sancion', l.sancionId, {
+        despues: { cargoId: l.cargoId },
+      });
+      return anulado;
+    });
+  }
 }
 
 @Controller()
@@ -450,6 +632,28 @@ export class TribunalController {
     @Body(new Zod(resolverExpedienteSchema)) d: ResolverExpedienteInput,
   ) {
     return this.s.resolver(c, id, d);
+  }
+
+  @Patch('torneos/:id/reglamento/levantar-sancion')
+  @Permiso('torneo.escribir')
+  reglamentoLevantar(
+    @Ctx() c: Contexto,
+    @Param('id') id: string,
+    @Body(new Zod(levantarSancionReglamentoSchema)) d: LevantarSancionReglamentoInput,
+  ) {
+    return this.s.reglamentoLevantar(c, id, d);
+  }
+
+  @Post('sanciones/:id/levantar')
+  @Permiso('sancion.resolver')
+  levantar(@Ctx() c: Contexto, @Param('id') id: string) {
+    return this.s.levantar(c, id);
+  }
+
+  @Post('levantamientos/:id/anular')
+  @Permiso('sancion.resolver')
+  anularLevantamiento(@Ctx() c: Contexto, @Param('id') id: string) {
+    return this.s.anularLevantamiento(c, id);
   }
 }
 

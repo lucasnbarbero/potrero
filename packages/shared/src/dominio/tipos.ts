@@ -31,6 +31,12 @@ export interface Reglamento {
   umbralAmarillas: number;
   suspensionAcumulacion: number;
   golesWO: number;
+  /** Levantar una suspensión pagando una multa (E14-08). Opcional por torneo, apagado por defecto. */
+  levantarSancionPagando: boolean;
+  /** Tipos de sanción que se pueden levantar. Nunca la roja directa ni lo que resolvió el tribunal. */
+  levantarSancionTipos: CausaSancion[];
+  /** Monto por cada partido levantado, en pesos enteros. Con 0 la opción no está disponible aunque esté encendida. */
+  levantarSancionMonto: number;
 }
 
 /** Evento del acta. Los eventos no se editan: una corrección es un evento ANULACION que apunta a otro. */

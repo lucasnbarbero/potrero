@@ -22,6 +22,7 @@ import { cuandoDe } from '../comun/formato.js';
 import { type Contexto, Ctx, ErrorNegocio, noEncontrado, Permiso, Zod } from '../comun/http.js';
 import { DbService, enSerie, type Tx } from '../db/db.service.js';
 import { MensajeriaModule, MensajeriaService } from '../mensajeria/mensajeria.js';
+import { sincronizarCobrosPorFecha } from '../cobros/por-fecha.js';
 
 // ───────────── Pronóstico del clima ─────────────
 
@@ -352,6 +353,13 @@ export class ContingenciasService {
       await auditar(tx, c, 'contingencia.aplicar', 'contingencia', contingencia.id, {
         despues: { motivo: d.motivo, accion: d.accion, partidos: r.propuesta.movimientos.length },
       });
+      // El vencimiento de la cuota por fecha acompaña al partido movido (E06-20).
+      const torneosMovidos = await tx.partido.findMany({
+        where: { id: { in: r.propuesta.movimientos.map((m) => m.partidoId) } },
+        distinct: ['torneoId'],
+        select: { torneoId: true },
+      });
+      for (const t of torneosMovidos) await sincronizarCobrosPorFecha(tx, c.organizacionId, t.torneoId);
 
       let avisados = 0;
       for (const e of plan.entregas) {

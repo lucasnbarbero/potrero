@@ -22,6 +22,21 @@ export const loginSchema = z.object({
 });
 export type LoginInput = z.infer<typeof loginSchema>;
 
+/** Cuota por fecha y seguro por jugador (E06-20, E06-21). Montos en pesos enteros; 0 = no se cobra. */
+export const cobrosPorFechaSchema = z.object({
+  cuotaPorFecha: z.number().int('Usá pesos enteros.').min(0, 'No puede ser negativo.').max(10_000_000),
+  seguroPorJugadorPorFecha: z
+    .number()
+    .int('Usá pesos enteros.')
+    .min(0, 'No puede ser negativo.')
+    .max(1_000_000),
+  cobrarFechaLibre: z.boolean(),
+  cobrarPartidoSuspendido: z.boolean(),
+  cobrarWO: z.boolean(),
+  deudaBloqueaJugar: z.boolean(),
+});
+export type CobrosPorFechaInput = z.infer<typeof cobrosPorFechaSchema>;
+
 export const crearTorneoSchema = z.object({
   nombre: texto(),
   modalidad: z.enum(MODALIDADES),
@@ -32,6 +47,8 @@ export const crearTorneoSchema = z.object({
   puntosVictoria: z.number().int().min(0).max(10).default(3),
   puntosEmpate: z.number().int().min(0).max(10).default(1),
   umbralAmarillas: z.number().int().min(1).max(20).default(5),
+  /** Lo que no se indique toma el valor por defecto de datos.json. */
+  cobrosPorFecha: cobrosPorFechaSchema.partial().optional(),
 });
 export type CrearTorneoInput = z.infer<typeof crearTorneoSchema>;
 
@@ -72,6 +89,21 @@ export const generarFixtureSchema = z.object({
   grupos: z.number().int().min(2).max(16).optional(),
 });
 export type GenerarFixtureInput = z.infer<typeof generarFixtureSchema>;
+
+/** Mover un partido a mano o intercambiar su lugar con otro de la misma fecha (E09-07). */
+export const moverPartidoSchema = z.object({
+  cambio: z.discriminatedUnion('tipo', [
+    z.object({ tipo: z.literal('MOVER'), dia, hora, canchaId: z.string().min(1, 'Elegí la cancha.') }),
+    z.object({ tipo: z.literal('INTERCAMBIAR'), conPartidoId: z.string().min(1, 'Elegí el otro partido.') }),
+  ]),
+  /** El organizador vio los conflictos y quiere seguir (advierte, no bloquea). */
+  aceptarConflictos: z.boolean().default(false),
+  /** Avisar a los capitanes del cambio, con "Confirmo" / "No puedo" (como en Reprogramaciones). */
+  avisar: z.boolean().default(false),
+  canal: z.enum(CANALES).default('WHATSAPP'),
+  motivo: z.string().trim().max(120).optional(),
+});
+export type MoverPartidoInput = z.infer<typeof moverPartidoSchema>;
 
 export const generarLlavesSchema = z.object({
   primerDia: dia,
@@ -314,6 +346,27 @@ export const resolverExpedienteSchema = z.object({
   resolucion: z.string().trim().min(3).max(500),
 });
 export type ResolverExpedienteInput = z.infer<typeof resolverExpedienteSchema>;
+
+/** Opción del reglamento del torneo: levantar una suspensión pagando una multa (E14-08). */
+export const levantarSancionReglamentoSchema = z
+  .object({
+    levantarSancionPagando: z.boolean(),
+    levantarSancionTipos: z.array(z.enum(['ACUMULACION', 'DOBLE_AMARILLA'])).max(2),
+    levantarSancionMonto: z
+      .number('Ingresá el monto por partido.')
+      .int('El monto va en pesos enteros.')
+      .min(0, 'El monto no puede ser negativo.')
+      .max(1_000_000, 'El monto no puede pasar de 1.000.000.'),
+  })
+  .refine((d) => !d.levantarSancionPagando || d.levantarSancionMonto > 0, {
+    message: 'Para encender la opción, fijá un monto por partido.',
+    path: ['levantarSancionMonto'],
+  })
+  .refine((d) => !d.levantarSancionPagando || d.levantarSancionTipos.length > 0, {
+    message: 'Elegí al menos un tipo de sanción.',
+    path: ['levantarSancionTipos'],
+  });
+export type LevantarSancionReglamentoInput = z.infer<typeof levantarSancionReglamentoSchema>;
 
 // ───────────── Documentación e identidad (E15) ─────────────
 

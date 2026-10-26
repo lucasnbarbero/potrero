@@ -7,17 +7,35 @@ import {
   HttpCode,
   HttpStatus,
   Injectable,
+  Logger,
   Module,
+  type OnModuleDestroy,
+  type OnModuleInit,
   Param,
+  Patch,
   Post,
 } from '@nestjs/common';
 import { registrarPago } from '../caja/libro.js';
-import { comisionPlataforma, pagoManualSchema, type PagoManualInput, type Plan } from '@potrero/shared';
+import {
+  cobrosPorFechaSchema,
+  type CobrosPorFechaInput,
+  comisionPlataforma,
+  DIAS_ANTICIPACION_COBRO_POR_FECHA,
+  desdeFechaAlConfigurar,
+  deudaPorFecha,
+  inscripcionConfirmada,
+  pagoManualSchema,
+  type PagoManualInput,
+  type Plan,
+} from '@potrero/shared';
 import { z } from 'zod';
 import { auditar } from '../comun/auditoria.js';
 import { type Contexto, Ctx, ErrorNegocio, noEncontrado, Permiso, Publico, Zod } from '../comun/http.js';
+import { hoyEnArgentina } from '../comun/formato.js';
 import { config } from '../config.js';
-import { DbService, type Tx } from '../db/db.service.js';
+import { DbService, enSerie, type Tx } from '../db/db.service.js';
+import { Prisma } from '../generated/prisma/client.js';
+import { configDelTorneo, sincronizarCobrosPorFecha } from './por-fecha.js';
 
 // ───────────── Pasarela de pagos ─────────────
 
@@ -68,17 +86,25 @@ type Notificacion = z.infer<typeof notificacionSchema>;
 
 // ───────────── Servicio ─────────────
 
-/** Recalcula el estado del cargo y de la inscripción según los pagos aprobados. */
+/**
+ * Recalcula el estado del cargo y de la inscripción según los pagos aprobados. La inscripción se confirma cuando están
+ * pagados los cargos de inscripción y seña: las cuotas por fecha, los seguros y las multas no la traban (E06-20).
+ */
 async function actualizarCargo(tx: Tx, cargoId: string) {
   const cargo = await tx.cargo.findUniqueOrThrow({ where: { id: cargoId }, include: { pagos: true } });
   const pagado = cargo.pagos.filter((p) => p.estado === 'APROBADO').reduce((s, p) => s + p.monto, 0);
-  const estado = pagado >= cargo.monto ? 'PAGADO' : 'PENDIENTE';
+  const estado = pagado >= cargo.monto ? 'PAGADO' : cargo.estado === 'ANULADO' ? 'ANULADO' : 'PENDIENTE';
   await tx.cargo.update({ where: { id: cargoId }, data: { estado } });
   if (estado === 'PAGADO') {
-    const pendientes = await tx.cargo.count({
-      where: { inscripcionId: cargo.inscripcionId, estado: 'PENDIENTE' },
-    });
-    if (pendientes === 0)
+    const [inscripcion, cargos] = await enSerie([
+      () => tx.inscripcion.findUniqueOrThrow({ where: { id: cargo.inscripcionId } }),
+      () =>
+        tx.cargo.findMany({
+          where: { inscripcionId: cargo.inscripcionId },
+          select: { estado: true, categoria: true, fecha: true },
+        }),
+    ]);
+    if (inscripcion.estado === 'PENDIENTE' && inscripcionConfirmada(cargos))
       await tx.inscripcion.update({ where: { id: cargo.inscripcionId }, data: { estado: 'CONFIRMADA' } });
   }
 }
@@ -115,8 +141,11 @@ export async function inscribirEquipo(tx: Tx, organizacionId: string, torneoId: 
 }
 
 @Injectable()
-export class CobrosService {
+export class CobrosService implements OnModuleInit, OnModuleDestroy {
   private readonly pasarela = crearPasarela();
+  private readonly log = new Logger('Cobros');
+  private temporizador?: NodeJS.Timeout;
+  private primera?: NodeJS.Timeout;
   constructor(private readonly db: DbService) {}
 
   /** Estado de inscripciones y pagos de un torneo (pantalla de inscripciones). */
@@ -127,13 +156,28 @@ export class CobrosService {
         orderBy: { creadoEn: 'asc' },
         include: {
           equipo: { include: { _count: { select: { plantel: true } } } },
-          cargos: { include: { pagos: true } },
+          cargos: { include: { pagos: true }, orderBy: [{ vence: 'asc' }, { creadoEn: 'asc' }] },
         },
       });
+      const hoy = hoyEnArgentina();
+      const aprobado = (pagos: { estado: string; monto: number }[]) =>
+        pagos.filter((p) => p.estado === 'APROBADO').reduce((s, p) => s + p.monto, 0);
       return lista.map((i) => {
-        const total = i.cargos.reduce((s, x) => s + x.monto, 0);
-        const pagos = i.cargos.flatMap((x) => x.pagos);
-        const pagado = pagos.filter((p) => p.estado === 'APROBADO').reduce((s, p) => s + p.monto, 0);
+        // Los cargos anulados (por ejemplo, la cuota de un partido suspendido) no suman deuda.
+        const vigentes = i.cargos.filter((x) => x.estado !== 'ANULADO');
+        const total = vigentes.reduce((s, x) => s + x.monto, 0);
+        const pagos = vigentes.flatMap((x) => x.pagos);
+        const pagado = aprobado(pagos);
+        const cargos = i.cargos.map((x) => ({
+          id: x.id,
+          concepto: x.concepto,
+          monto: x.monto,
+          estado: x.estado,
+          categoria: x.categoria,
+          fecha: x.fecha,
+          vence: x.vence ? x.vence.toISOString().slice(0, 10) : null,
+          pagado: aprobado(x.pagos),
+        }));
         return {
           id: i.id,
           estado: i.estado,
@@ -146,7 +190,9 @@ export class CobrosService {
           total,
           pagado,
           debe: Math.max(0, total - pagado),
-          cargos: i.cargos.map((x) => ({ id: x.id, concepto: x.concepto, monto: x.monto, estado: x.estado })),
+          /** Cuotas y seguros que vencen hasta hoy y siguen impagos (E06-20). */
+          deudaPorFecha: deudaPorFecha(cargos, hoy),
+          cargos,
           pagos: pagos.map((p) => ({
             id: p.id,
             metodo: p.metodo,
@@ -166,6 +212,163 @@ export class CobrosService {
       const r = await inscribirEquipo(tx, c.organizacionId, torneoId, equipoId);
       await auditar(tx, c, 'inscripcion.crear', 'inscripcion', r.inscripcion.id, { despues: r });
       return r;
+    });
+  }
+
+  // ───────────── Cuota por fecha y seguro por jugador (E06-20, E06-21) ─────────────
+
+  /** Cada hora genera los cargos de las fechas que se acercan. En los tests se llama a mano. */
+  onModuleInit() {
+    if (config.NODE_ENV === 'test') return;
+    this.temporizador = setInterval(() => void this.generarCobrosPorFecha(), 3_600_000);
+    this.temporizador.unref();
+    this.primera = setTimeout(() => void this.generarCobrosPorFecha(), 10_000);
+    this.primera.unref();
+  }
+
+  onModuleDestroy() {
+    clearInterval(this.temporizador);
+    clearTimeout(this.primera);
+  }
+
+  /** Recorre los torneos en curso de todas las organizaciones y sincroniza sus cargos por fecha. */
+  async generarCobrosPorFecha(ahora = new Date()) {
+    try {
+      // Tarea de sistema: hay que saber qué organizaciones tienen torneos en curso antes de entrar a cada una con RLS.
+      const torneos = await this.db.sistema.torneo.findMany({
+        where: { estado: 'EN_CURSO', cobrosPorFecha: { not: Prisma.DbNull } },
+        select: { id: true, organizacionId: true },
+      });
+      let creados = 0;
+      for (const t of torneos)
+        creados += (
+          await this.db.enOrg(t.organizacionId, (tx) =>
+            sincronizarCobrosPorFecha(tx, t.organizacionId, t.id, { ahora }),
+          )
+        ).creados;
+      return creados;
+    } catch (e) {
+      this.log.error(`La generación de cuotas por fecha falló: ${e instanceof Error ? e.message : e}`);
+      return 0;
+    }
+  }
+
+  /** Configuración y cargos por fecha del torneo, con los totales de cuotas y de seguros. */
+  cobrosPorFecha(c: Contexto, torneoId: string) {
+    return this.db.enOrg(c.organizacionId, async (tx) => {
+      const torneo = await tx.torneo.findUnique({ where: { id: torneoId } });
+      if (!torneo) throw noEncontrado('el torneo');
+      const cargos = await tx.cargo.findMany({
+        where: { inscripcion: { torneoId }, fecha: { not: null } },
+        include: { pagos: { where: { estado: 'APROBADO' } }, inscripcion: { include: { equipo: true } } },
+        orderBy: [{ fecha: 'asc' }, { creadoEn: 'asc' }],
+      });
+      const lista = cargos.map((x) => ({
+        id: x.id,
+        fecha: x.fecha!,
+        tipo: x.categoria === 'SEGUROS' ? ('SEGURO' as const) : ('CUOTA' as const),
+        equipo: { id: x.inscripcion.equipoId, nombre: x.inscripcion.equipo.nombre },
+        concepto: x.concepto,
+        monto: x.monto,
+        pagado: x.pagos.reduce((s, p) => s + p.monto, 0),
+        estado: x.estado,
+        vence: x.vence ? x.vence.toISOString().slice(0, 10) : null,
+      }));
+      const totales = (tipo: 'CUOTA' | 'SEGURO') => {
+        const vigentes = lista.filter((x) => x.tipo === tipo && x.estado !== 'ANULADO');
+        const total = vigentes.reduce((s, x) => s + x.monto, 0);
+        const cobrado = vigentes.reduce((s, x) => s + x.pagado, 0);
+        return { total, cobrado, pendiente: Math.max(0, total - cobrado) };
+      };
+      return {
+        config: configDelTorneo(torneo),
+        anticipacionDias: DIAS_ANTICIPACION_COBRO_POR_FECHA,
+        totales: { cuotas: totales('CUOTA'), seguros: totales('SEGURO') },
+        cargos: lista,
+      };
+    });
+  }
+
+  /** Guarda la cuota por fecha y el seguro del torneo y ajusta los cargos pendientes sin pagos a los montos nuevos. */
+  configurarCobrosPorFecha(c: Contexto, torneoId: string, d: CobrosPorFechaInput) {
+    return this.db.enOrg(c.organizacionId, async (tx) => {
+      const antes = await tx.torneo.findUnique({ where: { id: torneoId } });
+      if (!antes) throw noEncontrado('el torneo');
+      // Con el torneo empezado, lo que se activa ahora se cobra desde la próxima fecha: nunca las ya jugadas.
+      const partidos = await tx.partido.findMany({
+        where: { torneoId },
+        select: { fecha: true, estado: true },
+      });
+      const config = { ...d, ...desdeFechaAlConfigurar(configDelTorneo(antes), d, partidos) };
+      await tx.torneo.update({ where: { id: torneoId }, data: { cobrosPorFecha: config } });
+      await auditar(tx, c, 'torneo.cobros_por_fecha', 'torneo', torneoId, {
+        antes: configDelTorneo(antes),
+        despues: config,
+      });
+      const r = await sincronizarCobrosPorFecha(tx, c.organizacionId, torneoId, {
+        repreciar: true,
+        usuarioId: c.usuarioId,
+      });
+      return { config, ...r };
+    });
+  }
+
+  /** Genera ya los cargos de las fechas próximas (lo mismo que hace la tarea de cada hora). */
+  generarCobrosDelTorneo(c: Contexto, torneoId: string) {
+    return this.db.enOrg(c.organizacionId, async (tx) => {
+      if (!(await tx.torneo.findUnique({ where: { id: torneoId } }))) throw noEncontrado('el torneo');
+      return sincronizarCobrosPorFecha(tx, c.organizacionId, torneoId, { usuarioId: c.usuarioId });
+    });
+  }
+
+  /**
+   * Deuda de cuotas y seguros de los dos equipos de un partido, para el acta. Con `deudaBloqueaJugar` encendido, el que
+   * tiene cuotas vencidas impagas figura como no habilitado (por ahora es una alerta: el acta no impide cargarlo).
+   */
+  deudaDelPartido(c: Contexto, partidoId: string) {
+    return this.db.enOrg(c.organizacionId, async (tx) => {
+      const p = await tx.partido.findUnique({ where: { id: partidoId }, include: { torneo: true } });
+      if (!p) throw noEncontrado('el partido');
+      const config = configDelTorneo(p.torneo);
+      const hoy = hoyEnArgentina();
+      const [equipos, cargos] = await enSerie([
+        () => tx.equipo.findMany({ where: { id: { in: [p.localId, p.visitanteId] } } }),
+        () =>
+          tx.cargo.findMany({
+            where: {
+              inscripcion: { torneoId: p.torneoId, equipoId: { in: [p.localId, p.visitanteId] } },
+              fecha: { not: null },
+              estado: 'PENDIENTE',
+            },
+            include: { pagos: { where: { estado: 'APROBADO' } }, inscripcion: true },
+          }),
+      ]);
+      const deEquipo = (equipoId: string) => {
+        const d = deudaPorFecha(
+          cargos
+            .filter((x) => x.inscripcion.equipoId === equipoId)
+            .map((x) => ({
+              concepto: x.concepto,
+              estado: x.estado,
+              fecha: x.fecha,
+              vence: x.vence ? x.vence.toISOString().slice(0, 10) : null,
+              monto: x.monto,
+              pagado: x.pagos.reduce((s, pg) => s + pg.monto, 0),
+            })),
+          hoy,
+        );
+        return {
+          equipoId,
+          nombre: equipos.find((e) => e.id === equipoId)?.nombre ?? '—',
+          ...d,
+          habilitado: !(config.deudaBloqueaJugar && d.vencido > 0),
+        };
+      };
+      return {
+        deudaBloqueaJugar: config.deudaBloqueaJugar,
+        local: deEquipo(p.localId),
+        visitante: deEquipo(p.visitanteId),
+      };
     });
   }
 
@@ -300,6 +503,34 @@ export class CobrosController {
     @Body(new Zod(inscribirSchema)) d: z.infer<typeof inscribirSchema>,
   ) {
     return this.s.inscribir(c, id, d.equipoId);
+  }
+
+  @Get('torneos/:id/cobros-por-fecha')
+  @Permiso('torneo.leer')
+  cobrosPorFecha(@Ctx() c: Contexto, @Param('id') id: string) {
+    return this.s.cobrosPorFecha(c, id);
+  }
+
+  @Patch('torneos/:id/cobros-por-fecha')
+  @Permiso('torneo.escribir')
+  configurarCobrosPorFecha(
+    @Ctx() c: Contexto,
+    @Param('id') id: string,
+    @Body(new Zod(cobrosPorFechaSchema)) d: CobrosPorFechaInput,
+  ) {
+    return this.s.configurarCobrosPorFecha(c, id, d);
+  }
+
+  @Post('torneos/:id/cobros-por-fecha/generar')
+  @Permiso('torneo.escribir')
+  generarCobrosPorFecha(@Ctx() c: Contexto, @Param('id') id: string) {
+    return this.s.generarCobrosDelTorneo(c, id);
+  }
+
+  @Get('partidos/:id/deuda')
+  @Permiso('torneo.leer')
+  deudaDelPartido(@Ctx() c: Contexto, @Param('id') id: string) {
+    return this.s.deudaDelPartido(c, id);
   }
 
   @Post('cargos/:id/link')

@@ -3,7 +3,7 @@ import { Encabezado, Vacio } from '@/componentes/ui';
 import { apiServidor } from '@/lib/api';
 import { pesos } from '@/lib/formato';
 import type { Equipo, Torneo, ExpedienteVista, FilaDisciplina, ResumenTribunal } from '@/lib/tipos';
-import { AbrirExpediente, AccionesExpediente } from './Acciones';
+import { AbrirExpediente, AccionesExpediente, LevantarPagando, ReglamentoLevantar } from './Acciones';
 
 export const metadata = { title: 'Sanciones' };
 
@@ -93,6 +93,9 @@ function Historial({ titulo, filas }: { titulo: string; filas: FilaDisciplina[] 
             <th className="th text-right">Amarillas</th>
             <th className="th text-right">Rojas</th>
             <th className="th text-right">Fechas</th>
+            <th className="th text-right" title="Fechas de suspensión levantadas pagando">
+              Levantadas
+            </th>
             <th className="th text-right">Multas</th>
           </tr>
         </thead>
@@ -103,6 +106,7 @@ function Historial({ titulo, filas }: { titulo: string; filas: FilaDisciplina[] 
               <td className="td text-right">{f.amarillas}</td>
               <td className="td text-right">{f.rojas}</td>
               <td className="td text-right">{f.partidosSancionados}</td>
+              <td className="td text-right">{f.partidosLevantados || '—'}</td>
               <td className="td text-right">{f.multas ? pesos(f.multas) : '—'}</td>
             </tr>
           ))}
@@ -224,6 +228,8 @@ export default async function Sanciones({ searchParams }: PageProps<'/panel/sanc
                       <b className="block">{s.jugador}</b>
                       <span className="text-mute">
                         {s.equipo} · {CAUSA[s.causa] ?? s.causa}
+                        {s.levantados > 0 &&
+                          ` · ${fechas(s.levantados)} levantada${s.levantados === 1 ? '' : 's'} pagando`}
                       </span>
                     </span>
                     <span className={s.activa ? 'pill-red' : 'pill'}>
@@ -251,14 +257,17 @@ export default async function Sanciones({ searchParams }: PageProps<'/panel/sanc
             {t.suspendidos.length ? (
               <ul className="mt-2">
                 {t.suspendidos.map((s) => (
-                  <li key={s.sancionId} className="list-row items-center text-sm">
-                    <span className="min-w-0 flex-1">
-                      <b className="block">{s.jugador}</b>
-                      <span className="text-mute">
-                        {s.equipo} · {CAUSA[s.causa] ?? s.causa}
+                  <li key={s.sancionId} className="list-row block text-sm" data-testid="suspendido">
+                    <div className="flex items-center gap-2">
+                      <span className="min-w-0 flex-1">
+                        <b className="block">{s.jugador}</b>
+                        <span className="text-mute">
+                          {s.equipo} · {CAUSA[s.causa] ?? s.causa}
+                        </span>
                       </span>
-                    </span>
-                    <span className="pill-red">{fechas(s.restantes)}</span>
+                      <span className="pill-red">{fechas(s.restantes)}</span>
+                    </div>
+                    <LevantarPagando s={s} />
                   </li>
                 ))}
               </ul>
@@ -282,6 +291,7 @@ export default async function Sanciones({ searchParams }: PageProps<'/panel/sanc
                 Agresión e incidentes <b>Tribunal</b>
               </li>
             </ul>
+            <ReglamentoLevantar key={JSON.stringify(r)} torneoId={t.torneo.id} r={r} />
           </section>
         </aside>
       </div>
