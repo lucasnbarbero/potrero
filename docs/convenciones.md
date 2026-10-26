@@ -1,9 +1,8 @@
 # Convenciones de trabajo
 
 ## Ramas y commits
-- `main` siempre funciona. Trabajo en ramas `tipo/ID-descripcion` (por ejemplo `feat/E06-04-mercado-pago-oauth`).
-- Commits en español, en imperativo, con el ID del backlog: `feat(cobros): conectar Mercado Pago por OAuth [E06-04]`. Tipos: feat, fix, refactor, test, docs, chore.
-- Un merge request por tarea o grupo chico de tareas de la misma épica.
+- `main` siempre funciona. Por ahora se trabaja directo en `main` y se commitea y sube a GitHub solo cuando lo pide el dueño.
+- Commits en español. Cuando haya más de una persona trabajando: ramas `tipo/ID-descripcion` (por ejemplo `feat/E06-04-mercado-pago-oauth`), commits con el ID del backlog (`feat(cobros): conectar Mercado Pago por OAuth [E06-04]`; tipos: feat, fix, refactor, test, docs, chore) y un pull request por tarea o grupo chico de tareas.
 
 ## Definición de terminado
 1. Hace lo que dice el criterio de la tarea en `docs/backlog.md` y en el documento 1.

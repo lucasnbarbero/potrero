@@ -5,195 +5,230 @@
 <div class="foot"><span>Documento 1 de 6 · Nombre provisorio</span><span>Octubre 2026</span></div></section>
 
 <h1 class="sec first"><p class="eyebrow">Introducción</p>Cómo leer este documento</h1>
-<p>Este documento es el punto de partida para quien construye Potrero. Define <b>qué</b> se construye (alcance completo), <b>con qué</b> (stack), <b>cómo</b> (arquitectura y reglas de negocio) y <b>en qué orden</b> (hitos internos). Los mocks navegables están en <code>/mocks</code> y son la referencia visual; este documento es la referencia funcional. Donde hay una decisión abierta, está marcada como <span class="pill v">DECIDIR</span>.</p>
-<div class="callout dark"><b class="t">Decisión de lanzamiento</b>El producto sale <b>completo en un único lanzamiento público</b>, no por versiones comerciales. Para reducir el riesgo de un lanzamiento grande se construye por <b>hitos internos</b> (sección 9), con <b>beta cerrada</b> con ligas fundadoras antes de abrir el registro. Todo lo no terminado queda detrás de <i>feature flags</i>.</div>
-<ol class="toc"><li>Alcance completo</li><li>Roles y permisos</li><li>Arquitectura y stack</li><li>Modelo de datos</li><li>Reglas de negocio</li><li>Integraciones</li><li>Acta offline y tiempo real</li><li>Seguridad y datos personales</li><li>Hitos de construcción</li><li>Calidad, DevOps y observabilidad</li><li>Riesgos técnicos y decisiones abiertas</li></ol>
+<p>Este documento es el punto de partida para quien construye Potrero. Define <b>qué</b> se construye (alcance completo), <b>con qué</b> (stack), <b>cómo</b> (arquitectura y reglas de negocio) y <b>en qué orden</b> (hitos internos). Los mocks navegables están en <code>/mocks</code> y son la referencia visual; este documento es la referencia funcional. Donde hay una decisión abierta, está marcada como <span class="pill v">DECIDIR</span>. Lo que todavía no está construido se marca como <b>pendiente</b>; el detalle tarea por tarea está en <code>docs/backlog.md</code> y las decisiones técnicas en <code>docs/adr/</code>.</p>
+<div class="callout dark"><b class="t">Decisión de lanzamiento</b>El producto sale <b>completo en un único lanzamiento público</b>, no por versiones comerciales (ADR-001). Para reducir el riesgo de un lanzamiento grande se construye por <b>hitos internos</b> (sección 9), con <b>beta cerrada</b> con ligas fundadoras antes de abrir el registro. Todo lo no terminado queda detrás de <i>feature flags</i>.</div>
+<div class="callout"><b class="t">Cómo se construye hoy (ADR-017)</b>Por ahora la implementación completa (frontend y backend) la hace <b>Claude Code</b>, dirigido por Gregal y guiado por el backlog, este documento y el repositorio. Los plazos de la sección 9 suponían un equipo de 3–4 personas de ingeniería: <b>se revisan cuando se defina el equipo definitivo</b>. Estado a octubre de 2026: los hitos H0 a H6 funcionan en <b>modo demo</b>, con Mercado Pago, WhatsApp, email y clima <b>simulados</b>; H7 (endurecimiento) no empezó. Hay además una <b>demo pública</b> con una sandbox por visitante (ADR-019), pendiente de desplegar.</div>
+<ol class="toc"><li>Alcance completo</li><li>Roles y permisos</li><li>Arquitectura y stack</li><li>Modelo de datos</li><li>Reglas de negocio</li><li>Integraciones</li><li>Acta sin conexión y en vivo</li><li>Seguridad y datos personales</li><li>Hitos de construcción</li><li>Calidad, DevOps y observabilidad</li><li>Riesgos técnicos y decisiones</li></ol>
 
 <h1 class="sec"><p class="eyebrow">1</p>Alcance completo del lanzamiento</h1>
-<p>Los 20 módulos de los mocks entran en el lanzamiento. Cada módulo tiene su archivo en <code>/mocks</code>.</p>
+<p>Los 20 módulos de los mocks entran en el lanzamiento. Cada módulo tiene su archivo en <code>/mocks</code>. La columna describe el criterio de aceptación y, donde corresponde, qué falta.</p>
 <table><tr><th>#</th><th>Módulo</th><th>Quién lo usa</th><th>Qué debe hacer (criterio de aceptación resumido)</th></tr>
-<tr><td>01</td><td>Panel</td><td>Organizador</td><td>Partido en vivo, cobrado/pendiente/deudores, alertas accionables (suspendido que jugó, acta sin cargar, partido sin árbitro) y sugerencias.</td></tr>
-<tr><td>02</td><td>Crear torneo</td><td>Organizador</td><td>Asistente por pasos: modalidad (F5/F7/F8/F11), formato (liga, copa, grupos + playoffs, liga + playoffs), reglas, vista previa de grupos, llaves y cantidad de partidos.</td></tr>
-<tr><td>03</td><td>Inscripciones y pagos</td><td>Organizador, capitán</td><td>Link público, cupos, seña y cuotas, cuota por fecha y seguro por jugador, pago con Mercado Pago, pago registrado manual, estado por equipo, recordatorios.</td></tr>
-<tr><td>04</td><td>Fixture automático</td><td>Organizador</td><td>Genera calendario con canchas, descansos y árbitros; grilla por cancha; ordenar a mano los horarios de una fecha; detecta y explica conflictos al mover un partido.</td></tr>
-<tr><td>05</td><td>Acta digital</td><td>Delegado, árbitro</td><td>Goles, tarjetas, cambios, firma de capitanes, <b>modo offline</b>, jugadores suspendidos o sin documentación marcados.</td></tr>
-<tr><td>06</td><td>Sitio público</td><td>Público</td><td>Tabla, fixture, goleadores, llaves; SEO; marca propia; compartible; PWA.</td></tr>
-<tr><td>07</td><td>Panel del capitán</td><td>Capitán</td><td>Plantel, convocatoria con confirmación, cuotas por jugador, documentación y sanciones del equipo.</td></tr>
-<tr><td>08</td><td>Perfil de jugador</td><td>Jugador</td><td>Estadísticas, trayectoria entre torneos, valoración de juego limpio.</td></tr>
-<tr><td>09</td><td>Página de partido</td><td>Público</td><td>Crónica automática, línea de tiempo, fotos, tarjeta para compartir.</td></tr>
-<tr><td>10</td><td>Mercado de pases</td><td>Equipos, jugadores</td><td>Jugadores libres y equipos que buscan, filtros por zona, posición y nivel.</td></tr>
-<tr><td>11</td><td>Reprogramaciones</td><td>Organizador</td><td>Contingencia en un clic con vista previa sin conflictos, aviso masivo y confirmación; equipo ausente con tolerancia y cuenta regresiva.</td></tr>
-<tr><td>12</td><td>Sanciones</td><td>Organizador</td><td>Suspensión automática desde el acta según reglamento; levantar la suspensión pagando una multa (opcional); expedientes, informe del árbitro, descargos, resolución del tribunal.</td></tr>
-<tr><td>13</td><td>Documentación</td><td>Organizador, capitán</td><td>DNI, apto físico, autorización de menores, alerta de duplicados entre equipos, selfie opcional.</td></tr>
-<tr><td>14</td><td>Caja</td><td>Organizador</td><td>Ingresos, egresos por rubro, cargos automáticos (árbitro, cancha), resultado en vivo, saldo y retiro.</td></tr>
-<tr><td>15</td><td>Árbitros y canchas</td><td>Organizador</td><td>Designación manual o automática, disponibilidad, pagos, ocupación por cancha.</td></tr>
-<tr><td>16</td><td>Comunicación</td><td>Organizador</td><td>Plantillas con variables, segmentación, vista previa, automatizaciones (24 h antes, cobro escalonado), historial y costo.</td></tr>
-<tr><td>17</td><td>Llaves en vivo</td><td>Organizador, público</td><td>Cuadro eliminatorio que se completa solo con los resultados y se publica al instante.</td></tr>
-<tr><td>18</td><td>Sponsors</td><td>Organizador</td><td>Espacios en sitio y tarjetas, ingresos por sponsor, reporte de impresiones y clics.</td></tr>
-<tr><td>19</td><td>Métricas</td><td>Organizador</td><td>Retención de equipos, tasa de cobro, ocupación, mapa de horarios más pedidos.</td></tr>
-<tr><td>20</td><td>Configuración</td><td>Organizador</td><td>Alta guiada en 5 pasos: organización, Mercado Pago, marca/dominio, reglamento, importación desde Excel.</td></tr></table>
-<div class="callout dark"><b class="t">Backoffice de Gregal</b>Además de los 20 módulos, se construye una aplicación interna separada (<code>apps/admin</code>) para el equipo de Gregal: organizaciones y acceso de soporte auditado, dinero y conciliación con Mercado Pago, facturación de comisiones, suscripciones y planes, configuración global (precios, feature flags, plantillas, textos legales), operación (colas, webhooks, actas con error, mensajería), moderación y datos personales, y métricas del negocio. Tiene login propio con 2FA obligatoria y roles internos (soporte, finanzas, dirección). Se construye junto con cada módulo que administra.</div>
-<div class="callout warn"><b class="t">Fuera de alcance (confirmar)</b>App nativa iOS/Android (el lanzamiento es PWA con notificaciones push web), reserva de canchas por el público y seguros/merchandising. Están en el plan como líneas futuras. <span class="pill v">DECIDIR</span> si la app nativa debe entrar al lanzamiento: agrega estimadamente 8–12 semanas y cuentas de desarrollador en Apple y Google.</div>
+<tr><td>01</td><td>Panel</td><td>Organizador</td><td>Partido en vivo con goles y acceso al acta; cobrado de los últimos 30 días, pendiente y deudores; alertas con su botón para resolverlas (suspendido que jugó, acta sin cargar, partido sin árbitro, documento vencido, pago sin conciliar, "No puedo" de una reprogramación, mensajes fallidos); sugerencias del próximo paso y avance de cada torneo.</td></tr>
+<tr><td>02</td><td>Crear torneo</td><td>Organizador</td><td>Asistente por pasos: modalidad (F5/F7/F8/F11), formato fijo (liga, copa, grupos + playoffs, liga + playoffs), reglas y vista previa. Además, <b>torneos por fases</b> (formato <code>FLEXIBLE</code>, ADR-026) desde "Armá el formato": plantillas editables (incluida una copa estímulo), vista previa de sábados, partidos y recaudación. Editar el torneo y cambiar su estado (cerrar o reabrir inscripción, finalizar).</td></tr>
+<tr><td>03</td><td>Inscripciones y pagos</td><td>Organizador, capitán</td><td>Link público, cupos, seña y cuotas, cuota por fecha y seguro por jugador, pago con Mercado Pago (hoy con pasarela simulada, mismo flujo), pagos manuales completos o parciales con comprobante, imputación a varios cargos y anulación (los registran el dueño, el administrador y el tesorero), estado por equipo, recordatorios.</td></tr>
+<tr><td>04</td><td>Fixture automático</td><td>Organizador</td><td>Genera calendario con canchas y franjas sin choques; grilla por cancha y horario; mover un partido o intercambiar dos (arrastrando o tocando), con los conflictos explicados. Pendiente: descanso mínimo, restricciones blandas y por equipo.</td></tr>
+<tr><td>05</td><td>Acta digital</td><td>Delegado, árbitro</td><td>Goles, goles en contra, tarjetas, anulaciones, firma de capitanes o justificación, <b>sin conexión</b> (ADR-020), un solo dueño por partido, jugadores suspendidos o sin documentación marcados, aviso de deuda del equipo.</td></tr>
+<tr><td>06</td><td>Sitio público</td><td>Público</td><td>Tabla (por fase o grupo), fixture, goleadores, llaves; sin datos personales; marca de la liga; compartible; PWA. Patrocinios visibles.</td></tr>
+<tr><td>07</td><td>Panel del capitán</td><td>Capitán</td><td>Próximo partido, convocatoria ("Voy" / "No voy"), plantel con altas y bajas, invitación de jugadores a su cuenta, documentación que falta, sanciones y descargo, tabla y deuda del equipo. Sin cuotas por jugador (el equipo paga).</td></tr>
+<tr><td>08</td><td>Perfil de jugador</td><td>Jugador, público</td><td>Perfil público con estadísticas y trayectoria (por defecto con iniciales; menores sin perfil sin consentimiento). <b>Panel privado</b> (<code>/jugador</code>): asistencia, estadísticas, sanciones, documentación, cómo aparece su nombre y avisos. Pendiente: valoración de juego limpio.</td></tr>
+<tr><td>09</td><td>Página de partido</td><td>Público</td><td>Crónica automática, línea de tiempo y tarjeta para WhatsApp e Instagram. Pendiente: fotos con consentimiento y moderación.</td></tr>
+<tr><td>10</td><td>Mercado de pases</td><td>Equipos, jugadores</td><td>Jugadores libres y equipos que buscan, filtros por zona, posición y nivel. <b>No construido.</b></td></tr>
+<tr><td>11</td><td>Reprogramaciones</td><td>Organizador</td><td>Contingencia por día, fecha o partidos: mover días o pasar a otras canchas, con vista previa de conflictos, aviso a capitanes con "Confirmo / No puedo" y seguimiento. Alerta de clima (proveedor simulado). Equipo ausente: cuenta regresiva en el acta; se marca a mano al vencer la tolerancia. Pendiente: alcance por cancha y resolución automática.</td></tr>
+<tr><td>12</td><td>Sanciones</td><td>Organizador, tribunal</td><td>Suspensión automática desde el acta según reglamento; levantar la suspensión pagando una multa (opcional); expedientes con informe del árbitro, descargo del capitán y resolución del tribunal; historial disciplinario.</td></tr>
+<tr><td>13</td><td>Documentación</td><td>Organizador, capitán, jugador</td><td>DNI y apto físico con revisión humana, autorización del tutor en línea, consentimiento de imagen, duplicados entre equipos, vencimientos, requisitos por torneo, retención automática. Selfie apagada (ADR-014 abierto).</td></tr>
+<tr><td>14</td><td>Caja</td><td>Organizador, tesorero</td><td>Libro de partida doble (ADR-023): ingresos, egresos por rubro (incluidos Seguros, Multas y Sponsors), cargos automáticos al cerrar el acta (árbitro, cancha), resultado en vivo, saldo, anulación con asiento de reversa, exportación CSV. El retiro lo registra solo el dueño. Pendiente: reembolsos y verificación en dos pasos.</td></tr>
+<tr><td>15</td><td>Árbitros y canchas</td><td>Organizador</td><td>Designación manual o automática, disponibilidad por franjas, confirmación, tarifa, costo y bloqueo de canchas, ocupación del día.</td></tr>
+<tr><td>16</td><td>Comunicación</td><td>Organizador</td><td>Plantillas con variables, segmentación, vista previa, canal según consentimiento, costo y tope del plan, envíos programados, automatizaciones (24 h antes, cobro escalonado, aviso de suspensión), historial. Canales simulados (ADR-022).</td></tr>
+<tr><td>17</td><td>Llaves en vivo</td><td>Organizador, público</td><td>Cuadro eliminatorio que se completa solo con los resultados (ADR-021), con penales y equipos ausentes. Ida y vuelta solo en torneos por fases.</td></tr>
+<tr><td>18</td><td>Sponsors</td><td>Organizador</td><td>Espacios por torneo y período, cobros en la caja, impresiones y clics sin datos del visitante, reporte CSV, rubros prohibidos con menores.</td></tr>
+<tr><td>19</td><td>Métricas</td><td>Organizador</td><td>Retención de equipos, tasa de cobro y cobro antes del inicio, medios de pago, ocupación de canchas, mapa de horarios.</td></tr>
+<tr><td>20</td><td>Configuración</td><td>Organizador</td><td>Alta guiada en 5 pasos: organización (logo, localidad), Mercado Pago (hoy informativo: sin conectar se registran pagos a mano), marca, reglamento por defecto e importación de equipos, jugadores y canchas desde Excel o CSV (todo o nada, validación por fila).</td></tr></table>
+<div class="callout dark"><b class="t">Backoffice de Gregal</b>Además de los 20 módulos hay un panel interno para el equipo de Gregal. Hoy vive <b>dentro de la web, en <code>/gregal</code></b> (no hay <code>apps/admin</code>), con login y cookie propios (sesión de 8 h) y roles internos <code>SUPERADMIN</code>, <code>SOPORTE</code>, <code>FINANZAS</code> y <code>DIRECCION</code>, separados de las organizaciones. Tiene: métricas de la plataforma (ligas activas, GMV, comisión, partidos cerrados por semana), organizaciones con su salud ("ligas para llamar"), dinero por mes y por liga, y <b>auditoría inmutable</b> de cada acción del staff. Pendiente: 2FA obligatoria, acceso de soporte temporal con motivo, conciliación con Mercado Pago, facturación, planes, configuración global, operación (colas, webhooks) y moderación.</div>
+<div class="callout warn"><b class="t">Fuera de alcance (confirmar)</b>App nativa iOS/Android (el lanzamiento es PWA con notificaciones push web), reserva de canchas por el público y seguros/merchandising. Están en el plan como líneas futuras. <span class="pill v">DECIDIR</span> si la app nativa debe entrar al lanzamiento (ADR-016): agrega estimadamente 8–12 semanas y cuentas de desarrollador en Apple y Google.</div>
 
 <h1 class="sec"><p class="eyebrow">2</p>Roles y permisos</h1>
-<p>Multi-organización: cada liga es un espacio aislado (<i>tenant</i>) con su marca y usuarios. Un mismo usuario puede tener distintos roles en distintas organizaciones, equipos y torneos.</p>
-<table><tr><th>Rol</th><th>Alcance</th><th>Puede</th><th>No puede</th></tr>
-<tr><td>Dueño de organización</td><td>Toda la organización</td><td>Todo, incluido cobros, retiro de dinero, usuarios, plan.</td><td>—</td></tr>
-<tr><td>Administrador de torneo</td><td>Torneos asignados</td><td>Fixture, sanciones, comunicación, documentación, árbitros.</td><td>Retirar dinero, cambiar plan.</td></tr>
-<tr><td>Tesorero</td><td>Caja y cobros</td><td>Ver y registrar pagos, egresos, retiros (según permiso).</td><td>Editar fixture o sanciones.</td></tr>
-<tr><td>Árbitro / delegado de mesa</td><td>Partidos designados</td><td>Cargar y cerrar acta de su partido, informe.</td><td>Editar actas cerradas (solo el administrador, con auditoría).</td></tr>
-<tr><td>Tribunal de disciplina</td><td>Expedientes</td><td>Resolver sanciones y descargos.</td><td>Modificar resultados.</td></tr>
-<tr><td>Capitán</td><td>Su equipo</td><td>Plantel, convocatoria, pagos del equipo, documentación, descargos.</td><td>Ver datos de otros equipos.</td></tr>
-<tr><td>Jugador</td><td>Su perfil</td><td>Ver estadísticas, confirmar asistencia, subir su documentación, aceptar términos.</td><td>Ver DNI de terceros.</td></tr>
-<tr><td>Tutor (de menor)</td><td>Su menor</td><td>Firmar consentimiento y autorización.</td><td>—</td></tr>
-<tr><td>Público</td><td>Sitio</td><td>Ver tabla, fixture, goleadores, llaves.</td><td>Ver datos personales.</td></tr>
-<tr><td>Staff interno</td><td>Plataforma</td><td>Soporte con acceso <b>temporal y auditado</b> a una organización.</td><td>Ver DNI sin motivo registrado.</td></tr></table>
-<p>Implementación: RBAC con permisos finos (<code>tournament.fixture.write</code>, <code>cash.payout.create</code>, etc.), guards en NestJS y <b>aislamiento por <code>organization_id</code> reforzado con Row Level Security en PostgreSQL</b>. Autenticación: email + contraseña, enlace mágico y código por WhatsApp/SMS para jugadores (muchos no usan email); sesiones con refresh token rotativo.</p>
+<p>Multi-organización: cada liga es un espacio aislado (<i>tenant</i>) con su marca y usuarios. Un usuario tiene <b>un rol por organización</b> (<code>Membresia</code>) y puede pertenecer a varias; cambia de organización activa desde su cuenta. Los permisos se definen en <code>apps/api/src/comun/permisos.ts</code>, con nombres en castellano.</p>
+<table><tr><th>Rol</th><th>Alcance</th><th>Puede (permisos)</th><th>No puede</th></tr>
+<tr><td>Dueño (<code>DUENO</code>)</td><td>Toda la organización</td><td>Todo (<code>*</code>), incluido <code>caja.retirar</code> y <code>organizacion.configurar</code>.</td><td>—</td></tr>
+<tr><td>Administrador de torneo (<code>ADMINISTRADOR</code>)</td><td>Toda la organización</td><td><code>torneo.*</code>, <code>equipo.escribir</code>, <code>cancha.escribir</code>, <code>fixture.escribir</code>, <code>partido.acta</code>, <code>arbitro.escribir</code>, <code>sancion.resolver</code>, <code>expediente.informe</code>, <code>documentacion.*</code> (leer, escribir, revisar), <code>comunicacion.*</code>, <code>cobro.leer</code>, <code>cobro.registrar</code>, <code>caja.leer</code>, <code>usuario.gestionar</code> (invita árbitro, tribunal y capitán).</td><td>Operar la caja, retirar dinero, configurar la organización.</td></tr>
+<tr><td>Tesorero (<code>TESORERO</code>)</td><td>Cobros y caja</td><td><code>torneo.leer</code>, <code>cobro.leer</code>, <code>cobro.registrar</code>, <code>caja.leer</code>, <code>caja.escribir</code> (egresos, ingresos, anulaciones), <code>comunicacion.leer</code>.</td><td>Retirar, editar fixture o sanciones.</td></tr>
+<tr><td>Árbitro / delegado (<code>ARBITRO</code>)</td><td>Partidos</td><td><code>torneo.leer</code>, <code>partido.acta</code>, <code>expediente.informe</code>.</td><td>Editar actas cerradas (pendiente: solo el administrador, con auditoría).</td></tr>
+<tr><td>Tribunal (<code>TRIBUNAL</code>)</td><td>Expedientes</td><td><code>torneo.leer</code>, <code>sancion.resolver</code>, <code>expediente.informe</code>.</td><td>Cargar el acta o modificar resultados.</td></tr>
+<tr><td>Capitán (<code>CAPITAN</code>)</td><td>Su equipo (<code>Membresia.equipoId</code>)</td><td><code>capitan.equipo</code>: plantel, convocatoria, invitar jugadores, documentación, descargos, deuda.</td><td>Nada del panel del organizador ni datos de otros equipos.</td></tr>
+<tr><td>Jugador (<code>JUGADOR</code>)</td><td>Su perfil (<code>Membresia.jugadorId</code>)</td><td><code>jugador.cuenta</code>: confirmar asistencia, ver estadísticas, sanciones y documentación, elegir cómo aparece su nombre.</td><td>Ver DNI de terceros ni datos del equipo más allá de lo suyo.</td></tr>
+<tr><td>Tutor (de menor)</td><td>Su menor</td><td>Firmar consentimiento y autorización con un link de un solo uso, <b>sin cuenta</b>.</td><td>—</td></tr>
+<tr><td>Público</td><td>Sitio</td><td>Ver tabla, fixture, goleadores, llaves, partidos y perfiles públicos.</td><td>Ver datos personales.</td></tr>
+<tr><td>Staff de Gregal</td><td>Plataforma (aparte)</td><td>Roles propios <code>SUPERADMIN</code>, <code>SOPORTE</code>, <code>FINANZAS</code>, <code>DIRECCION</code> en <code>/gregal</code>; cada acción queda en <code>StaffAuditoria</code>.</td><td>Pendiente: acceso de soporte temporal con motivo registrado.</td></tr></table>
+<p><b>Implementación:</b> guard de NestJS con <code>@Permiso('…')</code> y <b>aislamiento por <code>organizacionId</code> reforzado con Row Level Security en PostgreSQL</b> (ADR-003). Capitán y jugador son <b>roles acotados</b>: una ruta con sesión pero sin <code>@Permiso</code> les queda cerrada (salvo las de su cuenta), así un olvido no les muestra datos de toda la liga. El menú y las pantallas se adaptan al rol, con aviso amable cuando una sección no corresponde.</p>
+<p><b>Autenticación:</b> email + contraseña (mínimo 10 caracteres), verificación del email y recuperación de contraseña con links de un solo uso (hoy el link se muestra o se comparte a mano: email simulado), límite de intentos de ingreso (5 por cuenta y 20 por IP cada 15 minutos; cifras en <code>docs/datos.json</code>), invitaciones con rol por link de un solo uso (vencen a los 7 días). Sesión con <b>cookies httpOnly en el mismo origen</b> (ADR-010) y refresh token rotativo con detección de reutilización. Pendiente: enlace mágico y código por WhatsApp/SMS para jugadores, 2FA.</p>
 
 <h1 class="sec"><p class="eyebrow">3</p>Arquitectura y stack</h1>
-<table><tr><th>Capa</th><th>Tecnología</th><th>Motivo</th></tr>
-<tr><td>Web y PWA</td><td>Next.js (App Router), Tailwind CSS 4</td><td>SEO en páginas públicas, SSR/ISR para sitio público, instalable, service worker para el acta.</td></tr>
-<tr><td>API</td><td>NestJS + Prisma, REST con OpenAPI</td><td>Módulos por dominio, validación, jobs en segundo plano.</td></tr>
-<tr><td>Base de datos</td><td>PostgreSQL con RLS</td><td>Modelo relacional, integridad, consultas de estadísticas.</td></tr>
-<tr><td>Colas y caché</td><td>Redis + BullMQ</td><td>Notificaciones, recálculo de tabla, recordatorios, reintentos de webhooks.</td></tr>
-<tr><td>Archivos</td><td>Almacenamiento compatible con S3, URLs firmadas</td><td>Escudos, fotos, documentación sensible (bucket privado).</td></tr>
-<tr><td>Pagos</td><td>Mercado Pago Marketplace (split 1:1, OAuth)</td><td>Cobro directo al organizador con comisión de plataforma.</td></tr>
-<tr><td>Mensajería</td><td>WhatsApp Business API (vía BSP), email transaccional, Web Push</td><td>Canales con costo creciente; ver sección 6.</td></tr>
-<tr><td>Monorepo</td><td>pnpm + Turborepo: <code>apps/web</code>, <code>apps/admin</code>, <code>apps/api</code>, <code>packages/ui</code>, <code>packages/shared</code></td><td>Tipos y validaciones compartidas front/back.</td></tr>
-<tr><td>Hosting</td><td><span class="pill v">DECIDIR</span> (ej. Vercel + servicio gestionado para API/DB/Redis, o contenedores en un único proveedor)</td><td>Priorizar bases gestionadas con backups y región cercana (latencia en Argentina).</td></tr></table>
-<h2>Módulos del backend (un módulo NestJS por dominio)</h2>
-<p><code>auth</code> · <code>organizations</code> · <code>tournaments</code> (formatos, etapas, reglamento) · <code>registrations</code> · <code>payments</code> (Mercado Pago, pagos manuales, ledger) · <code>fixtures</code> (motor de programación) · <code>matches</code> (actas y eventos) · <code>standings</code> (tablas y desempates) · <code>discipline</code> (sanciones y expedientes) · <code>documents</code> (identidad y archivos) · <code>contingencies</code> · <code>messaging</code> · <code>referees-venues</code> · <code>cash</code> · <code>sponsors</code> · <code>analytics</code> · <code>players</code> (perfil y mercado) · <code>public-site</code> · <code>audit</code>.</p>
+<p>Versiones fijadas en ADR-002: Node 24, pnpm, Turborepo 2, TypeScript 6, NestJS 12 (ESM), Prisma 7 con <code>@prisma/adapter-pg</code>, PostgreSQL 17, Next.js 16 (App Router), React 19, Tailwind CSS 4, Zod 4, Vitest y Playwright.</p>
+<table><tr><th>Capa</th><th>Tecnología hoy</th><th>Motivo / pendiente</th></tr>
+<tr><td>Web y PWA</td><td>Next.js 16 (App Router), Tailwind CSS 4: landing, panel, acta, panel del capitán y del jugador, sitio público, <code>/gregal</code></td><td>SEO en páginas públicas; sitio público con revalidación por tiempo (cada pocos segundos); service worker acotado para el acta (ADR-020).</td></tr>
+<tr><td>API</td><td>NestJS 12 + Prisma 7, REST, validación con esquemas Zod compartidos</td><td>Un módulo por dominio. Sin OpenAPI: el cliente web está tipado a mano (<code>apps/web/src/lib/tipos.ts</code>); pendiente generarlo.</td></tr>
+<tr><td>Base de datos</td><td>PostgreSQL con RLS</td><td>Modelo relacional, integridad, triggers que impiden editar el libro de caja y la auditoría del staff.</td></tr>
+<tr><td>Tareas en segundo plano</td><td>Temporizadores dentro de la API (cobros por fecha, mensajes programados, retención, limpieza de sandboxes)</td><td>Sin Redis ni BullMQ por ahora; las tareas son idempotentes por clave. Pendiente: colas con reintentos (E02-07).</td></tr>
+<tr><td>Archivos</td><td>Interfaz <code>AlmacenArchivos</code>; hoy implementación local en disco, fuera de lo público</td><td>Links firmados de pocos minutos con registro. Sin S3 todavía: en producción se cambia por un bucket privado sin tocar el resto.</td></tr>
+<tr><td>Pagos</td><td>Interfaz <code>Pasarela</code> con modo simulado (ADR-007)</td><td>Mismo flujo que Mercado Pago Marketplace (link, webhook firmado, comisión). Pendiente: OAuth y split reales.</td></tr>
+<tr><td>Mensajería</td><td>Interfaz <code>CanalDespacho</code> con <code>CanalSimulado</code> (ADR-022)</td><td>WhatsApp (vía BSP), email y Web Push se enchufan detrás de la misma interfaz; ver sección 6.</td></tr>
+<tr><td>En vivo</td><td><i>Polling</i> (panel en vivo cada 15 s, página de partido)</td><td>Sin SSE ni WebSocket; alcanza para el marcador. Pendiente evaluar tiempo real (E02-15).</td></tr>
+<tr><td>Monorepo</td><td>pnpm + Turborepo: <code>apps/web</code>, <code>apps/api</code>, <code>packages/shared</code> (reglas puras, esquemas Zod, <code>datos.ts</code> generado), <code>packages/ui</code> (tema, íconos, logo)</td><td>Tipos y validaciones compartidas front/back. No hay <code>apps/admin</code>: el backoffice está en <code>apps/web</code>.</td></tr>
+<tr><td>Hosting</td><td><span class="pill v">DECIDIR</span> (ADR-011). Hoy: Docker Compose local (PostgreSQL) y <code>pnpm demo</code></td><td>Priorizar bases gestionadas con backups y región cercana (latencia en Argentina). La demo pública necesita un entorno aparte (ADR-019).</td></tr></table>
+<h2>Módulos del backend (un módulo NestJS por dominio, en <code>apps/api/src</code>)</h2>
+<p><code>auth</code> (sesión, cuenta, organizaciones) · <code>usuarios</code> (invitaciones) · <code>torneos</code> (formatos, reglamento, llaves, fases) · <code>equipos</code> (equipos, jugadores, plantel) · <code>cobros</code> (inscripciones, cargos, pasarela, pagos manuales, cuota por fecha) · <code>caja</code> (libro de partida doble) · <code>fixture</code> · <code>partidos</code> (acta y eventos) · <code>tribunal</code> (sanciones, expedientes, levantamientos) · <code>documentacion</code> (identidad, archivos, consentimientos) · <code>contingencias</code> · <code>mensajeria</code> · <code>arbitros</code> (árbitros y canchas) · <code>sponsors</code> · <code>metricas</code> · <code>panel</code> · <code>capitan</code> · <code>jugador</code> · <code>configuracion</code> (asistente e importación) · <code>publico</code> (sitio público) · <code>gregal</code> (backoffice) · <code>demo</code> (sandboxes, solo con <code>DEMO_MODE</code>). Transversales en <code>comun</code> (permisos, auditoría, RLS) y <code>db</code>.</p>
 <h2>Principios</h2>
-<ul><li><b>Todo cambio de dinero y de resultado deja rastro</b>: ledger de partida doble para caja, eventos inmutables para acta, <code>audit_log</code> para ediciones.</li>
-<li><b>Idempotencia</b> en webhooks (Mercado Pago, WhatsApp) y en la sincronización del acta.</li>
-<li><b>La tabla de posiciones es derivada</b>: se recalcula desde los partidos cerrados (job), nunca se edita a mano.</li>
-<li><b>Sitio público estático-incremental</b>: se regenera por evento (acta cerrada) para soportar picos de consulta el fin de semana.</li>
-<li>Configuración por reglamento (puntos, desempates, tarjetas, equipo ausente) en datos, no en código.</li></ul>
+<ul><li><b>Todo cambio de dinero y de resultado deja rastro</b>: libro de partida doble inmutable para la caja (ADR-023), eventos inmutables para el acta (ADR-004), <code>Auditoria</code> para ediciones sensibles.</li>
+<li><b>Idempotencia</b> en webhooks (pasarela), en la sincronización del acta (<code>clientUuid</code>) y en todo lo automático (cargos, asientos y mensajes con <code>clave</code> única).</li>
+<li><b>La tabla de posiciones es derivada</b> (ADR-005): se calcula al leer desde los partidos cerrados, nunca se guarda ni se edita a mano. Lo mismo goleadores y sanciones automáticas.</li>
+<li><b>Reglas de negocio puras</b> en <code>packages/shared/src/dominio</code>, con tests; los servicios solo leen, llaman y guardan.</li>
+<li><b>Integraciones intercambiables con modo simulado</b>: pasarela, mensajería, clima y almacenamiento detrás de interfaces, para poder probar todo sin terceros.</li>
+<li>Configuración por reglamento (puntos, desempates, tarjetas, equipo ausente, levantamiento de sanciones) en datos y versionada, no en código (ADR-006). Cifras oficiales solo en <code>docs/datos.json</code> (ADR-009).</li></ul>
 
 <h1 class="sec"><p class="eyebrow">4</p>Modelo de datos (entidades principales)</h1>
+<p>Fuente: <code>apps/api/prisma/schema.prisma</code>. Nombres de dominio en castellano (ADR-008). Toda tabla de una organización lleva <code>organizacionId</code> y política RLS; las globales (usuarios, organizaciones, membresías, sesiones, auditoría, staff) no.</p>
 <table><tr><th>Entidad</th><th>Campos clave</th><th>Relaciones / notas</th></tr>
-<tr><td>Organization</td><td>name, slug, domain, brand (colors, logo), plan, mp_account_id, billing_data</td><td>Raíz del tenant. Todas las tablas llevan <code>organization_id</code>.</td></tr>
-<tr><td>User / Membership</td><td>identity, phone, email; role, scope (org/tournament/team)</td><td>Un usuario, múltiples membresías.</td></tr>
-<tr><td>Tournament</td><td>modality, format, season, rules_id, status, fee_rules</td><td>Tiene Stages (grupos, liga, playoffs).</td></tr>
-<tr><td>Ruleset</td><td>points, tiebreakers[], card_thresholds, wo_rules, player_limits, match_length</td><td>Versionado; el torneo fija una versión.</td></tr>
-<tr><td>Stage / Group</td><td>type, order, advancement_rules</td><td>Define quiénes avanzan a llaves.</td></tr>
-<tr><td>Team</td><td>name, crest, colors, captain_id</td><td>Existe a nivel organización y se reutiliza entre torneos.</td></tr>
-<tr><td>Registration</td><td>team_id, tournament_id, status, deposit, fee, balance</td><td>Genera Charges.</td></tr>
-<tr><td>Player</td><td>name, dni_hash, birth_date, photo, privacy flags</td><td>Identidad única entre equipos (base de duplicados y trayectoria).</td></tr>
-<tr><td>Roster (TeamPlayer)</td><td>team_id, player_id, number, position, eligibility_status</td><td>Elegibilidad calculada desde documentos y sanciones.</td></tr>
-<tr><td>Document</td><td>type (DNI, apto, autorización), file_key, expires_at, status, reviewed_by</td><td>Archivo en bucket privado.</td></tr>
-<tr><td>Charge / Payment</td><td>amount, due_date, method (mp, cash, transfer), mp_payment_id, status</td><td>Conciliación automática (MP) o registro manual.</td></tr>
-<tr><td>LedgerEntry / Payout</td><td>account, debit, credit, category, ref</td><td>Caja del torneo; retiros hacia cuenta bancaria.</td></tr>
-<tr><td>Venue / Pitch</td><td>name, address, surfaces, availability, cost</td><td>Disponibilidad por franja.</td></tr>
-<tr><td>Referee</td><td>name, availability, fee, rating</td><td>Asignación manual o automática.</td></tr>
-<tr><td>Match</td><td>stage, round, home, away, pitch, kickoff, status, referee_id, result</td><td>Estados: programado, en juego, finalizado, suspendido, equipo ausente</td></tr>
-<tr><td>MatchEvent</td><td>match_id, type (gol, tarjeta, cambio), player_id, minute, client_uuid</td><td>Append-only; <code>client_uuid</code> da idempotencia al sincronizar.</td></tr>
-<tr><td>Sanction / Case</td><td>player_id, cause, matches_suspended, status, descargo, resolution</td><td>Se genera desde el acta; el tribunal puede modificarla.</td></tr>
-<tr><td>Contingency</td><td>cause, affected_matches[], proposal, confirmations</td><td>Registra qué se movió y quién confirmó.</td></tr>
-<tr><td>Message / Template / Automation</td><td>channel, audience, body, variables, cost, status</td><td>Registro de entrega y costo por mensaje.</td></tr>
-<tr><td>Sponsor / Placement / Impression</td><td>slot, period, amount, impressions, clicks</td><td>Base del reporte para sponsors.</td></tr>
-<tr><td>Consent</td><td>subject, guardian_id, type, text_version, accepted_at, ip</td><td>Requerido para menores y para datos sensibles.</td></tr>
-<tr><td>AuditLog</td><td>actor, action, entity, before, after, at</td><td>Inmutable.</td></tr></table>
+<tr><td>Organizacion</td><td>nombre, slug, plan, colorMarca, logo, localidad, provincia, mpCuentaId, configuracionInicial, demoExpiraEn</td><td>Raíz del tenant. <code>demoExpiraEn</code> solo en sandboxes de la demo pública.</td></tr>
+<tr><td>Usuario / Membresia</td><td>email, nombre, emailVerificadoEn; rol, equipoId (capitán), jugadorId (jugador)</td><td>Un rol por usuario y organización.</td></tr>
+<tr><td>SesionRefresh / LinkCuenta / IntentoIngreso</td><td>familia, tokenHash, organizacionActivaId; tipo (recuperar, verificar email), venceEn; email, ip, exitoso</td><td>Tokens guardados como hash; reutilizar uno rotado revoca la familia.</td></tr>
+<tr><td>Invitacion</td><td>email, rol, equipoId, jugadorId, tokenHash, venceEn, aceptada/anulada</td><td>Link de un solo uso para sumarse con un rol.</td></tr>
+<tr><td>Torneo</td><td>modalidad, formato (LIGA, COPA, GRUPOS_PLAYOFFS, LIGA_PLAYOFFS, FLEXIBLE), estado, cupo, inscripcion, venceInscripcion, idaYVuelta, llave, grupos, documentosRequeridos, cobrosPorFecha</td><td>Fija una versión de Reglamento. Los torneos por fases tienen Fases.</td></tr>
+<tr><td>Fase</td><td>clave, orden, tipo, definicion (entradas, grupos, ida y vuelta por ronda), estado, equipoIds, grupos, llave, baseFecha</td><td>ADR-026. Los partidos apuntan con <code>faseId</code>.</td></tr>
+<tr><td>Reglamento</td><td>puntos, desempates[], suspensiones, umbralAmarillas, golesWO, toleranciaWOMinutos, levantarSancionPagando / Tipos / Monto</td><td>Versionado; el torneo fija una versión.</td></tr>
+<tr><td>Equipo</td><td>nombre, color, datos del capitán, opt-in de WhatsApp, baja de marketing</td><td>A nivel organización, se reutiliza entre torneos. Sin escudo.</td></tr>
+<tr><td>Jugador / PlantelJugador</td><td>nombre, apellido, fechaNacimiento, dniCifrado, dniHash, datosMedicosCifrado, apodo, nombrePublico; número en el plantel</td><td>Identidad única en la organización (duplicados y trayectoria).</td></tr>
+<tr><td>Inscripcion / Cargo / Pago</td><td>estado; concepto, monto, categoria (INSCRIPCIONES, MULTAS, SEGUROS), vence, fecha, partidoId, clave; metodo, monto, comisionPlataforma, estado (incluye ANULADO), preferenciaId, pasarelaPagoId, comprobante</td><td>Un pago por cargo; un pago manual puede repartirse en varios cargos. <code>clave</code> hace idempotente un cargo automático.</td></tr>
+<tr><td>Asiento / LineaAsiento</td><td>tipo (COBRO, COMISION, EGRESO, INGRESO, RETIRO, REVERSA), referencia, clave, revierteAId; cuenta, debe, haber</td><td>Libro de partida doble inmutable (ADR-023). Reemplaza a ledger y retiros como tablas propias.</td></tr>
+<tr><td>Sede / Cancha</td><td>nombre, dirección; costoPorPartido, superficie, bloqueada, motivoBloqueo</td><td>Una sede tiene varias canchas.</td></tr>
+<tr><td>Arbitro</td><td>tarifa, valoracion, disponibilidad (franjas), activo</td><td>Designación manual o automática.</td></tr>
+<tr><td>Partido</td><td>fecha, local, visitante, cancha, inicio, estado (PROGRAMADO, EN_JUEGO, FINALIZADO, SUSPENDIDO, WO), goles, ganadorWOId, fase, grupo, clave, penales, árbitro, actaDispositivo, faseId, ronda, pierna</td><td>El resultado se guarda al cerrar (derivado de los eventos).</td></tr>
+<tr><td>EventoPartido</td><td>tipo (GOL, GOL_EN_CONTRA, AMARILLA, ROJA, CAMBIO, ANULACION), jugadorId, minuto, anulaA, clientUuid</td><td>Solo se agrega; <code>clientUuid</code> da idempotencia.</td></tr>
+<tr><td>Convocatoria</td><td>partidoId, jugadorId, respuesta (VA, NO_VA)</td><td>Sin fila = pendiente.</td></tr>
+<tr><td>Sancion / LevantamientoSancion / Expediente</td><td>causa, partidos; cargoId, monto; tipo, informeArbitro, descargo, sugeridos, partidosResueltos, multa, resolucion</td><td>La sanción nace del acta; el tribunal la modifica desde el expediente.</td></tr>
+<tr><td>DocumentoJugador / AccesoDocumento / DuplicadoJugador</td><td>tipo, estado, archivoClave, vencimiento, motivoRechazo; quién pidió verlo; par de jugadores con el mismo DNI</td><td>Archivos en almacenamiento privado; accesos registrados.</td></tr>
+<tr><td>Consentimiento / SolicitudConsentimiento</td><td>tipo, version, otorgante, revocadoEn; token, venceEn, usadaEn</td><td>Versionado; el tutor firma con un link sin cuenta.</td></tr>
+<tr><td>Difusion / Mensaje / Automatizacion</td><td>plantilla, canal, segmento, programadaPara; destinatario, estado, costoUsd, clave, token y respuesta; clave, activa, canal</td><td>Historial de entrega y costo por mensaje; botones "Confirmo / No puedo".</td></tr>
+<tr><td>Contingencia</td><td>motivo, accion (MOVER, SUSPENDER, CAMBIAR_CANCHA), detalle</td><td>Qué se movió; las respuestas quedan en sus mensajes.</td></tr>
+<tr><td>Sponsor / Placement / MetricaPlacement / PreferenciasSponsors</td><td>categoria, link; espacio, desde, hasta, monto; impresiones y clics por día; rubros rechazados</td><td>Los cobros entran a la caja como ingresos.</td></tr>
+<tr><td>Auditoria / StaffUsuario / StaffAuditoria</td><td>actor, accion, entidad, antes, después; rol de staff; acción, organización, ip</td><td>Solo se agregan; la base rechaza editar o borrar <code>StaffAuditoria</code>.</td></tr></table>
 
 <h1 class="sec"><p class="eyebrow">5</p>Reglas de negocio críticas</h1>
+<p>Implementación y tests en <code>packages/shared/src/dominio</code>. Resumen operativo en <code>docs/contexto/reglas-de-negocio.md</code>.</p>
 <h2>5.1 Tabla de posiciones</h2>
 <ul><li>Puntos configurables (por defecto 3 victoria, 1 empate, 0 derrota).</li>
 <li>Desempates en orden configurable: diferencia de gol, goles a favor, resultado entre sí, menos tarjetas (juego limpio), sorteo.</li>
-<li>Equipo ausente: puntos y goles según reglamento (por defecto 3-0 y sanción económica); se registra como tal y no suma estadísticas individuales.</li></ul>
+<li>Equipo ausente: gana el presente por los goles del reglamento (<code>golesWO</code>, por defecto 3-0); el resultado queda guardado en el partido y no suma estadísticas individuales. <b>No genera multa automática</b>: si corresponde, la aplica el tribunal desde un expediente.</li>
+<li>La tabla incluye solo a los equipos del fixture (o, sin fixture, a los confirmados). En torneos por fases hay una tabla por grupo.</li></ul>
 <h2>5.2 Motor de fixture</h2>
-<p><b>Entrada:</b> equipos, grupos, canchas con franjas, árbitros disponibles, reglas de descanso, restricciones por equipo (ej. no juega los domingos). <b>Salida:</b> calendario completo.</p>
-<ul><li>Cruces: método de rotación (<i>circle method</i>) para liga y grupos, ida y vuelta opcional; sorteo con cabezas de serie para copa.</li>
-<li>Asignación: heurística (constructiva + búsqueda local) que respeta restricciones duras (un equipo no juega dos partidos a la vez ni con menos del descanso mínimo; una cancha un partido por franja; un árbitro un partido por franja) y optimiza las blandas (balance local/visitante, preferencias, mínimo de huecos).</li>
-<li>Evaluar un solver de restricciones (ej. OR-Tools CP-SAT) si la heurística no alcanza en ligas grandes. <span class="pill v">DECIDIR</span> tras prototipo.</li>
-<li>Al mover un partido a mano (otro día, cancha u horario, o intercambiar el horario con otro partido de la misma fecha) se re-evalúan las restricciones y se muestra cada conflicto con su causa; nunca se bloquea, se advierte.</li>
+<p><b>Entrada:</b> equipos, grupos, canchas con franjas, días entre fechas. <b>Salida:</b> calendario completo.</p>
+<ul><li>Cruces: rotación (<i>circle method</i>) para liga y grupos, con libre por fecha si son impares y localía equilibrada; sorteo con cabezas de serie para copa (número de sorteo reproducible).</li>
+<li>Restricciones duras <b>hechas</b>: una cancha un partido por franja, un equipo una vez por fecha; un árbitro un partido por franja (en la designación). Canchas bloqueadas no se ofrecen.</li>
+<li><b>Pendiente</b>: descanso mínimo entre partidos, restricciones blandas (balance, preferencias, menos huecos) y por equipo ("no juega los domingos"). Evaluar un solver (ej. OR-Tools CP-SAT) si la heurística no alcanza. <span class="pill v">DECIDIR</span> tras prototipo (ADR-015).</li>
+<li>Grilla a mano: mover un partido (día, cancha u horario) o intercambiar el horario con otro de la misma fecha re-evalúa las restricciones y muestra cada conflicto con su causa; nunca se bloquea, se advierte. Aviso opcional a los capitanes.</li>
 <li>Rendimiento objetivo: fixture de 24 equipos en menos de 10 segundos.</li></ul>
 <h2>5.3 Sanciones automáticas</h2>
-<ul><li>Roja directa: partidos de suspensión según reglamento (por defecto 1, ampliable por el tribunal). Doble amarilla: 1 partido.</li>
+<ul><li>Roja directa: partidos de suspensión según reglamento (por defecto 1, ampliable por el tribunal) y expediente abierto solo. Doble amarilla: 1 partido (sus amarillas no acumulan).</li>
 <li>Acumulación de amarillas: umbral configurable (por defecto 5, 1 partido).</li>
-<li>La suspensión se cuenta en <b>partidos oficiales del equipo</b>; si el partido se suspende o tiene un equipo ausente, no descuenta.</li>
-<li>Un jugador suspendido aparece bloqueado en la planilla del acta; si se lo carga igual, el sistema lo marca y abre un expediente por "jugador no habilitado".</li>
-<li>Levantar la suspensión pagando (opcional, apagado por defecto): el reglamento del torneo define qué sanciones se pueden levantar (por defecto acumulación de amarillas y doble amarilla; nunca la roja directa ni lo resuelto por el tribunal) y el monto por partido. Cada pago levanta un partido de suspensión; genera un cargo al equipo (rubro Multas) y el jugador queda habilitado recién cuando el pago está acreditado.</li></ul>
-<h2>5.4 Elegibilidad del jugador</h2>
-<p>Estado = documentación vigente (DNI validado, apto físico no vencido, autorización si es menor) + sin sanción activa + sin duplicado abierto. La planilla del acta muestra el estado en tiempo real. El organizador define qué documentos son obligatorios por torneo.</p>
-<h2>5.5 Cobros</h2>
-<ul><li>El organizador define arancel, seña y cuotas. El equipo (o cada jugador, si el capitán lo habilita) paga por link de Mercado Pago.</li>
-<li>Cuota por fecha: monto fijo que cada equipo paga en cada fecha para jugar, con o sin inscripción. Se genera un cargo por equipo y por fecha que vence el día del partido. Por defecto no se cobra la fecha libre ni el partido suspendido, y sí el partido con equipo ausente La deuda genera alerta y recordatorio; bloquear al equipo deudor es una opción del reglamento (apagada por defecto). Si se activa con el torneo empezado, se cobra desde la próxima fecha: nunca las ya jugadas (lo mismo para el seguro).</li>
-<li>Seguro por jugador: monto por cada jugador del plantel en cada fecha que el equipo juega, juegue o no ese jugador. Es un cargo aparte de la cuota, al equipo, y entra a la caja en el rubro Seguros para que el organizador vea cuánto le debe a la aseguradora.</li>
-<li>Pagos manuales (efectivo, transferencia) los registra el organizador con comprobante; <b>no generan comisión de plataforma</b>.</li>
-<li>El costo de procesamiento de Mercado Pago se muestra al pagador como "cargo por servicio" o lo absorbe el organizador (configurable). <span class="pill v">DECIDIR</span> valor por defecto.</li>
-<li>Reembolsos: en split 1:1 requieren saldo del vendedor; el flujo debe prever el rechazo y avisar al organizador.</li></ul>
-<h2>5.6 Contingencias y equipos ausentes</h2>
-<ul><li>Alcance: partido, fecha, cancha o torneo. Opciones: mover, suspender, cambiar de cancha.</li>
-<li>La propuesta se calcula antes de aplicar, con lista de conflictos resueltos y los que quedan.</li>
-<li>Aviso con botones "Confirmo / No puedo"; los "No puedo" vuelven al organizador como alerta.</li>
-<li>Equipo ausente: tolerancia configurable (por defecto 15 min), cuenta regresiva visible en el acta, resolución automática al vencer.</li></ul>
+<li>La suspensión se cuenta en <b>partidos oficiales del equipo</b> jugados después; si el partido se suspende o tiene un equipo ausente, no descuenta.</li>
+<li>Un jugador suspendido aparece bloqueado en la planilla del acta; si llega igual (por ejemplo, desde un acta sin conexión), se registra con advertencia y abre un expediente "jugador no habilitado", una vez por partido y jugador.</li>
+<li>Tribunal: el expediente reúne el informe del árbitro (lo cargan árbitro, administrador o tribunal), el descargo del capitán y la resolución, que aplica, amplía, reduce o anula lo sugerido; la multa es un cargo al equipo (rubro Multas).</li></ul>
+<h2>5.4 Levantar una sanción pagando</h2>
+<ul><li>Opcional, apagado por defecto. El reglamento define qué tipos se pueden levantar (por defecto acumulación de amarillas y doble amarilla; nunca la roja directa, lo resuelto por el tribunal ni una sanción con expediente) y el monto por partido (0 = no disponible).</li>
+<li>Cada pedido es un <code>LevantamientoSancion</code> con su cargo al equipo (rubro Multas). Se acredita cuando el cargo queda pagado y levanta el primer partido oficial del equipo jugado después; ese partido no cuenta como cumplido. Si el cargo o el pedido se anulan, no levanta nada.</li></ul>
+<h2>5.5 Elegibilidad del jugador</h2>
+<p>Estado = documentación vigente (DNI validado, apto físico no vencido, autorización si es menor) + sin sanción activa + sin duplicado abierto. Cada torneo elige qué documentos exige (sin nada elegido no exige nada). Un documento subido no habilita hasta que una persona lo aprueba. La planilla del acta muestra el estado y el motivo antes de empezar.</p>
+<h2>5.6 Cobros</h2>
+<ul><li>El organizador define arancel, seña y cuotas. El equipo paga por link de Mercado Pago (hoy simulado). Un cargo queda pagado cuando los pagos aprobados cubren el monto; sin cargos de inscripción o seña pendientes, la inscripción pasa a confirmada (cuotas, seguros y multas no la traban).</li>
+<li>Cuota por fecha: monto fijo que cada equipo paga en cada fecha para jugar, con o sin inscripción. Un cargo por equipo y por fecha que vence el día del partido. Por defecto no se cobra la fecha libre ni el partido suspendido, y sí el partido con equipo ausente. Activada con el torneo empezado, se cobra desde la próxima fecha: nunca las ya jugadas (lo mismo para el seguro).</li>
+<li>Seguro por jugador: monto por cada jugador del plantel en cada fecha que el equipo juega, juegue o no ese jugador. Cargo aparte de la cuota, al equipo, rubro Seguros en la caja.</li>
+<li>Cuotas y seguros se generan <b>7 días antes</b> del partido, uno por equipo, tipo y fecha (clave única: idempotentes). Siguen al partido si se mueve; si se suspende, el cargo pendiente sin pagos se anula.</li>
+<li>Deuda: genera alerta, recordatorio y aviso en el acta. Bloquear al deudor (<code>deudaBloqueaJugar</code>) es opcional y apagado por defecto; <b>hoy solo avisa</b>, todavía no impide cargar al equipo.</li>
+<li>Pagos manuales (efectivo, transferencia), completos o parciales, con fecha y comprobante; <b>no generan comisión de plataforma</b>. Un pago puede cubrir varios cargos, del más viejo al más nuevo. Se anulan con un asiento que revierte. Los registran el dueño, el administrador y el tesorero.</li>
+<li>El costo de procesamiento de Mercado Pago se muestra al pagador como "cargo por servicio" o lo absorbe el organizador (configurable). <span class="pill v">DECIDIR</span> valor por defecto (ADR-013).</li>
+<li>Reembolsos (pendiente): en split 1:1 requieren saldo del vendedor; el flujo debe prever el rechazo y avisar al organizador.</li></ul>
+<h2>5.7 Contingencias y equipos ausentes</h2>
+<ul><li>Alcance: un día, una fecha o partidos elegidos. Opciones: mover días (un día después, una semana) o pasar a otras canchas en el mismo horario. Pendiente: alcance por cancha.</li>
+<li>La propuesta se calcula antes de aplicar, con los conflictos de cancha y de equipos con dos partidos el mismo día; no bloquea, pero hay que confirmar que se vieron.</li>
+<li>Al aplicar se mueven los partidos, se registra la contingencia y se avisa a los capitanes con "Confirmo / No puedo" (link sin sesión); los "No puedo" vuelven al panel como alerta.</li>
+<li>Alerta de clima con proveedor simulado (a elegir).</li>
+<li>Equipo ausente: tolerancia del reglamento (por defecto 15 min) con cuenta regresiva en el acta; al vencer, el delegado lo marca a mano y la API lo acepta. Pendiente: resolución automática.</li></ul>
+<h2>5.8 Torneos por fases (ADR-026)</h2>
+<ul><li>Un torneo <code>FLEXIBLE</code> es una secuencia de fases: todos contra todos, grupos o eliminación directa. Los cuatro formatos fijos y "grupos + playoffs + copa estímulo" son plantillas editables en "Armá el formato" (<code>/panel/torneos/formato</code>), que valida el formato y simula sábados, partidos y recaudación antes de crear.</li>
+<li><b>Entradas</b> de una fase: los inscriptos o lo que deja otra fase (puestos desde–hasta de cada grupo o tabla, mejores N de un puesto, ganadores o perdedores de una ronda, los que no clasificaron). Una fase puede alimentar a varias. Los mejores N de distintos grupos se ordenan por puntos, diferencia de gol y goles a favor.</li>
+<li><b>Generación por fase</b>: la primera se genera a mano al cerrar la inscripción; cada fase siguiente se genera cuando terminan las fases de las que toma equipos. La programación respeta canchas y franjas.</li>
+<li><b>Ida y vuelta</b> por ronda (por ejemplo, todo menos la final): dos partidos por cruce con resultado global; si el global empata, los penales van en la vuelta.</li>
+<li><b>Copa en paralelo</b>: una fase puede jugarse al mismo tiempo que otra (copa estímulo), compartiendo sábados y canchas.</li>
+<li>Panel y sitio público se muestran por fase, con tablas por grupo y llaves. Pendiente: editar el formato de un torneo creado, grilla a mano por fase y definir si se cobra la fecha libre de quien espera entre fases.</li></ul>
 
 <h1 class="sec"><p class="eyebrow">6</p>Integraciones</h1>
+<div class="callout warn"><b class="t">Estado hoy</b>Ninguna integración externa está conectada: la pasarela de pagos, los canales de mensajería (WhatsApp, email, push) y el pronóstico de clima funcionan en <b>modo simulado</b> detrás de interfaces (ADR-007, ADR-022). La demo pública los exige simulados. Los links de cuenta (recuperar contraseña, verificar email, invitaciones) se muestran o se comparten a mano hasta tener proveedor de email.</div>
 <h2>6.1 Mercado Pago (crítico)</h2>
-<ul><li>Marketplace con <b>OAuth</b>: cada organizador vincula su cuenta (requiere nivel de identificación KYC 6). Guardar tokens cifrados y renovarlos.</li>
+<ul><li>Marketplace con <b>OAuth</b>: cada organizador vincula su cuenta (requiere nivel de identificación KYC 6). Guardar tokens cifrados y renovarlos. Hoy el paso del asistente es informativo.</li>
 <li>Split 1:1: se cobra con la cuenta del organizador y se descuenta <i>application fee</i> para la plataforma. Mercado Pago descuenta primero su comisión y luego la nuestra, sobre el resto.</li>
-<li>El split no admite transferencias desde bancos externos, solo medios de Mercado Pago; ver reglas de pago manual (5.5).</li>
-<li>Webhooks de pago: validar firma, procesar por cola, idempotentes por <code>payment_id</code>; reconciliación nocturna contra la API.</li>
+<li>El split no admite transferencias desde bancos externos, solo medios de Mercado Pago; ver reglas de pago manual (5.6).</li>
+<li>Webhooks de pago: validar firma e idempotentes por id de pago (hecho con la pasarela simulada); reconciliación nocturna contra la API (pendiente).</li>
 <li>Tarifas y condiciones del acuerdo comercial: confirmar con el equipo comercial de Mercado Pago antes de fijar precios. <span class="pill v">DECIDIR</span></li></ul>
 <h2>6.2 WhatsApp</h2>
-<ul><li>WhatsApp Business API a través de un BSP. Cada mensaje fuera de ventana es de pago por plantilla aprobada por Meta.</li>
+<ul><li>WhatsApp Business API a través de un BSP (<span class="pill v">DECIDIR</span>, ADR-012). Cada mensaje fuera de ventana es de pago por plantilla aprobada por Meta.</li>
 <li>Referencia de costo (fuentes secundarias, verificar con Meta): utilidad ~US$0,026 y marketing ~US$0,06 por mensaje en Argentina. Desde el 1/10/2026 también se cobran mensajes de utilidad dentro de la ventana de 24 h.</li>
-<li><b>Diseño para controlar el costo:</b> WhatsApp se envía solo a capitanes/delegados y a quienes dieron <i>opt-in</i>; jugadores reciben push o email por defecto; cada envío masivo muestra costo estimado antes de confirmar; tope mensual por plan.</li>
-<li>Plantillas versionadas y aprobadas con anticipación (recordatorio de partido, cobro, contingencia, resultado).</li></ul>
+<li><b>Diseño para controlar el costo</b> (hecho): WhatsApp solo a capitanes con consentimiento y teléfono; si no, baja a email y después a push; cada envío muestra el costo antes de confirmar; tope mensual por plan (un envío que se pasa no sale).</li>
+<li>Plantillas versionadas (recordatorio de partido, cobro, contingencia, suspensión, mensaje libre), a aprobar con Meta con anticipación.</li></ul>
 <h2>6.3 Otros</h2>
-<ul><li>Email transaccional (proveedor con buena entregabilidad), Web Push (VAPID), almacenamiento S3.</li>
-<li>Validación de identidad: carga manual revisada por humanos al lanzamiento; selfie y comparación automática como mejora opcional (proveedor externo, costo por verificación). <span class="pill v">DECIDIR</span></li>
-<li>Facturación electrónica ARCA/AFIP para la comisión de la plataforma (ver documento legal).</li></ul>
+<ul><li>Email transaccional (proveedor con buena entregabilidad) y Web Push (VAPID): pendientes. Almacenamiento: bucket privado compatible con S3 en producción, detrás de <code>AlmacenArchivos</code>.</li>
+<li>Pronóstico de clima para las alertas de contingencia: proveedor a elegir.</li>
+<li>Validación de identidad: revisión humana (hecha); selfie y comparación automática como mejora opcional (proveedor externo, costo por verificación). <span class="pill v">DECIDIR</span> (ADR-014).</li>
+<li>Facturación electrónica ARCA/AFIP para la comisión de la plataforma (ver documento legal): pendiente.</li></ul>
 
-<h1 class="sec"><p class="eyebrow">7</p>Acta offline y tiempo real</h1>
-<ul><li><b>Offline-first</b>: el acta funciona sin señal con service worker + IndexedDB. Cada evento (gol, tarjeta, cambio) se guarda local con <code>client_uuid</code> y marca de tiempo del dispositivo.</li>
-<li><b>Sincronización</b>: cola de eventos que se envía en orden al recuperar señal; el servidor ignora duplicados por <code>client_uuid</code>. Los eventos son append-only; las correcciones son eventos de anulación, no ediciones.</li>
-<li><b>Conflictos</b>: un partido tiene un solo "dueño" de acta a la vez (el delegado asignado); si dos dispositivos cargan, gana el primero que se sincronizó y el segundo recibe aviso.</li>
-<li><b>Cierre</b>: solo con firma de ambos capitanes (o justificación del árbitro). Al cerrar se dispara la cadena: tabla → goleadores → sanciones → sitio público → notificaciones.</li>
-<li><b>Tiempo real</b>: Server-Sent Events o WebSocket para marcador en vivo en panel y página de partido. Si falla, degradar a <i>polling</i> cada 15 s.</li>
-<li>Instalable como PWA, con botones grandes y alto contraste para uso a la intemperie.</li></ul>
+<h1 class="sec"><p class="eyebrow">7</p>Acta sin conexión y en vivo</h1>
+<ul><li><b>Sin conexión</b> (ADR-020): cola local de operaciones (iniciar, evento, anular, cerrar) en IndexedDB, con la última foto del acta que confirmó el servidor. La pantalla muestra la foto más la cola, así el marcador se actualiza al instante. Cada evento lleva <code>clientUuid</code>.</li>
+<li><b>Service worker acotado</b>: guarda solo la pantalla del acta y los archivos de la app, con red primero; <b>nunca guarda respuestas de la API</b>. Hay que abrir el acta una vez con señal antes del partido.</li>
+<li><b>Sincronización</b>: la cola se envía en orden al volver la señal; el servidor ignora duplicados por <code>clientUuid</code>. Los eventos solo se agregan; las correcciones son anulaciones (por id o por <code>clientUuid</code>). Lo que el servidor rechaza se le informa al delegado.</li>
+<li><b>Un solo dueño</b>: el dueño del acta es el <b>primer dispositivo que carga algo</b> (iniciar, evento, anulación, cierre o equipo ausente); abrirla no la toma. Otro dispositivo ve quién la tiene y puede <b>"tomar el acta" a propósito</b>: el dueño anterior queda afuera y el servidor rechaza sus escrituras. Queda auditado.</li>
+<li><b>Cierre</b>: firma de ambos capitanes o justificación del árbitro. Al cerrar se guarda el resultado, se generan sanciones y expedientes, avanza la llave, se asientan los cargos automáticos y salen los avisos; tabla y goleadores se derivan al leer. El equipo ausente necesita conexión.</li>
+<li><b>En vivo</b>: <i>polling</i> (panel cada 15 s; la página de partido y el sitio público se revalidan por tiempo). Sin SSE ni WebSocket por ahora.</li>
+<li>Instalable como PWA, con botones grandes y alto contraste para uso a la intemperie. Pendiente: prueba en 3–4 celulares de gama media o baja con conexión mala.</li></ul>
 
 <h1 class="sec"><p class="eyebrow">8</p>Seguridad y datos personales</h1>
 <div class="callout warn"><b class="t">Datos sensibles</b>La plataforma trata DNI, fotos, aptos médicos y datos de menores. Es el mayor riesgo legal y reputacional del producto. Ver documento 6 (legal y cumplimiento) para obligaciones; aquí van los requisitos técnicos.</div>
-<ul><li>Cifrado en tránsito (TLS) y en reposo; <b>cifrado a nivel de campo</b> para número de DNI y datos médicos; número de DNI almacenado también como hash para detectar duplicados sin exponerlo.</li>
-<li>Documentos en bucket privado, acceso solo por URL firmada de corta duración y con registro de quién la solicitó.</li>
-<li>Principio de mínimo dato: el público nunca ve DNI, edad exacta de menores ni teléfono. Perfil público con apodo/iniciales opcional.</li>
-<li>Menores: no se publica foto sin consentimiento del tutor; el consentimiento es un registro versionado.</li>
-<li>Retención y borrado: política por tipo de dato (ej. aptos y DNI se eliminan tras X meses del último torneo); derecho de acceso, rectificación y supresión con proceso interno.</li>
-<li>Autenticación segura, límites de intentos, 2FA opcional para dueños y tesoreros (obligatorio para retiros).</li>
-<li>Auditoría de acciones sensibles (retiros, edición de actas, acceso a documentos), logs inmutables.</li>
+<h2>Hecho</h2>
+<ul><li><b>Aislamiento</b> entre organizaciones con Row Level Security, probado en base y API (ADR-003).</li>
+<li><b>Cifrado a nivel de campo</b> (AES-256-GCM) para el DNI del jugador y del tutor y los datos de salud; claves de cifrado, hash y firma derivadas por separado. El DNI se guarda también como <b>hash</b> para detectar duplicados sin exponerlo; la pantalla muestra solo el final y ver el número completo queda auditado (ADR-025).</li>
+<li>Documentos en almacenamiento privado; se validan tamaño y tipo real. Acceso solo por <b>link firmado</b> de pocos minutos, sin caché, con registro de quién lo pidió y abrió (<code>AccesoDocumento</code>).</li>
+<li>Principio de mínimo dato: el público nunca ve DNI, fecha de nacimiento exacta, teléfono, email ni domicilio. Perfil público con iniciales por defecto; menores sin perfil ni imagen sin consentimiento del tutor (registro versionado y revocable).</li>
+<li><b>Retención</b>: borrado automático diario por tipo (documentos rechazados, vencidos y registros de acceso; plazos provisorios en <code>docs/datos.json</code>).</li>
+<li>Autenticación: contraseñas con hash, límite de intentos por cuenta y por IP, cookies httpOnly en el mismo origen, refresh rotativo con detección de reutilización, links de un solo uso guardados como hash.</li>
+<li><b>Auditoría</b> de acciones sensibles (dinero, actas, accesos a documentos), que solo se agrega, y de cada acción del staff de Gregal. La base rechaza editar el libro de caja y la auditoría del staff.</li>
+<li>Demo pública aislada: sesiones de un entorno no sirven en el otro; topes de sandboxes por IP y en total.</li></ul>
+<h2>Pendiente</h2>
+<ul><li><b>2FA</b>: opcional para dueños y tesoreros, obligatoria para retiros y para el staff de Gregal.</li>
+<li>Acceso de soporte temporal con motivo registrado.</li>
+<li>Cifrado en reposo de la base y del almacenamiento, y TLS: dependen del hosting (ADR-011).</li>
+<li>Derechos de acceso, rectificación y supresión con herramienta interna.</li>
 <li>Backups diarios con restauración probada, cifrados y en otra región; plan de respuesta a incidentes.</li>
-<li>Análisis de dependencias, escaneo de secretos en CI, OWASP ASVS nivel 2 como objetivo.</li></ul>
+<li>Análisis de dependencias, escaneo de secretos en CI, pentest; OWASP ASVS nivel 2 como objetivo.</li></ul>
 
 <h1 class="sec"><p class="eyebrow">9</p>Hitos de construcción (lanzamiento único)</h1>
-<p>Los plazos son estimaciones iniciales, a validar con el equipo real y su tamaño. Suponen un equipo de 3–4 personas de ingeniería, 1 de diseño/producto y QA compartido. Si el equipo es menor, los plazos crecen de forma casi lineal.</p>
-<table><tr><th>Hito</th><th>Contenido</th><th>Semanas</th><th>Criterio de salida</th></tr>
-<tr><td>H0 · Cimientos</td><td>Monorepo, CI/CD, entornos, auth, organizaciones, roles, RLS, auditoría, diseño de sistema (<code>packages/ui</code>).</td><td>3–4</td><td>Login multi-organización con permisos probados.</td></tr>
-<tr><td>H1 · Torneo y dinero</td><td>Crear torneo, reglamento, inscripciones, Mercado Pago (OAuth, split, webhooks), pagos manuales, caja base.</td><td>5–6</td><td>Un equipo se inscribe y paga en sandbox y en producción con cuenta real.</td></tr>
-<tr><td>H2 · Programación</td><td>Motor de fixture, grilla, conflictos, árbitros y canchas, llaves.</td><td>5–6</td><td>Fixture de 16 y 24 equipos sin choques; mover partidos con validación.</td></tr>
-<tr><td>H3 · Partido</td><td>Acta digital offline, tabla, goleadores, sitio público, PWA, tiempo real.</td><td>5–6</td><td>Torneo simulado completo con actas offline y sincronización.</td></tr>
-<tr><td>H4 · Control</td><td>Sanciones, expedientes, documentación e identidad, consentimientos, duplicados.</td><td>5–6</td><td>Suspensión automática y bloqueo en acta de punta a punta.</td></tr>
-<tr><td>H5 · Comunicación y contingencias</td><td>WhatsApp/email/push, plantillas, automatizaciones, reprogramaciones, equipos ausentes</td><td>4–5</td><td>Lluvia simulada: 9 partidos movidos con aviso y confirmaciones.</td></tr>
-<tr><td>H6 · Negocio y comunidad</td><td>Sponsors, métricas, capitán, perfil de jugador, página de partido, mercado de pases, onboarding e importación desde Excel.</td><td>6–8</td><td>Alta de una liga nueva en menos de 30 minutos.</td></tr>
-<tr><td>H7 · Endurecimiento</td><td>Pruebas de carga, seguridad (pentest), accesibilidad, performance, documentación, runbooks.</td><td>3–4</td><td>Checklist de lanzamiento completo (sección 10).</td></tr>
-<tr><td>Beta cerrada</td><td>Ligas fundadoras usan el producto real con acompañamiento (puede solaparse con H6–H7).</td><td>8–12 (solapadas)</td><td>Un torneo completo cobrado y cerrado en la plataforma.</td></tr></table>
-<div class="callout"><b class="t">Total estimado</b>Entre <b>36 y 47 semanas</b> hasta el lanzamiento público, más la beta solapada. Es una estimación de orden de magnitud: un lanzamiento completo tarda bastante más que un MVP acotado (unas 10–14 semanas), y hay que asumirlo en el cronograma comercial y en el flujo de caja. Alternativa para ganar tiempo: abrir la beta antes con los hitos H0–H3 y completar el resto sin cambiar la fecha de lanzamiento público.</div>
+<p>Los plazos son estimaciones iniciales que suponían un equipo de 3–4 personas de ingeniería, 1 de diseño/producto y QA compartido. Con la forma de construcción actual (Claude Code, ADR-017) no aplican tal cual: <b>se revisan cuando se defina el equipo definitivo</b>. La columna "Estado" refleja octubre de 2026.</p>
+<table><tr><th>Hito</th><th>Contenido</th><th>Semanas</th><th>Criterio de salida</th><th>Estado</th></tr>
+<tr><td>H0 · Cimientos</td><td>Monorepo, CI/CD, entornos, auth, organizaciones, roles, RLS, auditoría, sistema de diseño (<code>packages/ui</code>).</td><td>3–4</td><td>Login multi-organización con permisos probados.</td><td>Funciona. Falta CI/CD, entornos y 2FA.</td></tr>
+<tr><td>H1 · Torneo y dinero</td><td>Crear torneo, reglamento, inscripciones, Mercado Pago (OAuth, split, webhooks), pagos manuales, caja base.</td><td>5–6</td><td>Un equipo se inscribe y paga en sandbox y en producción con cuenta real.</td><td>Funciona en modo demo con pasarela simulada. Falta Mercado Pago real y reembolsos.</td></tr>
+<tr><td>H2 · Programación</td><td>Motor de fixture, grilla, conflictos, árbitros y canchas, llaves.</td><td>5–6</td><td>Fixture de 16 y 24 equipos sin choques; mover partidos con validación.</td><td>Funciona, con torneos por fases. Falta descanso mínimo y restricciones blandas.</td></tr>
+<tr><td>H3 · Partido</td><td>Acta digital sin conexión, tabla, goleadores, sitio público, PWA, en vivo.</td><td>5–6</td><td>Torneo simulado completo con actas sin conexión y sincronización.</td><td>Funciona (probado en navegador). Falta prueba en celulares reales.</td></tr>
+<tr><td>H4 · Control</td><td>Sanciones, expedientes, documentación e identidad, consentimientos, duplicados.</td><td>5–6</td><td>Suspensión automática y bloqueo en acta de punta a punta.</td><td>Funciona. Selfie apagada.</td></tr>
+<tr><td>H5 · Comunicación y contingencias</td><td>WhatsApp/email/push, plantillas, automatizaciones, reprogramaciones, equipos ausentes.</td><td>4–5</td><td>Lluvia simulada: 9 partidos movidos con aviso y confirmaciones.</td><td>Funciona con canales y clima simulados.</td></tr>
+<tr><td>H6 · Negocio y comunidad</td><td>Sponsors, métricas, capitán, perfil y panel del jugador, página de partido, mercado de pases, onboarding e importación desde Excel, backoffice.</td><td>6–8</td><td>Alta de una liga nueva en menos de 30 minutos.</td><td>Funciona. Falta mercado de pases, fotos y buena parte del backoffice.</td></tr>
+<tr><td>H7 · Endurecimiento</td><td>Pruebas de carga, seguridad (pentest), accesibilidad, performance, documentación, runbooks.</td><td>3–4</td><td>Checklist de lanzamiento completo (sección 10).</td><td>No empezó: sin CI, carga ni pentest.</td></tr>
+<tr><td>Beta cerrada</td><td>Ligas fundadoras usan el producto real con acompañamiento (puede solaparse con H6–H7).</td><td>8–12 (solapadas)</td><td>Un torneo completo cobrado y cerrado en la plataforma.</td><td>No empezó: requiere hosting e integraciones reales.</td></tr></table>
+<div class="callout"><b class="t">Total estimado (con el equipo original)</b>Entre <b>36 y 47 semanas</b> hasta el lanzamiento público, más la beta solapada. Es una estimación de orden de magnitud: un lanzamiento completo tarda bastante más que un MVP acotado (unas 10–14 semanas), y hay que asumirlo en el cronograma comercial y en el flujo de caja. Alternativa para ganar tiempo: abrir la beta antes con los hitos H0–H3 y completar el resto sin cambiar la fecha de lanzamiento público.</div>
+<h2>Demo pública (ADR-019)</h2>
+<p>Mismo código, desplegado como entorno aparte (<code>DEMO_MODE=true</code>) con base propia (<code>potrero_demo_publica</code> en local, <code>pnpm demo --publica</code>). Cada visitante entra desde la landing a <b>su propia sandbox</b>: una organización creada desde la misma plantilla de datos que <code>pnpm demo</code>, aislada por RLS, que vence a las 24 h y un job elimina; tiene botón "Reiniciar demo", sin registro abierto y con topes de sandboxes por IP y en total. Pasarela y mensajería simuladas obligatorias, banner "Demo" y <code>noindex</code>. Pendiente: el despliegue del entorno y el tope de tamaño por sandbox.</p>
 
 <h1 class="sec"><p class="eyebrow">10</p>Calidad, DevOps y observabilidad</h1>
 <h2>Pruebas</h2>
-<ul><li><b>Unitarias</b> para reglas: tabla y desempates, sanciones, elegibilidad, motor de fixture (con casos límite reales).</li>
-<li><b>Integración</b> para API + base de datos + colas; contract tests contra sandbox de Mercado Pago.</li>
-<li><b>E2E</b> (Playwright) para flujos críticos: crear torneo, inscribir y pagar, armar fixture, cargar acta offline y sincronizar, reprogramar.</li>
-<li><b>Carga</b>: pico de sábado (cientos de consultas simultáneas al sitio público, decenas de actas abiertas).</li>
-<li>Dispositivos reales: pruebas del acta en 3–4 celulares de gama media/baja y con conexión mala.</li></ul>
+<ul><li><b>Dominio</b> (hecho): tests unitarios de las reglas puras en <code>packages/shared</code>: tabla y desempates, sanciones, tribunal, elegibilidad, fixture, llaves, formato y fases, cobros, caja, mensajería, reprogramación, sincronización del acta, entre otras.</li>
+<li><b>Integración</b> (hecho): un archivo por módulo en <code>apps/api/test</code>, contra la API compilada y una base aparte (<code>potrero_test</code>), incluido el aislamiento entre organizaciones y las sandboxes de la demo. Pendiente: contract tests contra el sandbox de Mercado Pago.</li>
+<li><b>E2E</b> (hecho, Playwright): recorridos sobre la demo local y sobre la demo pública (entrar desde la landing, copa con penales, acta sin conexión, dueño único del acta).</li>
+<li><b>Carga</b> (pendiente): pico de sábado (cientos de consultas simultáneas al sitio público, decenas de actas abiertas).</li>
+<li>Dispositivos reales (pendiente): pruebas del acta en 3–4 celulares de gama media/baja y con conexión mala.</li></ul>
 <h2>Entornos y entrega</h2>
-<ul><li>Entornos: local, preview por PR, staging (con datos sintéticos), producción. Nunca datos reales fuera de producción.</li>
-<li>CI: lint, tipos, pruebas, escaneo de dependencias y secretos, build. Migraciones con Prisma revisadas.</li>
+<ul><li>Hoy: entorno local (<code>pnpm demo</code>, Docker Compose con PostgreSQL) y demo pública local (<code>pnpm demo --publica</code>). Repositorio solo local, sin remoto.</li>
+<li>Previsto: preview por cambio, staging (con datos sintéticos), producción y el entorno de demo pública aparte. Nunca datos reales fuera de producción.</li>
+<li><b>Sin CI todavía</b>. Previsto: lint, tipos, pruebas, escaneo de dependencias y secretos, build, <code>check:alineacion</code>. Migraciones con Prisma revisadas.</li>
 <li>Despliegue continuo a staging, aprobado a producción; <i>feature flags</i> para lo incompleto y para activar organizaciones de a una.</li></ul>
 <h2>Observabilidad</h2>
-<ul><li>Errores (Sentry o equivalente), trazas y métricas, logs estructurados sin datos personales.</li>
-<li>Alertas: fallos de webhook de pago, cola de notificaciones atrasada, errores de sincronización de actas, tasa de errores del sitio público.</li>
-<li>Panel interno con estado de cada organización (pagos pendientes de conciliar, mensajes fallidos), dentro del backoffice de Gregal.</li></ul>
+<ul><li>Errores (Sentry o equivalente), trazas y métricas, logs estructurados sin datos personales: pendiente.</li>
+<li>Alertas: fallos de webhook de pago, mensajes atrasados o fallidos, errores de sincronización de actas, tasa de errores del sitio público.</li>
+<li>Salud de cada organización en el backoffice de Gregal (hecho: ligas en riesgo de abandono); pendiente: pagos sin conciliar, mensajes fallidos y actas con error por organización.</li></ul>
 <h2>Objetivos de servicio</h2>
 <table><tr><th>Indicador</th><th>Objetivo inicial</th></tr>
 <tr><td>Disponibilidad del sitio público y acta (sábado/domingo)</td><td>99,9 %</td></tr>
@@ -201,26 +236,39 @@
 <tr><td>Sincronización del acta tras recuperar señal</td><td>&lt; 30 s</td></tr>
 <tr><td>Confirmación de pago en la plataforma tras webhook</td><td>&lt; 10 s</td></tr>
 <tr><td>Recuperación ante falla (RTO / RPO)</td><td>4 h / 24 h (a ajustar)</td></tr></table>
-<h2>Accesibilidad y localización</h2><p>Español rioplatense, moneda ARS, zona horaria America/Argentina/Buenos_Aires, contraste AA, tamaños táctiles grandes en el acta. Internacionalización lista desde el inicio (textos externalizados) para una eventual expansión regional.</p>
+<h2>Accesibilidad y localización</h2><p>Español rioplatense con voseo, moneda ARS, zona horaria America/Argentina/Buenos_Aires, contraste AA, tamaños táctiles grandes en el acta. Textos hoy en el código; externalizarlos si hay expansión regional.</p>
 
-<h1 class="sec"><p class="eyebrow">11</p>Riesgos técnicos y decisiones abiertas</h1>
+<h1 class="sec"><p class="eyebrow">11</p>Riesgos técnicos y decisiones</h1>
 <table><tr><th>Riesgo</th><th>Impacto</th><th>Mitigación</th></tr>
 <tr><td>Alcance completo sin versiones: lanzamiento tardío o con calidad despareja</td><td>Alto</td><td>Hitos internos con criterios de salida, beta cerrada temprana, feature flags, recorte por prioridad si el cronograma se corre (ver abajo).</td></tr>
-<tr><td>Aprobación y condiciones de Mercado Pago Marketplace</td><td>Alto</td><td>Iniciar el trámite comercial ya; prototipo en sandbox en H1; definir plan B (cobro con cuenta propia del organizador con link manual).</td></tr>
-<tr><td>Costo y aprobación de plantillas de WhatsApp</td><td>Medio</td><td>Opt-in, push/email por defecto, topes por plan, costo visible antes de enviar.</td></tr>
+<tr><td>Aprobación y condiciones de Mercado Pago Marketplace</td><td>Alto</td><td>Iniciar el trámite comercial ya; la pasarela simulada permite avanzar sin la cuenta; definir plan B (cobro con cuenta propia del organizador con link manual).</td></tr>
+<tr><td>Costo y aprobación de plantillas de WhatsApp</td><td>Medio</td><td>Consentimiento, push/email por defecto, topes por plan, costo visible antes de enviar.</td></tr>
 <tr><td>Fixture con restricciones complejas</td><td>Medio</td><td>Reglas básicas primero, solver opcional, siempre editable a mano.</td></tr>
 <tr><td>Datos de menores y documentos</td><td>Alto</td><td>Diseño con mínimo dato, consentimiento, cifrado, asesoría legal desde el inicio.</td></tr>
-<tr><td>Conexión pobre en canchas</td><td>Medio</td><td>Offline-first probado en campo desde H3.</td></tr></table>
+<tr><td>Conexión pobre en canchas</td><td>Medio</td><td>Acta sin conexión probada en navegador; falta probarla en campo y en celulares de gama baja.</td></tr>
+<tr><td>Dependencia de un solo constructor (ADR-017)</td><td>Medio</td><td>Contexto en el repositorio (CLAUDE.md, <code>docs/contexto</code>, ADR, backlog), tests en verde como definición de terminado.</td></tr></table>
 <h2>Orden de recorte si el cronograma se corre</h2>
 <p>Sin cambiar la promesa de "producto completo", si hay que ajustar, este es el orden sugerido de lo que pasa a "poco después del lanzamiento": 1) mercado de pases, 2) página de partido con fotos, 3) verificación por selfie automática, 4) asignación automática de árbitros, 5) métricas avanzadas. No recortar nunca: cobros, fixture, acta, tabla, sitio público, sanciones, comunicación y contingencias.</p>
-<h2>Decisiones abiertas para el equipo</h2>
-<table><tr><th>Tema</th><th>Opciones</th><th>Responsable</th></tr>
-<tr><td>Hosting y proveedor cloud</td><td>Gestionado único vs. mixto</td><td>Tech lead</td></tr>
-<tr><td>BSP de WhatsApp</td><td>Local con facturación en pesos vs. internacional</td><td>Tech lead + negocio</td></tr>
-<tr><td>App nativa en el lanzamiento</td><td>PWA solamente vs. PWA + contenedor nativo</td><td>Producto</td></tr>
-<tr><td>Costo de procesamiento de Mercado Pago</td><td>Absorbe organizador vs. recargo visible al equipo</td><td>Negocio</td></tr>
-<tr><td>Verificación de identidad</td><td>Revisión humana vs. proveedor automático</td><td>Producto + legal</td></tr>
-<tr><td>Solver de fixture</td><td>Heurística propia vs. CP-SAT</td><td>Tech lead (tras prototipo)</td></tr></table>
+<h2>Decisiones abiertas</h2>
+<table><tr><th>ADR</th><th>Tema</th><th>Opciones</th><th>Responsable</th></tr>
+<tr><td>011</td><td>Hosting y proveedor cloud</td><td>Gestionado único vs. mixto</td><td>Tech lead</td></tr>
+<tr><td>012</td><td>BSP de WhatsApp</td><td>Local con facturación en pesos vs. internacional</td><td>Tech lead + negocio</td></tr>
+<tr><td>013</td><td>Costo de procesamiento de Mercado Pago</td><td>Absorbe organizador vs. recargo visible al equipo</td><td>Negocio</td></tr>
+<tr><td>014</td><td>Verificación de identidad</td><td>Revisión humana vs. proveedor automático</td><td>Producto + legal</td></tr>
+<tr><td>015</td><td>Solver de fixture</td><td>Heurística propia vs. CP-SAT</td><td>Tech lead (tras prototipo)</td></tr>
+<tr><td>016</td><td>App nativa en el lanzamiento</td><td>PWA solamente vs. PWA + contenedor nativo</td><td>Producto</td></tr></table>
+<h2>Decisiones tomadas durante la construcción</h2>
+<p>Además de ADR-001 a 010 (lanzamiento, stack, RLS, acta, datos derivados, reglamento, pasarela, idioma, cifras, sesión), están aceptadas:</p>
+<table><tr><th>ADR</th><th>Decisión</th></tr>
+<tr><td>017</td><td>La implementación completa la hace Claude Code, dirigido por Gregal; los plazos se revisan al definir el equipo.</td></tr>
+<tr><td>018</td><td>Convivir con el aviso de consultas concurrentes de Prisma 7; no pasar a pg 9 hasta que Prisma lo corrija.</td></tr>
+<tr><td>019</td><td>Demo pública como entorno aparte, con una sandbox por visitante que vence a las 24 h.</td></tr>
+<tr><td>020</td><td>Acta sin conexión con cola local en IndexedDB y service worker que nunca guarda respuestas de la API.</td></tr>
+<tr><td>021</td><td>Llaves: se guarda el cuadro y cada cruce se crea cuando se conocen sus dos equipos.</td></tr>
+<tr><td>022</td><td>Mensajería con canales intercambiables y envíos simulados hasta elegir proveedores.</td></tr>
+<tr><td>023</td><td>Caja como libro de partida doble inmutable, con asientos automáticos e idempotentes.</td></tr>
+<tr><td>025</td><td>Documentación con cifrado de campos, revisión humana, hash para duplicados y links firmados.</td></tr>
+<tr><td>026</td><td>Torneos con formato flexible por fases; los formatos fijos pasan a ser plantillas.</td></tr></table>
 <p class="fn">Las estimaciones de plazo y las cifras de costos de terceros son supuestos iniciales y deben validarse. Las tarifas de Mercado Pago y Meta cambian con frecuencia: confirmar en sus fuentes oficiales antes de fijar precios.</p>
 <div class="gt-colofon"><div><img src="brand/gregal-oscuro.svg" alt="Gregal Tech"><p>Potrero es un producto de Gregal Tech. Este documento forma parte del set de 6 documentos de trabajo del proyecto; ante cualquier diferencia con otro material, vale lo que dicen estos documentos.</p></div><div class="gt-datos">gregal.tech<br>gregaltech.sf@gmail.com<br>San Francisco, Córdoba</div></div>
 </body></html>

@@ -8,7 +8,7 @@ Sistema para organizar ligas y torneos de fútbol amateur en Argentina: cobros c
 - Fuente de verdad: documentos 1–6 en `docs/src/*.html` (los PDF se generan). Si algo contradice esos documentos, se corrige lo otro o se actualiza el documento a propósito.
 - Cifras (precios, comisiones, metas, reglamento por defecto): solo en `docs/datos.json`. Después de cambiarlo: `pnpm datos` y `pnpm check:alineacion`.
 - Decisiones técnicas: `docs/adr/` (formato GT-D2). Nueva decisión → skill `adr`. Abiertas: 011–016.
-- Repo solo local por ahora (sin remoto). No commitear sin pedido explícito.
+- Repo en GitHub (`origin`: lucasnbarbero/potrero), rama `main`. No commitear ni subir sin pedido explícito.
 - Para contexto de negocio NO leer los HTML/PDF completos: usar `docs/contexto/` (reglas, glosario, estado actual). Modelo de datos: `apps/api/prisma/schema.prisma`.
 
 ## Mapa
@@ -32,4 +32,4 @@ Sistema para organizar ligas y torneos de fútbol amateur en Argentina: cobros c
 - Base de desarrollo: `pnpm db:reset` borra y recarga. Prisma bloquea `migrate reset` si lo corre un agente: pedirle al usuario que lo ejecute o que dé su consentimiento explícito. Para pruebas, usar una base aparte.
 
 ## Definición de terminado
-Tipos, lint y tests en verde; reglas de negocio con tests en `packages/shared`; endpoints con test de integración; pantalla verificada en el navegador (Playwright); `check:alineacion` OK; backlog actualizado.
+En `docs/convenciones.md` (única fuente).

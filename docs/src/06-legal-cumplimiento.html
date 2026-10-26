@@ -29,23 +29,31 @@
 <tr><td>Mercado Pago, WhatsApp/BSP, nube</td><td>Subencargados</td><td>Cláusulas contractuales, transferencia internacional de datos.</td></tr></table>
 <p>El abogado debe confirmar si Potrero es responsable, encargado o ambos según cada flujo, porque determina quién registra la base, quién responde a los pedidos de los titulares y quién responde ante un incidente.</p>
 <h2>Obligaciones a cubrir</h2>
-<table><tr><th>Obligación</th><th>Qué hay que hacer</th><th>Dónde se implementa</th></tr>
-<tr><td>Inscripción de bases de datos</td><td>Confirmar si la base debe inscribirse ante la AAIP y quién la inscribe (liga, Potrero, ambos), y plazos de actualización.</td><td>Trámite legal</td></tr>
-<tr><td>Consentimiento informado</td><td>Texto claro, finalidad, destinatarios, derechos, datos sensibles; guardar versión, fecha y origen del consentimiento.</td><td>Registro <code>Consent</code>; flujo de alta</td></tr>
-<tr><td>Consentimiento de tutores</td><td>Flujo de autorización para menores, con prueba (quién, cuándo, cómo se verificó).</td><td>Rol Tutor; documento 1</td></tr>
-<tr><td>Datos sensibles</td><td>Salud (apto físico) y otros: determinar si son datos sensibles y las condiciones especiales; minimizar (guardar solo el resultado y la fecha de vencimiento si es posible).</td><td>Modelo de datos</td></tr>
-<tr><td>Calidad y finalidad</td><td>Usar los datos solo para organizar el torneo; no reutilizarlos para publicidad sin consentimiento.</td><td>Política y permisos</td></tr>
-<tr><td>Derechos de los titulares</td><td>Acceso, rectificación, supresión y oposición con proceso y plazos.</td><td>Procedimiento interno + herramienta de soporte</td></tr>
-<tr><td>Seguridad</td><td>Medidas técnicas y organizativas (cifrado, accesos, auditoría), registro de incidentes y aviso.</td><td>Documento 1, sección 8</td></tr>
-<tr><td>Transferencias internacionales</td><td>Si la nube, el BSP o el proveedor de verificación está fuera del país, verificar el nivel de protección y firmar cláusulas.</td><td>Contratos con proveedores</td></tr>
-<tr><td>Retención y borrado</td><td>Plazos por tipo de dato (ej. documentos de identidad y aptos); eliminación segura.</td><td>Jobs de borrado</td></tr>
-<tr><td>Imagen y fotos</td><td>Consentimiento para publicar fotos y tarjetas, especialmente de menores.</td><td>Permisos de perfil y de partido</td></tr></table>
+<p>La columna "Estado" dice qué ya hace el producto. <b>Implementado (provisorio)</b> significa que funciona en la demo con un criterio conservador nuestro, pero espera el aval del abogado: textos, edades y plazos pueden cambiar. Las cifras (edades, plazos) están en <code>datos.json</code>.</p>
+<table><tr><th>Obligación</th><th>Qué hay que hacer</th><th>Dónde se implementa</th><th>Estado</th></tr>
+<tr><td>Inscripción de bases de datos</td><td>Confirmar si la base debe inscribirse ante la AAIP y quién la inscribe (liga, Potrero, ambos), y plazos de actualización.</td><td>Trámite legal</td><td>Pendiente (E28-05).</td></tr>
+<tr><td>Consentimiento informado</td><td>Texto claro, finalidad, destinatarios, derechos, datos sensibles; guardar versión, fecha y origen del consentimiento.</td><td>Registro <code>Consent</code>; flujo de alta</td><td><b>Implementado (provisorio):</b> consentimientos versionados con quién, cuándo y qué versión: participación del menor, imagen y términos del jugador al crear su cuenta. Falta el texto legal.</td></tr>
+<tr><td>Consentimiento de tutores</td><td>Flujo de autorización para menores, con prueba (quién, cuándo, cómo se verificó).</td><td>Rol Tutor; documento 1</td><td><b>Implementado (provisorio):</b> el tutor autoriza en línea por un link de un solo uso que vence a los 14 días; queda su nombre, DNI y vínculo, y puede revocar. Menor = menos de 18 años.</td></tr>
+<tr><td>Datos sensibles</td><td>Salud (apto físico) y otros: determinar si son datos sensibles y las condiciones especiales; minimizar (guardar solo el resultado y la fecha de vencimiento si es posible).</td><td>Modelo de datos</td><td><b>Implementado (provisorio):</b> número de DNI y datos de salud cifrados campo por campo; el DNI se compara por hash para detectar duplicados. Hoy <b>se guarda el archivo del apto</b>, no solo estado y vencimiento: pregunta al abogado.</td></tr>
+<tr><td>Calidad y finalidad</td><td>Usar los datos solo para organizar el torneo; no reutilizarlos para publicidad sin consentimiento.</td><td>Política y permisos</td><td>El sitio público no muestra datos personales; los sponsors reciben solo totales.</td></tr>
+<tr><td>Derechos de los titulares</td><td>Acceso, rectificación, supresión y oposición con proceso y plazos.</td><td>Procedimiento interno + herramienta de soporte</td><td>Sin herramienta (E28-04): hoy se resolvería a mano.</td></tr>
+<tr><td>Seguridad</td><td>Medidas técnicas y organizativas (cifrado, accesos, auditoría), registro de incidentes y aviso.</td><td>Documento 1, sección 8</td><td><b>Parcial:</b> aislamiento por liga (RLS), cifrado, "Ver DNI" con registro de quién lo vio, archivos por links firmados de 5 minutos con registro, acceso del staff de Gregal auditado. Falta 2FA del staff, backups, pentest (E29).</td></tr>
+<tr><td>Transferencias internacionales</td><td>Si la nube, el BSP o el proveedor de verificación está fuera del país, verificar el nivel de protección y firmar cláusulas.</td><td>Contratos con proveedores</td><td>Pendiente: proveedores sin elegir.</td></tr>
+<tr><td>Retención y borrado</td><td>Plazos por tipo de dato (ej. documentos de identidad y aptos); eliminación segura.</td><td>Jobs de borrado</td><td><b>Implementado (provisorio):</b> borrado automático diario de los documentos rechazados a los 30 días, de los vencidos a los 365 días del vencimiento y de los registros de acceso a los 730 días.</td></tr>
+<tr><td>Imagen y fotos</td><td>Consentimiento para publicar fotos y tarjetas, especialmente de menores.</td><td>Permisos de perfil y de partido</td><td><b>Implementado (provisorio):</b> consentimiento de imagen por jugador (en menores, el del tutor). No hay fotos de partido todavía.</td></tr></table>
 <h2>Reglas de producto derivadas (propuestas)</h2>
-<ul><li>No publicar nunca DNI, fecha de nacimiento exacta, teléfono ni domicilio. Los perfiles públicos de menores son opcionales y con apodo.</li>
+<ul><li>No publicar nunca DNI, fecha de nacimiento exacta, teléfono ni domicilio. <i>Hoy:</i> en el sitio público el nombre sale con iniciales por defecto y cada jugador elige apodo o iniciales; los menores sin consentimiento no tienen perfil y aparecen solo con iniciales.</li>
 <li>Pedir el mínimo de documentación; el organizador elige qué es obligatorio por torneo.</li>
 <li>Acceso a documentos solo para roles autorizados y con registro.</li>
-<li>La selfie y la comparación facial son datos biométricos: requieren consentimiento expreso y evaluación legal específica antes de implementarlas. Por defecto, revisión humana.</li>
-<li>Los jugadores que se dan de baja pueden pedir que se borren sus datos; se conserva solo lo imprescindible por obligación legal o para la integridad de los resultados deportivos (dato anonimizado).</li></ul>
+<li>La selfie y la comparación facial son datos biométricos: requieren consentimiento expreso y evaluación legal específica antes de implementarlas. Por defecto, revisión humana. <i>Hoy:</i> la selfie está apagada (no disponible) y toda la revisión es humana.</li>
+<li>Los jugadores que se dan de baja pueden pedir que se borren sus datos; se conserva solo lo imprescindible por obligación legal o para la integridad de los resultados deportivos (dato anonimizado). <i>Hoy:</i> no hay herramienta para estos pedidos (E28-04).</li></ul>
+<h2>Flujos nuevos a revisar con el abogado</h2>
+<table><tr><th>Flujo (ya en el producto)</th><th>Qué hay que revisar</th></tr>
+<tr><td>Cuenta del jugador</td><td>El capitán invita y el jugador crea su cuenta aceptando términos. ¿Un menor puede tener cuenta propia? ¿Con qué consentimiento y desde qué edad?</td></tr>
+<tr><td>Importación desde Excel</td><td>El organizador sube planillas con nombres y DNI de terceros. Base legal, información a los jugadores y responsabilidad de la liga por esos datos.</td></tr>
+<tr><td>Acceso del staff de Gregal</td><td>El panel interno ve datos de las ligas (no documentos) y cada consulta queda auditada. Definir quién accede, para qué y cómo se informa en la privacidad.</td></tr>
+<tr><td>Demo pública</td><td>Cada visitante usa datos inventados, pero se usa su IP para los topes y puede pasar por un captcha de Cloudflare (Turnstile): informarlo y revisar la transferencia.</td></tr>
+<tr><td>Crónica automática y tarjeta compartible</td><td>El sitio publica crónicas y tarjetas de cada partido con nombres (en iniciales o apodo). Revisar el alcance del consentimiento y el caso de menores.</td></tr></table>
 
 <h1 class="sec"><p class="eyebrow">2</p>Dinero, pagos e impuestos</h1>
 <h2>Modelo de cobro</h2>
@@ -53,7 +61,13 @@
 <ul><li>Que ese esquema no convierte a Potrero en una entidad que requiera autorización o registro financiero (por ejemplo, como proveedor de servicios de pago u otros regímenes).</li>
 <li>Obligaciones frente a la <b>UIF</b> (prevención de lavado de dinero): si Potrero, como plataforma, es sujeto obligado o solo lo es la pasarela. Prever procedimientos de conocimiento del cliente razonables para organizadores.</li>
 <li>Condiciones de Mercado Pago: aprobación de la aplicación, requisitos de cada vendedor (identificación nivel KYC 6), responsabilidad por contracargos, reembolsos, plazos de acreditación, tarifas y prohibiciones de uso.</li>
-<li>Tratamiento del <b>retiro de dinero</b> de la caja del torneo: si es solo un registro contable del organizador o un movimiento real de fondos. En el segundo caso, el esquema legal cambia de manera importante.</li></ul>
+<li>Tratamiento del <b>retiro de dinero</b> de la caja del torneo: si es solo un registro contable del organizador o un movimiento real de fondos. En el segundo caso, el esquema legal cambia de manera importante. <i>Hoy el retiro es solo un registro</i> en la caja: no mueve dinero.</li></ul>
+<h2>Preguntas nuevas por funciones ya construidas</h2>
+<table><tr><th>Función</th><th>Pregunta</th></tr>
+<tr><td>Seguro por jugador</td><td>El organizador puede cobrar un seguro por jugador y por fecha. Gregal no vende ni intermedia seguros: ¿alcanza con aclararlo o cobrar ese cargo por la plataforma roza la intermediación (Superintendencia de Seguros de la Nación)?</td></tr>
+<tr><td>Levantar una sanción pagando</td><td>Opción del reglamento, apagada por defecto: la suspensión se levanta al pagar una multa. ¿Hay límites (menores, defensa del consumidor, reglamentos federativos)?</td></tr>
+<tr><td>Pagos manuales con comprobante</td><td>El organizador registra efectivo o transferencia, completos o parciales, con un comprobante. ¿Qué valor tiene ese registro y qué obligaciones fiscales del organizador hay que recordarle?</td></tr>
+<tr><td>Sponsors en la caja</td><td>Los cobros a sponsors entran en la caja del torneo. Es ingreso del organizador: ¿cómo se aclara que la facturación es suya?</td></tr></table>
 <h2>Impuestos y facturación de Potrero</h2>
 <table><tr><th>Tema</th><th>Pregunta para el contador</th></tr>
 <tr><td>Régimen</td><td>¿Monotributo, responsable inscripto, o sociedad? Impacto de la comisión y de ingresos del exterior si hay clientes en otros países.</td></tr>
@@ -70,11 +84,11 @@
 <tr><td>Términos y condiciones para organizadores</td><td>Servicio, precios y comisiones, pagos, responsabilidades, uso aceptable, propiedad de datos, suspensión, baja, ley aplicable y jurisdicción, límites de responsabilidad, nivel de servicio.</td><td>Pendiente</td></tr>
 <tr><td>Contrato de tratamiento de datos (con cada liga)</td><td>Quién es responsable/encargado, instrucciones, seguridad, subencargados, devolución y borrado al finalizar, auditoría, notificación de incidentes.</td><td>Pendiente</td></tr>
 <tr><td>Acuerdo de liga fundadora</td><td>Beneficios (2,5 % de por vida, condiciones), obligaciones (torneo piloto, datos de cobros, feedback, testimonio), plazo, confidencialidad, qué pasa si se cambia el modelo.</td><td>Pendiente</td></tr>
-<tr><td>Términos para capitanes, jugadores y público</td><td>Uso de la cuenta, reglas de conducta, contenido, pagos y reembolsos del equipo.</td><td>Pendiente</td></tr>
+<tr><td>Términos para capitanes, jugadores y público</td><td>Uso de la cuenta, reglas de conducta, contenido, pagos y reembolsos del equipo.</td><td>El jugador ya los acepta en la app (versionados); falta el texto legal</td></tr>
 <tr><td>Política de privacidad (pública)</td><td>Qué datos se recogen, para qué, con quién se comparten, derechos, plazos, contacto.</td><td>Pendiente</td></tr>
-<tr><td>Política de cookies y analítica</td><td>Qué se mide y cómo se informa.</td><td>Pendiente</td></tr>
-<tr><td>Consentimiento de tutor</td><td>Autorización para participar, tratar datos y publicar imagen; versionado.</td><td>Pendiente</td></tr>
-<tr><td>Política de reembolsos y reclamos de pago</td><td>Quién reembolsa, plazos, qué hace Potrero y qué el organizador.</td><td>Pendiente</td></tr>
+<tr><td>Política de cookies y analítica</td><td>Qué se mide y cómo se informa.</td><td>Pendiente. Hoy solo cookies propias de sesión y ninguna analítica (E27-04); las métricas de sponsors no usan cookies</td></tr>
+<tr><td>Consentimiento de tutor</td><td>Autorización para participar, tratar datos y publicar imagen; versionado.</td><td>Flujo en la app (versionado); falta el texto legal</td></tr>
+<tr><td>Política de reembolsos y reclamos de pago</td><td>Quién reembolsa, plazos, qué hace Potrero y qué el organizador.</td><td>Pendiente. El producto todavía no tiene reembolsos (E06-12)</td></tr>
 <tr><td>Acuerdo para sponsors</td><td>Espacios, medición, categorías prohibidas, derechos de uso de marca.</td><td>Pendiente</td></tr>
 <tr><td>Contratos con proveedores</td><td>Mercado Pago, BSP de WhatsApp, nube, email: confidencialidad, datos, niveles de servicio.</td><td>Pendiente</td></tr>
 <tr><td>Contratos de personal y colaboradores</td><td>Confidencialidad, propiedad intelectual del código y diseño, acceso a datos sensibles.</td><td>Pendiente</td></tr></table>
@@ -102,13 +116,15 @@
 <li><b>Transparencia:</b> señalar claramente cuándo algo es publicidad.</li>
 <li><b>Uso de marcas de terceros:</b> sponsors que aportan logos; revisar derechos y condiciones.</li>
 <li><b>Datos para reportes:</b> reportes de impresiones y clics son agregados; no entregar datos personales a sponsors sin consentimiento.</li></ul>
+<div class="callout"><b class="t">Implementado, a validar con el abogado</b>El módulo de sponsors ya aplica estas reglas: rechaza apuestas, alcohol y tabaco en torneos con jugadores menores; cada organización puede rechazar rubros; los espacios llevan la marca "Publicidad"; y las impresiones y clics se cuentan por día, sin cookies ni datos del visitante. Falta el acuerdo para sponsors (sección 3) y revisar la normativa provincial de apuestas.</div>
 <h2>Responsabilidad por el contenido</h2>
 <p>Crónicas automáticas, fotos y comentarios pueden generar reclamos (honor, imagen, derechos). Preparar: política de contenido, canal de denuncias, moderación y proceso de retiro rápido.</p>
 
 <h1 class="sec"><p class="eyebrow">7</p>Responsabilidad, seguros y riesgos deportivos</h1>
 <ul><li><b>Lesiones y accidentes:</b> Potrero no organiza los partidos ni controla la cancha. Los términos deben dejar claro que la responsabilidad deportiva, de seguridad y de seguros es de la liga y del organizador. Aun así, verificar con el abogado la exposición por exigir o verificar documentación (aptos físicos): la plataforma registra el documento, pero no certifica la aptitud médica.</li>
 <li><b>Seguro de responsabilidad civil y ciber:</b> cotizar cobertura para la empresa (errores y omisiones, protección de datos).</li>
-<li><b>Decisiones disciplinarias:</b> la plataforma ejecuta las reglas definidas por la liga; las sanciones son decisión del tribunal del organizador. Dejarlo expreso para que los reclamos de jugadores y equipos se dirijan a la liga.</li>
+<li><b>Decisiones disciplinarias:</b> la plataforma ejecuta las reglas definidas por la liga; las sanciones son decisión del tribunal del organizador. Dejarlo expreso para que los reclamos de jugadores y equipos se dirijan a la liga. Hoy el producto tiene un <b>tribunal</b> con expediente, informe, descargo del equipo (lo carga el capitán), resolución y multa como cargo al equipo: la plataforma ofrece el procedimiento, pero quien resuelve es el tribunal de la liga.</li>
+<li><b>Seguro de los jugadores:</b> el organizador puede cobrar un seguro por jugador para pagar la póliza que él contrata. Gregal no vende, no elige ni garantiza seguros: los términos tienen que decirlo y la cobertura es responsabilidad de la liga.</li>
 <li><b>Fallas del servicio:</b> definir límites de responsabilidad e indemnización razonables, nivel de servicio y compensaciones (por ejemplo, créditos) ante caídas en fechas críticas.</li>
 <li><b>Fraude:</b> pagos con tarjetas robadas, equipos que reclaman un pago; definir quién responde con Mercado Pago y cómo se reparte entre plataforma, organizador y equipo.</li></ul>
 
@@ -119,20 +135,26 @@
 <tr><td>3</td><td>Definir forma societaria y régimen fiscal.</td><td>Abogado + contador</td><td>Noviembre–diciembre 2026</td></tr>
 <tr><td>4</td><td>Consulta sobre menores, DNI, aptos físicos y biometría; definir consentimientos y edad.</td><td>Abogado</td><td>Diciembre 2026</td></tr>
 <tr><td>5</td><td>Acuerdo con Mercado Pago y revisión del esquema marketplace/UIF.</td><td>Dirección + abogado</td><td>Diciembre 2026 – enero 2027</td></tr>
-<tr><td>6</td><td>Redactar términos, privacidad, contrato de datos y acuerdo de liga fundadora.</td><td>Abogado</td><td>Enero–febrero 2027</td></tr>
-<tr><td>7</td><td>Registro de bases de datos, si corresponde.</td><td>Abogado</td><td>Antes de la beta (abril 2027)</td></tr>
+<tr><td>6</td><td>Redactar términos (incluidos los del jugador, que la app ya hace aceptar), privacidad, contrato de datos y acuerdo de liga fundadora.</td><td>Abogado</td><td>Enero–febrero 2027</td></tr>
+<tr><td>7</td><td>Registro de bases de datos, si corresponde.</td><td>Abogado</td><td>Antes de la beta (marzo 2027)</td></tr>
 <tr><td>8</td><td>Seguros y contratos con proveedores.</td><td>Dirección</td><td>Marzo 2027</td></tr>
-<tr><td>9</td><td>Auditoría de privacidad y revisión final antes del lanzamiento.</td><td>Abogado + tech lead</td><td>Septiembre–octubre 2027</td></tr></table>
+<tr><td>9</td><td>Auditoría de privacidad y revisión final antes del lanzamiento.</td><td>Abogado + tech lead</td><td>Julio 2027, antes del lanzamiento (documento 5)</td></tr></table>
 <h2>Preguntas para la primera reunión con el abogado</h2>
 <ol><li>¿Debemos registrar bases de datos? ¿Quién (liga, Potrero o ambos) y cuándo?</li>
 <li>¿Qué consentimientos exigimos para menores de 13, 13–17 y mayores? ¿Cómo se acredita la relación con el tutor?</li>
-<li>¿Un apto físico es dato sensible? ¿Guardamos el archivo o solo el estado y la fecha?</li>
+<li>¿Un apto físico es dato sensible? ¿Guardamos el archivo o solo el estado y la fecha? (Hoy se guarda el archivo, en almacenamiento privado y con cada acceso registrado.)</li>
 <li>¿Podemos usar selfie y comparación facial? ¿Con qué consentimiento y proveedor?</li>
 <li>Con el esquema de split de Mercado Pago, ¿qué autorizaciones necesitamos y cuáles son nuestras obligaciones frente a la UIF?</li>
 <li>¿Qué forma jurídica conviene para empezar y para recibir inversión?</li>
 <li>¿Cómo repartimos la responsabilidad entre liga, plataforma y Mercado Pago en reembolsos y fraude?</li>
 <li>¿Qué requisitos tiene la publicidad de apuestas o alcohol en torneos con menores?</li>
-<li>¿Qué cláusulas son indispensables en los términos con las ligas fundadoras?</li></ol>
+<li>¿Qué cláusulas son indispensables en los términos con las ligas fundadoras?</li>
+<li>¿Un menor puede tener cuenta propia de jugador? ¿Desde qué edad y con qué consentimiento?</li>
+<li>¿Qué base legal tiene la liga para importar planillas con DNI de sus jugadores, y qué tenemos que informarles?</li>
+<li>¿Cobrar un seguro por jugador por la plataforma tiene alguna implicancia como intermediación de seguros?</li>
+<li>¿Es válido que el reglamento permita levantar una suspensión pagando una multa, también con menores?</li>
+<li>¿Qué hay que informar sobre la demo pública (IP, captcha de un tercero) y sobre el acceso auditado del staff de Gregal?</li>
+<li>¿Las crónicas y tarjetas de partido con iniciales o apodo necesitan un consentimiento aparte?</li></ol>
 <p class="fn">Las normas y plazos mencionados son referencias a verificar con profesionales matriculados. Documento de trabajo, no es una opinión legal.</p>
 <div class="gt-colofon"><div><img src="brand/gregal-oscuro.svg" alt="Gregal Tech"><p>Potrero es un producto de Gregal Tech. Este documento forma parte del set de 6 documentos de trabajo del proyecto; ante cualquier diferencia con otro material, vale lo que dicen estos documentos.</p></div><div class="gt-datos">gregal.tech<br>gregaltech.sf@gmail.com<br>San Francisco, Córdoba</div></div>
 </body></html>

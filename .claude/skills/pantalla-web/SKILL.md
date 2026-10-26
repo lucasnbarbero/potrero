@@ -14,4 +14,4 @@ Seguí `apps/web/CLAUDE.md`.
 5. **Precios y cifras**: desde `DATOS` de `@potrero/shared`.
 6. **Responsive y accesibilidad**: probá 390 px de ancho; botones táctiles grandes en pantallas de cancha; etiquetas en todos los campos.
 7. **Verificación**: `npx tsc --noEmit` en `apps/web`; agregá o ajustá el recorrido en `e2e/demo.spec.ts`; corré `CAPTURAS=<scratchpad> pnpm test:e2e` y mirá las capturas antes de dar la pantalla por terminada.
-8. Si la pantalla estaba en "Próximamente" de `BarraLateral.tsx`, movela al menú.
+8. Si es una sección nueva del panel, sumala al menú de `BarraLateral.tsx` con el permiso que la habilita (`PERMISO_DEL_MENU`).

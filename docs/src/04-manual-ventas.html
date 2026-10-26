@@ -8,7 +8,9 @@
 <p>Vendemos <b>fines de semana libres y dinero cobrado</b>, no software. El organizador no quiere una app: quiere dejar de perseguir pagos, rehacer fixtures y avisar uno por uno cuando llueve. Tu trabajo es conseguir que pruebe <b>un torneo real</b> con Potrero. La venta se gana cuando el organizador ve su propio torneo funcionando.</p>
 <div class="callout dark"><b class="t">Objetivo comercial de esta etapa</b>Conseguir las <b>15 ligas fundadoras</b> y 8–10 entrevistas de descubrimiento antes del lanzamiento público. La meta no es facturar: es aprender, conseguir casos de éxito y confirmar cuánto dinero cobra cada liga.</div>
 <h2>Qué hay que tener claro antes de hablar</h2>
-<ul><li>El producto sale completo en un solo lanzamiento. Hoy hay <b>diseño navegable</b> (mocks), no producto terminado: nunca prometas fechas que no estén confirmadas ni muestres un mock como si fuera el sistema funcionando.</li>
+<ul><li><b>Hoy se muestra la aplicación real</b>, no diseños: con <code>pnpm demo</code> se levanta Potrero con una liga de ejemplo cargada (Liga Barrial Sur), con torneos en curso, un partido en vivo, capitán y jugador. También existe una <b>demo pública</b> donde cada visitante entra a su propia liga de prueba, que se borra sola; todavía no está publicada, así que por ahora la demo la hacés vos.</li>
+<li><b>Qué está simulado</b> y hay que decirlo siempre: el cobro con Mercado Pago (mismo recorrido, sin plata real; la conexión real todavía no está hecha), los envíos por WhatsApp y email, y el pronóstico del clima. Todo lo demás (base de datos, reglas, permisos, acta sin señal, caja) funciona de verdad.</li>
+<li>Nunca prometas fechas que no estén confirmadas ni muestres como existente algo que no está (ver "Fallas ya conocidas" y "Límites" en <code>docs/guia-demo.md</code> y <code>docs/contexto/estado-actual.md</code>).</li>
 <li>Los precios son de referencia. Los de las ligas fundadoras (2,5 % de por vida) son los únicos que podés cerrar.</li>
 <li>Todo lo que se diga sobre Mercado Pago, WhatsApp y datos personales debe ser verdad. Ante la duda: "lo confirmo y te respondo".</li></ul>
 
@@ -19,20 +21,24 @@
 <tr><td>Quién decide</td><td>El organizador/dueño de la liga</td><td>Hay que pedir permiso a una comisión que no usa tecnología</td></tr>
 <tr><td>Cobros</td><td>Cobra inscripción y cuotas por fecha, hoy por transferencia, con morosos</td><td>Todo en efectivo y sin interés en cobrar online</td></tr>
 <tr><td>Dolor</td><td>Pierde horas semanales en cobros, fixture y avisos</td><td>"Así estamos bien"</td></tr>
+<tr><td>Formato</td><td>Cuota por fecha, seguro por jugador, copa estímulo o torneos por fases (grupos, playoffs ida y vuelta)</td><td>No descalifica: sirve para saber qué mostrar en la demo</td></tr>
 <tr><td>Calendario</td><td>Torneo próximo a empezar (próximos 1–3 meses)</td><td>Temporada recién terminada, sin fecha de inicio</td></tr>
 <tr><td>Actitud</td><td>Prueba herramientas y comparte con sus equipos</td><td>Rechaza cambios de plano</td></tr></table>
 <h2>Preguntas de calificación (rápidas)</h2>
-<ol><li>¿Cuántas ligas o divisiones organizás y cuántos equipos en total?</li><li>¿Cuándo empieza tu próximo torneo?</li><li>¿Cuánto cobrás por equipo (inscripción y por fecha)? ¿Cómo te pagan hoy?</li><li>¿Cuántas horas por semana te lleva organizar?</li><li>¿Quién más decide?</li></ol>
+<ol><li>¿Cuántas ligas o divisiones organizás y cuántos equipos en total?</li><li>¿Cuándo empieza tu próximo torneo?</li><li>¿Cuánto cobrás por equipo (inscripción y por fecha)? ¿Cobrás seguro por jugador? ¿Cómo te pagan hoy?</li><li>¿Qué formato jugás? ¿Grupos, playoffs ida y vuelta, copa estímulo para los eliminados?</li><li>¿Cuántas horas por semana te lleva organizar?</li><li>¿Quién más decide?</li></ol>
 <p><b>Puntaje:</b> torneo en menos de 3 meses (3), 12+ equipos (2), cobra por fecha además de inscripción (2), decide solo (2), dolor claro (1). 7 o más: prioridad alta. 4–6: seguimiento. Menos de 4: lista de espera.</p>
 <div class="callout"><b class="t">Dato clave que debés relevar siempre</b>¿Cuánto cobra la liga por equipo y por fecha en total en un torneo? Es el número que decide el negocio (documento 2). Anotalo en el CRM en cada conversación.</div>
 
 <h1 class="sec"><p class="eyebrow">3</p>Mensajes por tipo de organizador</h1>
 <table><tr><th>Perfil</th><th>Qué le duele</th><th>Mensaje principal</th><th>Prueba</th></tr>
-<tr><td>Organizador independiente</td><td>Cobros, tiempo, morosos</td><td>"Cobrás sin perseguir y recuperás tus fines de semana."</td><td>Demo de inscripciones y cobro; cuentas del torneo ejemplo.</td></tr>
-<tr><td>Dueño de complejo</td><td>Llenar horarios, caja, árbitros</td><td>"Ocupación y caja bajo control, y un sitio con tu marca."</td><td>Pantallas de canchas y caja; reportes de ocupación.</td></tr>
-<tr><td>Liga grande</td><td>Disciplina, reclamos, escala</td><td>"Sanciones automáticas y registro auditable para dejar de discutir."</td><td>Sanciones y acta; auditoría.</td></tr>
-<tr><td>Delegado / árbitro</td><td>Papel y apuro</td><td>"El acta en el celular, aunque no haya señal."</td><td>Acta en celular real.</td></tr>
-<tr><td>Capitán</td><td>Armar el equipo, cobrar cuotas</td><td>"Convocatoria y cuotas por jugador, sin chat infinito."</td><td>Panel del capitán.</td></tr></table>
+<tr><td>Organizador independiente</td><td>Cobros, tiempo, morosos</td><td>"Cobrás sin perseguir y recuperás tus fines de semana."</td><td>Inscripción por link, pago parcial por transferencia, cuota y seguro por fecha automáticos; cuentas del torneo ejemplo.</td></tr>
+<tr><td>Dueño de complejo</td><td>Llenar horarios, caja, árbitros</td><td>"Canchas, árbitros y caja bajo control, y sabés si ganaste plata."</td><td>Árbitros y canchas (ocupación del día), caja con egresos y CSV, métricas de horarios.</td></tr>
+<tr><td>Liga grande</td><td>Disciplina, reclamos, escala, formatos largos</td><td>"Sanciones automáticas, tribunal con expedientes y torneos por fases armados a tu medida."</td><td>Sanciones y tribunal, acta con no habilitado, "Armá el formato" y Torneo Primavera 2026; usuarios con roles.</td></tr>
+<tr><td>Delegado / árbitro</td><td>Papel y apuro</td><td>"El acta en el celular, aunque se corte la señal."</td><td>Acta en un celular (abierta una vez con señal antes del partido).</td></tr>
+<tr><td>Tesorero</td><td>Comprobantes sueltos, cuentas que no cierran</td><td>"Cada pago con su comprobante, y la caja se arma sola."</td><td>Registrar pagos completos o parciales; caja con resultado y CSV; métricas de medios de pago.</td></tr>
+<tr><td>Capitán</td><td>Armar el equipo, papeles, reclamos</td><td>"Convocatoria, plantel, documentación y descargos en un solo lugar, sin chat infinito."</td><td>Panel del capitán.</td></tr>
+<tr><td>Jugador</td><td>Enterarse tarde, no saber si está habilitado</td><td>"Confirmás si vas con un toque y ves tus goles, sanciones y papeles."</td><td>Panel del jugador ("Voy / No voy"), página del partido y perfil.</td></tr></table>
+<p class="fn">Capitán y jugador no pagan: se les habla para que el organizador vea que su gente lo va a usar.</p>
 <h2>Frases que funcionan</h2>
 <ul><li>"¿Cuántas horas te lleva hoy saber quién pagó?"</li><li>"El día que llueve, ¿cuánto tardás en avisar a todos?"</li><li>"Cuando un equipo reclama una suspensión, ¿tenés dónde mostrar la tarjeta?"</li><li>"¿Sabés cuánto ganaste en el último torneo, descontando cancha y árbitros?"</li></ul>
 <h2>Frases que no hay que usar</h2>
@@ -45,7 +51,7 @@
 <tr><td>1. Prospecto</td><td>Identificás una liga (redes, canchas, referidos).</td><td>Datos de contacto y torneo próximo.</td><td>—</td></tr>
 <tr><td>2. Primer contacto</td><td>Mensaje o llamada de 5 minutos.</td><td>Acepta una charla de 20 min.</td><td>1–3 días</td></tr>
 <tr><td>3. Descubrimiento</td><td>Charla de 20 minutos con preguntas (sección 6).</td><td>Dolor confirmado; datos de cobros relevados.</td><td>Misma semana</td></tr>
-<tr><td>4. Demo</td><td>Presentación con sus datos (sección 7).</td><td>Pide ver precio o fecha.</td><td>3–5 días</td></tr>
+<tr><td>4. Demo</td><td>Demo de la app real, con su caso en mente (sección 7).</td><td>Pide ver precio o fecha.</td><td>3–5 días</td></tr>
 <tr><td>5. Propuesta</td><td>Oferta de liga fundadora o plan según perfil.</td><td>Acepta torneo piloto.</td><td>1 semana</td></tr>
 <tr><td>6. Piloto</td><td>Alta, migración, primer torneo acompañado.</td><td>Torneo cobrado y cerrado en plataforma.</td><td>Duración de un torneo</td></tr>
 <tr><td>7. Cliente</td><td>Continúa con precio fundador, referidos.</td><td>Segundo torneo planificado.</td><td>—</td></tr></table>
@@ -55,13 +61,13 @@
 <h2>Dónde encontrar organizadores</h2>
 <ul><li>Instagram y Facebook de ligas y complejos (publican fixtures y tablas manuales).</li><li>Grupos de WhatsApp y Facebook de fútbol amateur de la zona.</li><li>Complejos de canchas: preguntar por quién organiza torneos allí.</li><li>Referidos de ligas fundadoras y de capitanes.</li><li>Eventos y torneos presenciales: ir un sábado, hablar con la mesa de control.</li></ul>
 <h2>Mensaje de primer contacto (WhatsApp / DM)</h2>
-<pre>Hola [Nombre], soy [Tu nombre] de Potrero. Estamos armando un sistema para
-que organizadores de torneos como el tuyo dejen de perseguir pagos y rehacer
-el fixture cuando llueve. Estamos buscando 15 ligas para probarlo con
+<pre>Hola [Nombre], soy [Tu nombre] de Potrero. Hicimos un sistema para que
+organizadores de torneos como el tuyo dejen de perseguir pagos y rehacer
+el fixture cuando llueve. Ya funciona y buscamos 15 ligas para probarlo con
 nosotros, sin costo fijo y con precio especial de por vida. ¿Tenés 20 minutos
-esta semana para contarte y que me cuentes cómo lo manejás hoy?</pre>
+esta semana para mostrártelo y que me cuentes cómo lo manejás hoy?</pre>
 <h2>Llamada de 5 minutos</h2>
-<ol><li><b>Apertura:</b> "Te llamo por el torneo [nombre]. ¿Tenés un minuto?"</li><li><b>Contexto:</b> "Estamos construyendo una herramienta para organizadores. Quiero entender cómo lo hacés hoy."</li><li><b>Una pregunta de dolor:</b> "¿Qué es lo que más tiempo te lleva en cada torneo?"</li><li><b>Cierre:</b> "Te muestro en 20 minutos cómo lo resolvería con tus datos. ¿Martes o jueves?"</li></ol>
+<ol><li><b>Apertura:</b> "Te llamo por el torneo [nombre]. ¿Tenés un minuto?"</li><li><b>Contexto:</b> "Tenemos una herramienta para organizadores y la estamos abriendo a las primeras ligas. Quiero entender cómo lo hacés hoy."</li><li><b>Una pregunta de dolor:</b> "¿Qué es lo que más tiempo te lleva en cada torneo?"</li><li><b>Cierre:</b> "Te muestro en 20 minutos cómo lo resuelve, funcionando. ¿Martes o jueves?"</li></ol>
 <h2>Seguimiento</h2>
 <p>Si no responde: segundo mensaje a los 3 días con un dato útil (por ejemplo, cuántos mensajes mandás por una reprogramación), tercero a los 7 días con la invitación concreta. Después de 3 intentos sin respuesta, pausar 60 días.</p>
 
@@ -80,16 +86,19 @@ esta semana para contarte y que me cuentes cómo lo manejás hoy?</pre>
 <div class="callout warn"><b class="t">Anotá textual</b>Guardá las frases del organizador. Son material para la landing, los casos de éxito y para priorizar el producto.</div>
 
 <h1 class="sec"><p class="eyebrow">7</p>Guion de demo (20–25 minutos)</h1>
-<p>Usá los mocks de la carpeta <code>/mocks</code>. Aclaralo siempre: <b>"Esto es el diseño del producto final, todavía lo estamos construyendo con ligas como la tuya."</b> Personalizá con sus datos (nombre de la liga, equipos, canchas).</p>
-<table><tr><th>Min</th><th>Pantalla</th><th>Qué decir</th><th>Pregunta de cierre</th></tr>
-<tr><td>0–2</td><td>Panel (01)</td><td>"Esto es lo que ves cada mañana: lo urgente primero."</td><td>"¿Hoy cómo sabés qué está pendiente?"</td></tr>
-<tr><td>2–6</td><td>Crear torneo (02) e Inscripciones (03)</td><td>"Elegís el formato y mandás un link. Cada equipo paga y vos ves quién debe."</td><td>"¿Cuánto tiempo te llevaría esto hoy?"</td></tr>
-<tr><td>6–10</td><td>Fixture (04) y Llaves (17)</td><td>"Se arma solo, sin choques. Si movés un partido te avisa."</td><td>"¿Cuánto tardás en armarlo?"</td></tr>
-<tr><td>10–14</td><td>Acta (05) y Sitio público (06)</td><td>"El árbitro carga todo en el celular, incluso sin señal. La tabla se actualiza sola."</td><td>"¿Cuánto tardan hoy en llegarte los resultados?"</td></tr>
-<tr><td>14–18</td><td>Reprogramaciones (11) y Sanciones (12)</td><td>"Llueve: un clic y todos reciben el aviso. Las tarjetas se vuelven suspensiones."</td><td>"¿Qué hiciste la última vez que llovió?"</td></tr>
-<tr><td>18–21</td><td>Caja (14), Sponsors (18)</td><td>"Sabés si ganaste plata y mostrás alcance real a sponsors."</td><td>"¿Hoy sabés cuánto ganás por torneo?"</td></tr>
-<tr><td>21–25</td><td>Cierre</td><td>Precio, ligas fundadoras y torneo piloto.</td><td>"¿Probamos con tu próximo torneo?"</td></tr></table>
-<p>No muestres todo si no hace falta: mostrá <b>los 3 dolores que el organizador mencionó</b>. Terminá siempre con un pedido concreto de próximo paso y fecha.</p>
+<p>Mostrá <b>la aplicación real</b> con la liga de ejemplo (Liga Barrial Sur), siguiendo el recorrido corto de <code>docs/guia-demo.md</code> (parte 7). Decilo al empezar: <b>"Esto funciona de verdad; lo único simulado es el cobro con Mercado Pago, los WhatsApp y emails, y el clima."</b> Si te pasó su Excel, importalo antes en una liga nueva.</p>
+<div class="callout warn"><b class="t">Preparación (el mismo día)</b>Cargá datos limpios con <code>pnpm db:reset</code> y levantá <code>pnpm demo</code> poco antes de la reunión: <b>el partido en vivo dura 2 horas desde la carga</b>; después deja de estar en vivo. Tené tres ventanas abiertas: organizador (demo@potrero.app), capitán (capitan@potrero.app, en incógnito) y jugador (jugador@potrero.app, en otro navegador o perfil). Contraseña <code>potrero-demo-2026</code>; 5 intentos fallidos bloquean la cuenta 15 minutos.</div>
+<table><tr><th>Min</th><th>Pantalla</th><th>Qué mostrar y qué decir</th><th>Pregunta de cierre</th></tr>
+<tr><td>0–3</td><td>Panel</td><td>Partido en vivo, alertas con su botón, sugerencia del próximo paso, cobrado y pendiente. "Lo urgente primero, cada mañana."</td><td>"¿Hoy cómo sabés qué está pendiente?"</td></tr>
+<tr><td>3–6</td><td>Apertura 2026 → Fixture → Fecha 5</td><td>Arrastrar un partido sobre otro y confirmar. "Se arma solo, sin choques, y lo acomodás a mano: te explica qué se pisa."</td><td>"¿Cuánto tardás en armarlo y en rehacerlo?"</td></tr>
+<tr><td>6–9</td><td>Fecha 4 → actas</td><td>El acta del equipo sancionado muestra al "No habilitado" con su motivo. En el acta en vivo, desde un celular, cargar un gol y una tarjeta. "El árbitro lo ve antes de que entre, y funciona aunque se corte la señal."</td><td>"¿Cuánto tardan hoy en llegarte los resultados?"</td></tr>
+<tr><td>9–11</td><td>Sitio público → un resultado</td><td>Página del partido: crónica, línea de tiempo, imagen para WhatsApp e Instagram; después el perfil del goleador. "Esto lo comparten tus equipos. Sin datos personales."</td><td>"¿Hoy dónde publicás la tabla?"</td></tr>
+<tr><td>11–14</td><td>Clausura 2026 → Inscripciones, y Métricas</td><td>"Registrar pago": $ 30.000 por transferencia con comprobante, pago parcial; queda el saldo. En Métricas, cómo te pagan y quién vuelve. "El efectivo y la transferencia también se registran, y ves cómo te paga tu liga."</td><td>"¿Cómo te pagan hoy? ¿Cuántos pagan tarde?"</td></tr>
+<tr><td>14–17</td><td>Torneos → "Armá el formato" y Torneo Primavera 2026</td><td>Grupos + playoffs + copa estímulo: sábados, partidos y recaudación; después el torneo creado, con sus fases. "Armás el torneo a tu manera y ves cuántas fechas juegan todos antes de crearlo."</td><td>"¿Qué formato jugás? ¿Los eliminados siguen jugando?"</td></tr>
+<tr><td>17–19</td><td>Configuración → Importación</td><td>El Excel con errores, explicado fila por fila. "Dejá el Excel: lo importás en minutos y te dice qué corregir."</td><td>"¿Me pasás tu planilla para el piloto?"</td></tr>
+<tr><td>19–22</td><td>Capitán y jugador (otras ventanas)</td><td>Capitán: convocatoria, documentación, descargo. Jugador: "Voy" al próximo partido, y el capitán lo ve al instante. "Tus equipos hacen su parte y te sacan trabajo."</td><td>"¿Tus capitanes lo usarían?"</td></tr>
+<tr><td>22–25</td><td>Cierre</td><td>Ligas fundadoras, torneo piloto y precio.</td><td>"¿Probamos con tu próximo torneo?"</td></tr></table>
+<p>Mostrá <b>los 3 dolores que mencionó</b>: cambiá un bloque por Reprogramar, Sanciones y tribunal, Caja, Árbitros o Sponsors si hace falta. Terminá siempre con un pedido concreto de próximo paso y fecha.</p>
 
 <h1 class="sec"><p class="eyebrow">8</p>Precios y cómo explicarlos</h1>
 <table><tr><th>Plan</th><th>Precio</th><th>Para quién</th></tr>
@@ -108,14 +117,14 @@ esta semana para contarte y que me cuentes cómo lo manejás hoy?</pre>
 
 <h1 class="sec"><p class="eyebrow">9</p>Objeciones y respuestas</h1>
 <table><tr><th>Objeción</th><th>Qué hay detrás</th><th>Cómo responder</th></tr>
-<tr><td>"Ya uso Excel y me funciona."</td><td>Miedo al cambio</td><td>"Perfecto, no hace falta cambiar todo. ¿Cuántas horas te lleva por semana? Probemos un torneo y te importamos tu planilla nosotros."</td></tr>
+<tr><td>"Ya uso Excel y me funciona."</td><td>Miedo al cambio</td><td>"Perfecto, no hace falta cambiar todo. ¿Cuántas horas te lleva por semana? Tu planilla la importás en minutos: el sistema revisa fila por fila y te dice qué corregir (DNI repetidos, equipos mal escritos). Si preferís, la importamos nosotros."</td></tr>
 <tr><td>"¿Cuánto cuesta?"</td><td>Pide precio sin ver valor</td><td>Preguntar primero cuánto cobra y cuánto tiempo pierde; luego dar el precio con el ejemplo de cuentas.</td></tr>
 <tr><td>"Me parece caro (la comisión)."</td><td>Compara con 0 hoy</td><td>"Hoy pagás con tu tiempo y con plata que no cobrás. Con el piloto medimos cuánto recuperás. Si no te cierra, no seguís."</td></tr>
-<tr><td>"Mis equipos pagan en efectivo."</td><td>Duda de utilidad</td><td>"Lo registrás igual y sin comisión. El link es para el que prefiere pagar online."</td></tr>
+<tr><td>"Mis equipos pagan en efectivo."</td><td>Duda de utilidad</td><td>"Lo registrás igual, completo o en partes y con el comprobante, sin comisión. Las métricas te muestran cómo te paga tu liga. El link es para el que prefiere pagar online."</td></tr>
 <tr><td>"Mercado Pago me cobra mucho."</td><td>Costo real</td><td>"Es el costo de cualquier cobro con tarjeta. Podés elegir un plazo de acreditación más largo, que es más barato, o pasárselo al equipo como cargo por servicio."</td></tr>
-<tr><td>"No quiero datos de mis jugadores en una app."</td><td>Privacidad</td><td>"Se guardan cifrados, con consentimiento y sin mostrarse al público. Vos controlás qué documentación pedís."</td></tr>
-<tr><td>"¿Y si se cae en plena fecha?"</td><td>Confianza técnica</td><td>"El acta funciona sin señal y se sincroniza después. Además, durante el piloto estamos con vos."</td></tr>
-<tr><td>"¿Ya está listo?"</td><td>Riesgo</td><td>"Estamos construyendo el producto completo y lo abrimos primero a ligas fundadoras. Vos lo ves funcionando antes de decidir y marcás prioridades."</td></tr>
+<tr><td>"No quiero datos de mis jugadores en una app."</td><td>Privacidad</td><td>"DNI y datos de salud se guardan cifrados, con consentimiento, y nunca se muestran al público. En el sitio el nombre sale con iniciales por defecto y los menores no tienen perfil sin autorización del tutor. Vos elegís qué documentación pide cada torneo."</td></tr>
+<tr><td>"¿Y si se cae en plena fecha?"</td><td>Confianza técnica</td><td>"El acta guarda todo en el celular y lo envía cuando vuelve la señal, sin duplicar nada; solo hay que abrirla una vez con conexión antes del partido. Lo probamos en el navegador, incluso con el servidor apagado; en el piloto lo probamos juntos en los celulares de tus árbitros. Y durante el piloto estamos con vos."</td></tr>
+<tr><td>"¿Ya está listo?"</td><td>Riesgo</td><td>"Probalo: te lo muestro ahora funcionando, con una liga de ejemplo cargada. Las ligas fundadoras son las primeras en usarlo en un torneo real y marcan las prioridades. Lo que todavía está simulado te lo digo de entrada: el cobro con Mercado Pago y los envíos por WhatsApp y email."</td></tr>
 <tr><td>"Tengo que consultarlo con la comisión."</td><td>Decide otro</td><td>"Armemos 15 minutos con ellos. Te preparo un resumen de una página."</td></tr>
 <tr><td>"Después te aviso."</td><td>Falta urgencia</td><td>"¿Cuándo empieza el torneo? Para que quede listo, necesitamos arrancar [fecha]. ¿Te escribo ese día?"</td></tr></table>
 
@@ -128,22 +137,27 @@ esta semana para contarte y que me cuentes cómo lo manejás hoy?</pre>
 <tr><td>Marcagol</td><td>Equipos, jugadores, partidos y documentación.</td><td>Cómo cobran y qué automatizan.</td><td>Automatización del ciclo completo.</td></tr>
 <tr><td>Competize, Futzo, Copa Fácil</td><td>Fixture, tabla, inscripciones.</td><td>Soporte en Argentina y pagos locales.</td><td>Mercado Pago y contexto argentino.</td></tr>
 <tr><td>Excel + WhatsApp</td><td>Gratis y conocido.</td><td>—</td><td>Tiempo recuperado y plata cobrada.</td></tr></table>
-<p>Cuando comparan precio: <b>no hables mal de nadie.</b> Preguntá qué usan hoy, qué les falta y mostrá los 3 módulos donde somos más fuertes (cobros con split, contingencias, sanciones/identidad).</p>
+<h2>Lo que mostramos funcionando</h2>
+<ul><li><b>Torneos a medida:</b> fases encadenadas, playoffs ida y vuelta y copa estímulo en paralelo, con vista previa de sábados, partidos y recaudación antes de crearlo.</li><li><b>Cobros que se generan solos:</b> cuota por fecha y seguro por jugador antes de cada partido, pagos parciales por transferencia con comprobante y aviso de deuda en el acta.</li><li><b>Capitanes y jugadores adentro:</b> panel del capitán (convocatoria, plantel, documentación, descargos) y panel del jugador ("Voy / No voy").</li><li><b>Disciplina e identidad:</b> sanciones automáticas, tribunal con expedientes, acta que marca al no habilitado.</li><li><b>Contingencias:</b> reprogramación con choques a la vista y confirmación de cada capitán.</li></ul>
+<p>Cuando comparan precio: <b>no hables mal de nadie.</b> Preguntá qué usan hoy, qué les falta y mostrá los 3 de esta lista que más le duelen.</p>
 
 <h1 class="sec"><p class="eyebrow">11</p>Ligas fundadoras y piloto</h1>
 <table><tr><th>Qué recibe la liga</th><th>Qué pedimos a cambio</th></tr>
-<tr><td>2,5 % de por vida (en lugar de 3,5 %)<br>Alta y migración desde Excel gratis<br>Acompañamiento directo durante el torneo<br>Logo como socio fundador (opcional)<br>Voz en las prioridades del producto</td><td>Su próximo torneo como piloto<br>Una reunión de feedback cada 2 semanas<br>Datos reales de cobros (confidenciales) para validar el modelo<br>Un testimonio y permiso para citar su caso<br>2 referidos de otras ligas, si el piloto funciona</td></tr></table>
+<tr><td>Ser una de las primeras 15 ligas<br>Alta y migración desde Excel gratis, hechas con nosotros<br>Acompañamiento directo durante el torneo<br>Voz en las prioridades del producto<br>Probarlo sin riesgo: sin permanencia ni costo de baja<br>2,5 % de por vida (en lugar de 3,5 %)<br>Logo como socio fundador (opcional)</td><td>Su próximo torneo como piloto<br>Una reunión de feedback cada 2 semanas<br>Datos reales de cobros (confidenciales) para validar el modelo<br>Un testimonio y permiso para citar su caso<br>2 referidos de otras ligas, si el piloto funciona</td></tr></table>
+<h2>Lo que podemos ofrecer hoy</h2>
+<ul><li><b>Alta con importación:</b> cargamos sus equipos, jugadores y canchas desde su Excel con la importación de Potrero, que valida fila por fila.</li><li><b>Demo con su liga:</b> antes de decidir, le mostramos la app con sus datos o con la liga de ejemplo.</li><li><b>Acompañamiento:</b> canal directo con el equipo, presencia en las primeras fechas y reunión de resultados.</li><li><b>Todo lo que ya funciona:</b> torneos y fases, fixture, acta, sanciones y tribunal, documentación, caja, sitio público, paneles del capitán y del jugador.</li></ul>
+<div class="callout warn"><b class="t">Lo que todavía no, y cómo se resuelve en el piloto</b><b>Mercado Pago real no está conectado todavía:</b> el piloto arranca registrando efectivo y transferencias en Potrero (sin comisión); el cobro online se suma cuando la integración esté lista, sin prometer fecha. <b>WhatsApp y email están simulados:</b> los links (inscripción, confirmaciones, invitaciones) se comparten a mano por WhatsApp. <b>El sitio público todavía no lleva el logo ni los colores de la liga.</b></div>
 <h2>Criterios para aceptar una liga fundadora</h2>
-<ul><li>Torneo real con fecha de inicio en los próximos 1–3 meses.</li><li>12 equipos o más y disposición a cobrar parte por Mercado Pago.</li><li>Organizador con tiempo para el acompañamiento y buena reputación en la zona.</li><li>Mezcla de perfiles: al menos un complejo y una liga independiente.</li></ul>
+<ul><li>Torneo real con fecha de inicio en los próximos 1–3 meses.</li><li>12 equipos o más y disposición a cobrar parte por Mercado Pago cuando esté conectado.</li><li>Organizador con tiempo para el acompañamiento y buena reputación en la zona.</li><li>Mezcla de perfiles: al menos un complejo y una liga independiente.</li></ul>
 <h2>Cómo se hace el piloto</h2>
-<ol><li><b>Alta (semana 0):</b> cuenta, marca, conexión a Mercado Pago, reglamento.</li><li><b>Migración (semana 0–1):</b> cargamos equipos, jugadores y canchas desde su Excel.</li><li><b>Inscripciones (semana 1–3):</b> link a capitanes; seguimiento de pagos.</li><li><b>Fixture y publicación:</b> armamos con el organizador y avisamos a capitanes.</li><li><b>Fechas:</b> presencia en las primeras jornadas; acta y contingencias.</li><li><b>Cierre:</b> reunión de resultados con cifras (horas ahorradas, cobro anticipado, errores).</li></ol>
+<ol><li><b>Alta (semana 0):</b> el asistente de 5 pasos: organización, Mercado Pago ("conectar después" por ahora), dirección y logo, reglamento e importación. Usuarios con su rol (administrador, tesorero, árbitro, tribunal).</li><li><b>Migración (semana 0–1):</b> importamos equipos, jugadores y canchas desde su Excel; corregimos con él lo que marque la validación.</li><li><b>Prueba del acta (semana 0–1):</b> abrirla en el celular de cada árbitro, con y sin señal, antes de la primera fecha.</li><li><b>Inscripciones (semana 1–3):</b> link a capitanes; pagos registrados; cuota por fecha y seguro si los cobra; invitación a capitanes y jugadores a sus paneles.</li><li><b>Fixture y publicación:</b> armamos el formato con el organizador (fijo o por fases), ajustamos a mano y compartimos el sitio.</li><li><b>Fechas:</b> presencia en las primeras jornadas; acta y contingencias.</li><li><b>Cierre:</b> reunión de resultados con cifras (horas ahorradas, cobro anticipado, errores).</li></ol>
 <h2>Compromisos que SÍ podemos hacer / que NO</h2>
 <table><tr><th>Sí</th><th>No (sin confirmación del equipo de desarrollo)</th></tr>
-<tr><td>Acompañamiento personal, migración, ser su canal directo con el equipo.</td><td>Fechas exactas de funciones, integraciones con otros sistemas, soporte 24/7, garantías de ingreso o de ahorro.</td></tr></table>
+<tr><td>Acompañamiento personal, demo con sus datos, migración de su Excel, ser su canal directo con el equipo.</td><td>Fechas exactas de funciones (incluida la conexión real con Mercado Pago y WhatsApp), integraciones con otros sistemas, soporte 24/7, garantías de ingreso o de ahorro.</td></tr></table>
 
 <h1 class="sec"><p class="eyebrow">12</p>Gestión, métricas y compensación</h1>
 <h2>CRM (campos mínimos)</h2>
-<p>Liga, organizador, zona, equipos, divisiones, cuánto cobra por equipo, forma de pago actual, fecha del próximo torneo, dolor principal (frases textuales), etapa, próxima acción y fecha, objeciones, fuente del contacto.</p>
+<p>Liga, organizador, zona, equipos, divisiones, cuánto cobra por equipo (inscripción, por fecha, seguro), forma de pago actual, formato (fases, copa estímulo), fecha del próximo torneo, dolor principal (frases textuales), etapa, próxima acción y fecha, objeciones, fuente del contacto.</p>
 <h2>Indicadores semanales</h2>
 <div class="grid g4"><div class="card"><p class="big">30</p><p class="small">contactos nuevos por vendedor</p></div><div class="card"><p class="big">10</p><p class="small">charlas de descubrimiento</p></div><div class="card"><p class="big">6</p><p class="small">demos</p></div><div class="card"><p class="big">1–2</p><p class="small">ligas aceptan piloto</p></div></div>
 <p class="fn">Metas de partida como referencia; ajustarlas con datos de las primeras semanas.</p>
@@ -160,14 +174,17 @@ esta semana para contarte y que me cuentes cómo lo manejás hoy?</pre>
 <h1 class="sec"><p class="eyebrow">13</p>Material y listas de control</h1>
 <table><tr><th>Material</th><th>Estado</th><th>Dónde</th></tr>
 <tr><td>Presentación para organizadores (PDF)</td><td>Listo</td><td>Documento 3</td></tr>
-<tr><td>Mocks navegables y landing</td><td>Listo</td><td>Carpeta <code>/mocks</code></td></tr>
+<tr><td>App de demo con liga de ejemplo</td><td>Listo</td><td><code>pnpm demo</code></td></tr>
+<tr><td>Guía de la demo (recorrido corto y fallas conocidas)</td><td>Listo</td><td><code>docs/guia-demo.md</code></td></tr>
+<tr><td>Demo pública (una liga de prueba por visitante)</td><td>Lista, falta publicarla</td><td><code>pnpm demo --publica</code></td></tr>
+<tr><td>Plantilla de importación y ejemplo con errores</td><td>Listo</td><td>En la app: Configuración → Importación</td></tr>
 <tr><td>Resumen de una página para decisores</td><td>A preparar</td><td>Derivar de la presentación</td></tr>
 <tr><td>Ejemplo de cuentas por torneo con datos de cada liga</td><td>A preparar por prospecto</td><td>Planilla de simulación (documento 2)</td></tr>
 <tr><td>Casos de éxito y testimonios</td><td>Después de los pilotos</td><td>—</td></tr>
 <tr><td>Términos de servicio y privacidad</td><td>Pendiente de legal</td><td>Documento 6</td></tr>
 <tr><td>Contrato o acuerdo de liga fundadora</td><td>Pendiente de legal</td><td>Documento 6</td></tr></table>
 <h2>Checklist antes de cada demo</h2>
-<ul><li>Leí lo que anoté de esa liga y conozco su dolor principal.</li><li>Personalicé nombres, equipos y cuentas.</li><li>Verifiqué que los mocks abren sin conexión a internet.</li><li>Tengo el pedido de próximo paso preparado.</li></ul>
+<ul><li>Leí lo que anoté de esa liga y conozco su dolor principal.</li><li>Personalicé nombres, equipos y cuentas.</li><li>Levanté la demo con datos recién cargados (<code>pnpm db:reset</code> y <code>pnpm demo</code>), a menos de 2 horas de la reunión para que el partido siga en vivo.</li><li>Probé el ingreso de demo@, capitan@ y jugador@, y tengo el celular para el acta.</li><li>Si me pasó su Excel, lo importé en una liga nueva.</li><li>Tengo el pedido de próximo paso preparado.</li></ul>
 <h2>Checklist después de cada demo</h2>
 <ul><li>Resumen por escrito en menos de 24 horas.</li><li>Etapa y próxima acción en el CRM.</li><li>Dato de recaudación y fecha del próximo torneo anotados.</li><li>Objeciones nuevas compartidas con el equipo.</li></ul>
 <div class="gt-colofon"><div><img src="brand/gregal-oscuro.svg" alt="Gregal Tech"><p>Potrero es un producto de Gregal Tech. Este documento forma parte del set de 6 documentos de trabajo del proyecto; ante cualquier diferencia con otro material, vale lo que dicen estos documentos.</p></div><div class="gt-datos">gregal.tech<br>gregaltech.sf@gmail.com<br>San Francisco, Córdoba</div></div>

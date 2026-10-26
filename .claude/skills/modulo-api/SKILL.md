@@ -12,6 +12,6 @@ Seguí `apps/api/CLAUDE.md`. Patrón de referencia: `apps/api/src/equipos/equipo
 3. **Servicio + controlador + módulo** en `src/<dominio>/<dominio>.ts`. Cada método: `this.db.enOrg(c.organizacionId, async (tx) => ...)`; varias consultas en `tx` → `enSerie`. Errores: `ErrorNegocio` / `noEncontrado`. Dinero o resultados → `auditar(...)`.
 4. **Permisos**: `@Permiso('x.y')`; si es nuevo, agregalo en `src/comun/permisos.ts` a los roles que correspondan (documento 1, sección 2).
 5. Registrá el módulo en `src/app.module.ts`.
-6. **Tests**: agregá casos en `test/integracion.test.ts` (camino feliz, validación, permisos, y que otra organización no ve los datos). `pnpm --filter @potrero/api test`.
+6. **Tests**: un archivo por módulo en `apps/api/test/<dominio>.test.ts` (o casos en uno existente del mismo dominio) (camino feliz, validación, permisos, y que otra organización no ve los datos). `pnpm --filter @potrero/api test`.
 7. Si la web lo consume, sumá el tipo en `apps/web/src/lib/tipos.ts`.
 8. Marcá la tarea en `docs/backlog.md` y actualizá `docs/contexto/estado-actual.md`.

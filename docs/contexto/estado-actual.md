@@ -42,12 +42,13 @@ Actualizar al cerrar cada bloque de trabajo. Detalle de tareas: `docs/backlog.md
 
 - Demo pública (ADR-019, `pnpm demo --publica`): cada visitante entra desde la landing a su propia sandbox con los datos de la plantilla, aislada por RLS; vence a las 24 h y un job la elimina; botón "Reiniciar demo"; sin registro abierto; tope de sandboxes por IP y en total. Falta el despliegue del entorno (E37-08).
 
-## Límites conocidos de la demo
+## Límites conocidos del producto
+Limitaciones de alcance (las fallas puntuales que hay que tener en cuenta al probar la demo están en `docs/guia-demo.md`, "Fallas ya conocidas").
+
 - Mercado Pago real, WhatsApp, email y push: no integrados; los canales de mensajería son simulados (E06-04, ADR-022). El pronóstico de clima también es simulado (E17-06).
 - El acta sin conexión está probada en el navegador (incluido con el servidor apagado), no en celulares reales de gama baja (E11-13). Hay que abrirla una vez con señal antes del partido.
-- Llaves sin ida y vuelta (solo partido único con penales).
-- Sin backoffice, mercado de pases, cuenta propia del jugador ni fotos de partido (ver backlog). Torneos por fases: fase 1 a mano, sin editar el formato ni grilla a mano (E10-07). Invitaciones, recuperación de contraseña y verificación de email: el link se muestra o se comparte a mano hasta tener proveedor de email.
-- Cifras provisorias en código, a pasar a `datos.json`: vencimiento de invitaciones (7 días), plantel mínimo por modalidad, límites de ingreso y vigencia de los links de cuenta (marcadas `TODO datos.json`).
+- Llaves de los formatos fijos sin ida y vuelta (solo partido único con penales); la ida y vuelta existe en los torneos por fases.
+- Sin mercado de pases ni fotos de partido; el backoffice de Gregal es una versión mínima dentro de la web (`/gregal`, sin 2FA ni app aparte). Torneos por fases: fase 1 a mano, sin editar el formato ni grilla a mano (E10-07). Invitaciones, recuperación de contraseña y verificación de email: el link se muestra o se comparte a mano hasta tener proveedor de email.
 - Cuota por fecha: con `deudaBloqueaJugar` el acta solo avisa, todavía no impide cargar al equipo.
 - Caja: sin reembolsos (E06-12), sin PDF ni comprobantes como archivo; el retiro es solo un registro y falta la verificación en dos pasos.
 - Cliente de la API tipado a mano (`apps/web/src/lib/tipos.ts`), pendiente OpenAPI (E02-06).

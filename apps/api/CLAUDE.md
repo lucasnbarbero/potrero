@@ -9,7 +9,7 @@
 - Dinero, resultados y cierres: `auditar(tx, c, accion, entidad, id, { antes, despues })`.
 - Reglas de negocio puras van en `packages/shared` (con tests), no en el servicio.
 - Esquema: `prisma/schema.prisma`. Tabla nueva de una organización → agregar la política RLS en una migración (`prisma migrate dev --create-only`). Después: `prisma generate`.
-- Tests: `test/integracion.test.ts` contra la API compilada y la base `potrero_test` (`pnpm test`).
+- Tests: `test/<dominio>.test.ts` (uno por módulo) contra la API compilada y la base `potrero_test` (`pnpm test`; `POTRERO_TEST_DB` para usar otra base).
 - Semilla de demo: `src/seed/seed.ts` usa los servicios reales y carga la organización principal con `cargarPlantilla` (`src/demo/plantilla.ts`), la misma plantilla de las sandboxes.
 - Demo pública (ADR-019): `src/demo/demo.ts` solo se carga con `DEMO_MODE=true`. Las tablas con `organizacion_id` no tienen clave foránea a `organizacion`: **una tabla nueva de una organización se suma a `TABLAS_DE_ORGANIZACION`** o el borrado de sandboxes la deja con datos (lo detecta `test/demo.test.ts`). Los tokens llevan el entorno que los emitió (`ent`).
 - Llaves (ADR-021): la lógica está en `packages/shared/src/dominio/llaves.ts`; `src/torneos/llaves.ts` solo guarda y crea los cruces cuando se conocen sus equipos (`avanzarLlave`, que se llama al cerrar un partido de llave).
