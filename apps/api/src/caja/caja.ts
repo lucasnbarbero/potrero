@@ -35,6 +35,8 @@ import {
   type IngresoInput,
   ingresoDeCategoria,
   invertir,
+  CARGO_SERVICIO,
+  cuotaMensual,
   NOMBRE_CATEGORIA,
   NOMBRE_RUBRO,
   type Plan,
@@ -117,10 +119,15 @@ export class CajaService {
         .filter((x) => x.falta > 0);
       const porCobrar = debe.reduce((s, x) => s + x.falta, 0);
       return {
-        plan: { nombre: plan.nombre, comisionPct: plan.comisionPct },
+        plan: {
+          nombre: plan.nombre,
+          cuotaMensual: cuotaMensual(org.plan as Plan, org.fundadora),
+          fundadora: org.fundadora,
+        },
+        absorbeCargoServicio: org.absorbeCargoServicio,
         // La plata disponible es de toda la organización, mire el torneo que mire.
         disponible: disponible(sTodo),
-        comisionTotal: sTodo.COMISION_PLATAFORMA ?? 0,
+        cargoAbsorbidoTotal: sTodo[CARGO_SERVICIO] ?? 0,
         resultado: resultadoDeCaja(sVista),
         porRubro: egresosPorRubro(sVista).map((r) => ({ ...r, nombre: NOMBRE_RUBRO[r.rubro] })),
         porCobrar: { monto: porCobrar, equipos: new Set(debe.map((x) => x.equipoId)).size },
@@ -140,14 +147,14 @@ export class CajaService {
 
   // ───────────── Movimientos ─────────────
 
-  /** Efecto de un asiento sobre el resultado: + ingresos, − egresos y comisión, 0 los retiros (la plata solo cambia de lugar). */
+  /** Efecto de un asiento sobre el resultado: + ingresos, − egresos y cargo absorbido, 0 los retiros (la plata solo cambia de lugar). */
   private efecto(a: AsientoConLineas, originales: Map<string, AsientoConLineas>): number {
     const total = a.lineas.reduce((s, l) => s + l.debe, 0);
     switch (a.tipo) {
       case 'COBRO':
       case 'INGRESO':
         return total;
-      case 'COMISION':
+      case 'CARGO_SERVICIO':
       case 'EGRESO':
         return -total;
       case 'REVERSA': {
@@ -167,7 +174,7 @@ export class CajaService {
     switch (a.tipo) {
       case 'COBRO':
         return `${lugar}${cat && cat !== 'INSCRIPCIONES' ? ` · ${NOMBRE_CATEGORIA[cat as keyof typeof NOMBRE_CATEGORIA]}` : ''}`;
-      case 'COMISION':
+      case 'CARGO_SERVICIO':
         return 'Mercado Pago';
       case 'EGRESO':
         return `${NOMBRE_RUBRO[rubro as keyof typeof NOMBRE_RUBRO] ?? 'Egreso'} · ${lugar}`;
@@ -315,7 +322,7 @@ export class CajaService {
       if (!a) throw noEncontrado('el movimiento');
       if (!['EGRESO', 'INGRESO', 'RETIRO'].includes(a.tipo))
         throw new ErrorNegocio(
-          'Los cobros y comisiones no se anulan desde acá: se corrigen con un reembolso del pago.',
+          'Los cobros y cargos por servicio no se anulan desde acá: se corrigen con un reembolso del pago.',
           HttpStatus.UNPROCESSABLE_ENTITY,
         );
       if (await tx.asiento.findFirst({ where: { revierteAId: id } }))

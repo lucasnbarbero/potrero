@@ -2,7 +2,7 @@ import { Icono } from '@potrero/ui';
 import Link from 'next/link';
 import { Encabezado } from '@/componentes/ui';
 import { pesos } from '@/lib/formato';
-import { apiGregal, diaMes, ESTADO_SALUD, type InicioGregal, nombreMes, porcentaje } from '@/lib/gregal';
+import { apiGregal, diaMes, ESTADO_SALUD, type InicioGregal, nombreMes } from '@/lib/gregal';
 import { Columnas, MezclaDeMedios } from './graficos';
 
 export const metadata = { title: 'Inicio' };
@@ -40,12 +40,13 @@ export default async function InicioGregal() {
           <p className="text-sm text-mute">{m.cobros.pagos} pagos aprobados</p>
         </section>
         <section className="tile-ink rise" style={d(4)}>
-          <span className="eyebrow !text-white/50">Comisión de Gregal</span>
+          <span className="eyebrow !text-white/50">Ingresos de Gregal · mes</span>
           <div className="num text-gregal mt-2 text-4xl font-bold tracking-tighter">
-            {pesos(m.cobros.comision)}
+            {pesos(m.ingresos.total)}
           </div>
           <p className="text-sm text-white/50">
-            {porcentaje(m.tasa.sobreOnline, 1)} de lo online · {porcentaje(m.tasa.sobreTotal, 1)} del total
+            Suscripciones (MRR) {pesos(m.ingresos.suscripciones)} · cargos por servicio{' '}
+            {pesos(m.ingresos.cargosDelMes)}
           </p>
         </section>
       </div>
@@ -75,7 +76,7 @@ export default async function InicioGregal() {
 
         <section className="tile rise" style={d(6)}>
           <h2 className="text-xl font-bold">Cobrado por medio</h2>
-          <p className="mb-4 text-sm text-mute">La comisión se cobra solo sobre lo online.</p>
+          <p className="mb-4 text-sm text-mute">El cargo por servicio se cobra solo sobre lo online.</p>
           <MezclaDeMedios cobros={m.cobros} />
         </section>
       </div>

@@ -1,6 +1,6 @@
 'use client';
 // Cobro de un equipo en "Inscripciones y pagos": link de pago, atajo en efectivo, pago manual completo o parcial
-// (efectivo o transferencia, sin comisión) y la lista de pagos con la anulación de un pago manual mal cargado.
+// (efectivo o transferencia, sin cargo por servicio) y la lista de pagos con la anulación de un pago manual mal cargado.
 import { saldoDelCargo } from '@potrero/shared';
 import { Icono } from '@potrero/ui';
 import { useRouter } from 'next/navigation';
@@ -207,7 +207,7 @@ function FormularioPago({
         placeholder="N° de operación o de recibo"
       />
       <p className="text-xs text-mute">
-        Sin comisión. El efectivo entra a la caja en Efectivo y la transferencia en Banco.
+        Sin cargo por servicio. El efectivo entra a la caja en Efectivo y la transferencia en Banco.
       </p>
       <MensajeError error={error} />
       <button className="btn-volt w-full" disabled={enviando || !(n > 0)}>
@@ -239,7 +239,6 @@ function ListaPagos({ pagos, total, pagado }: { pagos: PagoDeInscripcion[]; tota
               <span className="block text-xs text-mute">
                 {fechaCorta(p.fecha)} · {p.concepto}
                 {p.comprobante ? ` · ${p.comprobante}` : ''}
-                {p.comision ? ` · comisión ${pesos(p.comision)}` : ''}
               </span>
             </span>
             {p.estado === 'ANULADO' ? (

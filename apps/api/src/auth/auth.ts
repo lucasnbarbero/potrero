@@ -168,7 +168,7 @@ export class AuthService {
       }),
       this.db.app.organizacion.findUniqueOrThrow({
         where: { id: c.organizacionId },
-        select: { id: true, nombre: true, slug: true, plan: true, mpCuentaId: true },
+        select: { id: true, nombre: true, slug: true, plan: true, fundadora: true, mpCuentaId: true },
       }),
     ]);
     const { mpCuentaId, ...org } = organizacion;

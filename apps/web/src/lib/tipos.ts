@@ -88,7 +88,14 @@ export interface Inscripcion {
     vence: string | null;
     pagado: number;
   }[];
-  pagos: { id: string; metodo: string; monto: number; estado: string; comision: number; fecha: string }[];
+  pagos: {
+    id: string;
+    metodo: string;
+    monto: number;
+    estado: string;
+    cargoServicio: number;
+    fecha: string;
+  }[];
 }
 
 export interface Equipo {
@@ -303,10 +310,12 @@ export interface ContingenciaDetalle {
 // ───────────── Caja, árbitros y canchas ─────────────
 
 export interface ResumenCaja {
-  plan: { nombre: string; comisionPct: number };
+  plan: { nombre: string; cuotaMensual: number; fundadora: boolean };
+  /** El organizador absorbe el cargo por servicio de los pagos online. */
+  absorbeCargoServicio: boolean;
   disponible: { MP: number; EFECTIVO: number; BANCO: number };
-  comisionTotal: number;
-  resultado: { ingresos: number; comision: number; egresos: number; resultado: number };
+  cargoAbsorbidoTotal: number;
+  resultado: { ingresos: number; cargoAbsorbido: number; egresos: number; resultado: number };
   porRubro: { rubro: string; nombre: string; monto: number; pct: number }[];
   porCobrar: { monto: number; equipos: number };
   /** Seguro por jugador (E06-21): lo cobrado se le debe a la aseguradora. */
@@ -317,7 +326,7 @@ export interface ResumenCaja {
 export interface MovimientoCaja {
   id: string;
   fecha: string;
-  tipo: 'COBRO' | 'COMISION' | 'EGRESO' | 'INGRESO' | 'RETIRO' | 'REVERSA';
+  tipo: 'COBRO' | 'CARGO_SERVICIO' | 'EGRESO' | 'INGRESO' | 'RETIRO' | 'REVERSA';
   descripcion: string;
   detalle: string;
   /** + ingresos, − egresos, 0 retiros. */
@@ -609,6 +618,8 @@ export interface EstadoConfiguracion {
     nombre: string;
     slug: string;
     plan: Plan;
+    fundadora: boolean;
+    absorbeCargoServicio: boolean;
     colorMarca: string | null;
     logo: string | null;
     localidad: string | null;
@@ -635,7 +646,8 @@ export interface PagoDeInscripcion {
   monto: number;
   /** PENDIENTE, APROBADO, RECHAZADO o ANULADO. */
   estado: string;
-  comision: number;
+  /** Cargo por servicio de Gregal (lo paga el equipo; no es del organizador). */
+  cargoServicio: number;
   fecha: string;
 }
 export type InscripcionConPagos = Omit<Inscripcion, 'pagos'> & { pagos: PagoDeInscripcion[] };

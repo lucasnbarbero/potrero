@@ -13,7 +13,8 @@ export type CategoriaIngreso = (typeof CATEGORIAS_INGRESO)[number];
 export const CUENTAS_DE_PLATA = ['MP', 'EFECTIVO', 'BANCO'] as const;
 export type CuentaDePlata = (typeof CUENTAS_DE_PLATA)[number];
 
-export const COMISION = 'COMISION_PLATAFORMA';
+/** Cargo por servicio que absorbe el organizador (si lo eligió): se descuenta de lo que recibe por Mercado Pago. */
+export const CARGO_SERVICIO = 'CARGO_SERVICIO';
 
 export const NOMBRE_RUBRO: Record<RubroEgreso, string> = {
   CANCHAS: 'Canchas',
@@ -62,26 +63,29 @@ const monto = (n: number) => {
   return n;
 };
 
-/** Un pago aprobado: entra la plata y, si cobró Mercado Pago, sale la comisión de la plataforma. */
+/**
+ * Un pago aprobado: entra el arancel completo. El cargo por servicio lo paga el equipo y no es del organizador, así que
+ * no se asienta; solo si el organizador eligió absorberlo, sale de Mercado Pago como gasto (`cargoAbsorbido`).
+ */
 export function asientosDePago(p: {
   metodo: MetodoPago;
   monto: number;
-  comision: number;
+  cargoAbsorbido: number;
   categoria?: CategoriaIngreso;
-}): { cobro: Linea[]; comision: Linea[] | null } {
+}): { cobro: Linea[]; cargo: Linea[] | null } {
   const cuenta = cuentaDeMetodo(p.metodo);
   const cobro = [
     { cuenta, debe: monto(p.monto), haber: 0 },
     { cuenta: `INGRESOS:${p.categoria ?? 'INSCRIPCIONES'}`, debe: 0, haber: p.monto },
   ];
-  const comision =
-    p.comision > 0
+  const cargo =
+    p.cargoAbsorbido > 0
       ? [
-          { cuenta: COMISION, debe: p.comision, haber: 0 },
-          { cuenta: 'MP', debe: 0, haber: p.comision },
+          { cuenta: CARGO_SERVICIO, debe: p.cargoAbsorbido, haber: 0 },
+          { cuenta: 'MP', debe: 0, haber: p.cargoAbsorbido },
         ]
       : null;
-  return { cobro, comision };
+  return { cobro, cargo };
 }
 
 export function asientoDeEgreso(e: { rubro: RubroEgreso; monto: number; pagadoCon: CuentaDePlata }): Linea[] {
@@ -129,18 +133,18 @@ const suma = (s: Record<string, number>, prefijo: string) =>
 
 export interface ResultadoCaja {
   ingresos: number;
-  /** Comisión de Potrero por los cobros con Mercado Pago. */
-  comision: number;
+  /** Cargo por servicio que absorbió el organizador (cero si lo pagan los equipos). */
+  cargoAbsorbido: number;
   egresos: number;
-  /** Ingresos − comisión − egresos. */
+  /** Ingresos − cargo absorbido − egresos. */
   resultado: number;
 }
 
 export function resultadoDeCaja(s: Record<string, number>): ResultadoCaja {
   const ingresos = 0 - suma(s, 'INGRESOS:');
-  const comision = s[COMISION] ?? 0;
+  const cargoAbsorbido = s[CARGO_SERVICIO] ?? 0;
   const egresos = suma(s, 'EGRESOS:');
-  return { ingresos, comision, egresos, resultado: ingresos - comision - egresos };
+  return { ingresos, cargoAbsorbido, egresos, resultado: ingresos - cargoAbsorbido - egresos };
 }
 
 export function egresosPorRubro(

@@ -116,10 +116,10 @@ describe('mensajería: costo y topes', () => {
   });
 
   it('el tope depende del plan y avisa cuánto se pasa', () => {
-    expect(evaluarTope('LIGA', 190, 5)).toEqual({ tope: 200, usados: 190, restantes: 10, excedente: 0 });
-    expect(evaluarTope('LIGA', 190, 25)).toMatchObject({ restantes: 10, excedente: 15 });
+    expect(evaluarTope('TORNEO', 90, 5)).toEqual({ tope: 100, usados: 90, restantes: 10, excedente: 0 });
+    expect(evaluarTope('TORNEO', 90, 25)).toMatchObject({ restantes: 10, excedente: 15 });
     expect(evaluarTope('PRO', 0, 25).excedente).toBe(0);
-    expect(evaluarTope('LIGA', 250, 1)).toMatchObject({ restantes: 0, excedente: 1 });
+    expect(evaluarTope('LIGA', 350, 1)).toMatchObject({ restantes: 0, excedente: 1 });
   });
 });
 

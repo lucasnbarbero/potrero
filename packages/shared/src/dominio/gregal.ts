@@ -1,7 +1,8 @@
 // Backoffice de Gregal (E36): métricas de la plataforma (E36-12, E24-05) y salud de cada liga (E36-05).
 // Funciones puras: la API junta los datos de todas las organizaciones y llama a estas funciones.
 import { DATOS } from '../datos.js';
-import type { MetodoPago } from './tipos.js';
+import { mrr } from './planes.js';
+import type { MetodoPago, Plan } from './tipos.js';
 
 /** Roles del equipo interno de Gregal (E36-02). No se mezclan con los roles de una organización. */
 export const ROLES_STAFF = ['SUPERADMIN', 'SOPORTE', 'FINANZAS', 'DIRECCION'] as const;
@@ -75,7 +76,7 @@ export function porMes(fechas: string[], ahora: Date, n = 6) {
 export interface PagoDePlataforma {
   metodo: MetodoPago;
   monto: number;
-  comision: number;
+  cargoServicio: number;
   /** Acreditación (o registro). ISO. Solo se pasan los pagos aprobados. */
   fecha: string;
 }
@@ -85,7 +86,7 @@ export interface CobrosPorMedio {
   transferencia: number;
   online: number;
   total: number;
-  comision: number;
+  cargoServicio: number;
   pagos: number;
 }
 
@@ -100,36 +101,51 @@ const vacio = (): CobrosPorMedio => ({
   transferencia: 0,
   online: 0,
   total: 0,
-  comision: 0,
+  cargoServicio: 0,
   pagos: 0,
 });
 
-/** Suma lo cobrado (GMV) por medio y la comisión de Gregal. */
+/** Suma lo cobrado (GMV) por medio y los cargos por servicio de Gregal. */
 export function sumarCobros(pagos: PagoDePlataforma[]): CobrosPorMedio {
   const r = vacio();
   for (const p of pagos) {
     r[CAMPO_MEDIO[p.metodo]] += p.monto;
     r.total += p.monto;
-    r.comision += p.comision;
+    r.cargoServicio += p.cargoServicio;
     r.pagos++;
   }
   return r;
 }
 
-/** Take rate: comisión sobre lo cobrado online (lo único que paga comisión) y sobre el total. */
-export function tasaDeComision(c: CobrosPorMedio) {
+/** Cargo por servicio sobre lo cobrado online (lo único que lo paga) y sobre el total. */
+export function tasaDeCargo(c: CobrosPorMedio) {
   return {
-    sobreOnline: c.online ? c.comision / c.online : 0,
-    sobreTotal: c.total ? c.comision / c.total : 0,
+    sobreOnline: c.online ? c.cargoServicio / c.online : 0,
+    sobreTotal: c.total ? c.cargoServicio / c.total : 0,
   };
 }
 
-/** Cobros y comisiones mes a mes (los últimos `n` meses, con cero los vacíos). */
+/** Cobros y cargos por servicio mes a mes (los últimos `n` meses, con cero los vacíos). */
 export function cobrosPorMes(pagos: PagoDePlataforma[], ahora: Date, n = 6) {
   const meses = ultimosMeses(ahora, n);
   const grupos = new Map<string, PagoDePlataforma[]>(meses.map((m) => [m, []]));
   for (const p of pagos) grupos.get(mesDe(p.fecha))?.push(p);
   return meses.map((mes) => ({ mes, ...sumarCobros(grupos.get(mes)!) }));
+}
+
+/**
+ * Ingresos de Gregal: las suscripciones (MRR: la cuota de cada plan, con el descuento de las fundadoras) más los cargos
+ * por servicio de los pagos online del mes en curso.
+ */
+export function ingresosDeGregal(
+  orgs: readonly { plan: Plan; fundadora: boolean }[],
+  pagos: readonly PagoDePlataforma[],
+  ahora: Date,
+) {
+  const mes = ultimosMeses(ahora, 1)[0];
+  const suscripciones = mrr(orgs);
+  const cargosDelMes = pagos.filter((p) => mesDe(p.fecha) === mes).reduce((s, p) => s + p.cargoServicio, 0);
+  return { suscripciones, cargosDelMes, total: suscripciones + cargosDelMes };
 }
 
 // ── Salud de cada liga (E36-05) ──

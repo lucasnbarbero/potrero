@@ -546,3 +546,7 @@ export const privacidadJugadorSchema = z.object({
   nombrePublico: z.enum(['INICIALES', 'APODO', 'COMPLETO']),
 });
 export type PrivacidadJugadorInput = z.infer<typeof privacidadJugadorSchema>;
+
+/** El organizador elige si absorbe el cargo por servicio de los pagos online (por defecto lo paga el equipo). */
+export const cargoServicioSchema = z.object({ absorbe: z.boolean() });
+export type CargoServicioInput = z.infer<typeof cargoServicioSchema>;

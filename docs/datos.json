@@ -3,28 +3,94 @@
   "moneda": "ARS",
   "tipoDeCambioReferencia": 1500,
   "planes": {
+    "TORNEO": {
+      "nombre": "Torneo",
+      "cuotaMensual": 100000,
+      "limites": {
+        "torneosActivos": 1,
+        "equiposActivos": 16,
+        "usuarios": 2
+      },
+      "modulos": [
+        "FIXTURE",
+        "ACTA",
+        "TABLA",
+        "SITIO",
+        "COBROS",
+        "CAJA",
+        "SANCIONES"
+      ],
+      "descripcion": "Un torneo activo, hasta 16 equipos y 2 usuarios. Fixture, acta, tabla, sitio, cobros, caja y sanciones."
+    },
     "LIGA": {
       "nombre": "Liga",
-      "comisionPct": 3.5,
-      "cuotaMensual": 0,
-      "descripcion": "Sin cuota fija. Todos los módulos."
-    },
-    "FUNDADORA": {
-      "nombre": "Ligas fundadoras",
-      "comisionPct": 2.5,
-      "cuotaMensual": 0,
-      "cupo": 15,
-      "descripcion": "De por vida, primeras 15 ligas."
+      "cuotaMensual": 200000,
+      "limites": {
+        "torneosActivos": 4,
+        "equiposActivos": 48,
+        "usuarios": null
+      },
+      "modulos": [
+        "FIXTURE",
+        "ACTA",
+        "TABLA",
+        "SITIO",
+        "COBROS",
+        "CAJA",
+        "SANCIONES",
+        "TRIBUNAL",
+        "DOCUMENTACION",
+        "COBROS_POR_FECHA",
+        "ARBITROS",
+        "REPROGRAMACIONES",
+        "METRICAS"
+      ],
+      "descripcion": "Hasta 4 torneos y 48 equipos activos, usuarios sin límite con roles. Suma tribunal, documentación, cuota por fecha y seguro, árbitros, reprogramaciones y métricas."
     },
     "PRO": {
       "nombre": "Pro",
-      "comisionPct": 2,
-      "cuotaMensual": 24900,
-      "descripcion": "Marca y dominio propio, WhatsApp ampliado, sponsors y métricas avanzadas."
+      "cuotaMensual": 350000,
+      "limites": {
+        "torneosActivos": null,
+        "equiposActivos": null,
+        "usuarios": null
+      },
+      "modulos": [
+        "FIXTURE",
+        "ACTA",
+        "TABLA",
+        "SITIO",
+        "COBROS",
+        "CAJA",
+        "SANCIONES",
+        "TRIBUNAL",
+        "DOCUMENTACION",
+        "COBROS_POR_FECHA",
+        "ARBITROS",
+        "REPROGRAMACIONES",
+        "METRICAS",
+        "MARCA_PROPIA",
+        "SPONSORS",
+        "SOPORTE_PRIORITARIO"
+      ],
+      "descripcion": "Sin límites. Suma marca y dominio propios, sponsors con reporte y soporte prioritario."
     }
   },
-  "pagosManualesConComision": false,
-  "umbralRecomendarPro": 20000000,
+  "cargoPorServicio": {
+    "pct": 4,
+    "minimo": 500,
+    "absorbeOrganizadorPorDefecto": false
+  },
+  "ligasFundadoras": {
+    "cupo": 15,
+    "descuentoPct": 50
+  },
+  "suscripcion": {
+    "mesesGratisPagoAnual": 2,
+    "primerMesSinCargo": true,
+    "ajusteMeses": 3,
+    "avisoDias": 30
+  },
   "ejemploTorneo": {
     "equipos": 16,
     "inscripcion": 60000,
@@ -53,8 +119,8 @@
       "WHATSAPP_MARKETING": 0.06
     },
     "whatsappIncluidoPorMes": {
-      "LIGA": 200,
-      "FUNDADORA": 400,
+      "TORNEO": 100,
+      "LIGA": 300,
       "PRO": 2000
     }
   },
@@ -111,7 +177,14 @@
     "Crear mi liga gratis",
     "V1.5",
     "Empezás en 5 minutos",
-    "listo en 5 minutos"
+    "listo en 5 minutos",
+    "3,5%",
+    "3,5 %",
+    "2,5%",
+    "2,5 %",
+    "24.900",
+    "Pagás solo cuando cobrás",
+    "por cobro online"
   ],
   "cuentas": {
     "contrasenaMinimaCaracteres": 10,

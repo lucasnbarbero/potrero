@@ -39,7 +39,10 @@ import {
   type SeccionStaff,
   staffPuedeVer,
   sumarCobros,
-  tasaDeComision,
+  tasaDeCargo,
+  ingresosDeGregal,
+  cuotaMensual,
+  type Plan,
 } from '@potrero/shared';
 import argon2 from 'argon2';
 import type { Request, Response } from 'express';
@@ -217,6 +220,7 @@ export class GregalService {
         nombre: true,
         slug: true,
         plan: true,
+        fundadora: true,
         creadoEn: true,
         localidad: true,
         provincia: true,
@@ -240,7 +244,7 @@ export class GregalService {
           organizacionId: true,
           metodo: true,
           monto: true,
-          comisionPlataforma: true,
+          cargoServicio: true,
           acreditadoEn: true,
           creadoEn: true,
         },
@@ -262,7 +266,7 @@ export class GregalService {
         .map((p) => ({
           metodo: p.metodo,
           monto: p.monto,
-          comision: p.comisionPlataforma,
+          cargoServicio: p.cargoServicio,
           fecha: (p.acreditadoEn ?? p.creadoEn).toISOString(),
         }));
 
@@ -291,6 +295,9 @@ export class GregalService {
         nombre: o.nombre,
         slug: o.slug,
         plan: o.plan,
+        fundadora: o.fundadora,
+        /** Suscripción mensual que paga (con el descuento de fundadora). */
+        cuotaMensual: cuotaMensual(o.plan as Plan, o.fundadora),
         localidad: [o.localidad, o.provincia].filter(Boolean).join(', ') || null,
         mpConectado: !!o.mpCuentaId,
         creadaEn: o.creadoEn.toISOString(),
@@ -302,7 +309,7 @@ export class GregalService {
         partidosCerrados: cerrados.length,
         actas: { cargadas: salud.actasCargadas, vencidos: salud.partidosVencidos },
         cobrado: cobros.total,
-        comision: cobros.comision,
+        cargoServicio: cobros.cargoServicio,
         ultimoUso: salud.ultimoUso,
         salud: estadoDeSalud(alertas),
         alertas,
@@ -320,7 +327,9 @@ export class GregalService {
       equipos: ligas.reduce((a, l) => a + l.equipos, 0),
       jugadores: ligas.reduce((a, l) => a + l.jugadores, 0),
       cobros,
-      tasa: tasaDeComision(cobros),
+      tasa: tasaDeCargo(cobros),
+      /** Ingresos de Gregal: suscripciones (MRR) más cargos por servicio del mes. */
+      ingresos: ingresosDeGregal(orgs, pagosPlataforma(), ahora),
       partidosPorSemana: porSemana(
         partidos.filter((p) => p.cerradoEn).map((p) => p.cerradoEn!.toISOString()),
         ahora,
@@ -382,7 +391,7 @@ export class GregalService {
           id: true,
           metodo: true,
           monto: true,
-          comisionPlataforma: true,
+          cargoServicio: true,
           acreditadoEn: true,
           creadoEn: true,
           cargo: {
@@ -416,7 +425,7 @@ export class GregalService {
         id: p.id,
         medio: MEDIO[p.metodo],
         monto: p.monto,
-        comision: p.comisionPlataforma,
+        cargoServicio: p.cargoServicio,
         fecha: p.acreditadoEn ?? p.creadoEn,
         concepto: p.cargo.concepto,
         equipo: p.cargo.inscripcion.equipo.nombre,
@@ -425,14 +434,22 @@ export class GregalService {
   }
 
   async dinero() {
-    const { ahora, ligas, pagosPlataforma } = await this.relevar();
+    const { ahora, ligas, pagosPlataforma, orgs } = await this.relevar();
     const total = sumarCobros(pagosPlataforma());
     return {
       total,
-      tasa: tasaDeComision(total),
+      tasa: tasaDeCargo(total),
+      ingresos: ingresosDeGregal(orgs, pagosPlataforma(), ahora),
       porMes: cobrosPorMes(pagosPlataforma(), ahora, 6),
       porLiga: ligas
-        .map((l) => ({ id: l.id, nombre: l.nombre, plan: l.plan, ...sumarCobros(pagosPlataforma(l.id)) }))
+        .map((l) => ({
+          id: l.id,
+          nombre: l.nombre,
+          plan: l.plan,
+          fundadora: l.fundadora,
+          cuotaMensual: l.cuotaMensual,
+          ...sumarCobros(pagosPlataforma(l.id)),
+        }))
         .sort((a, b) => b.total - a.total),
     };
   }

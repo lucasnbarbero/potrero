@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Campo, MensajeError, useEnvio } from '@/componentes/formulario';
 import { api } from '@/lib/cliente';
-import { iniciales } from '@/lib/formato';
+import { iniciales, pesos } from '@/lib/formato';
 import type { EstadoConfiguracion } from '@/lib/tipos';
 import { Importador } from './Importador';
 
@@ -251,7 +251,7 @@ function PasoMercadoPago({ estado, listo }: { estado: EstadoConfiguracion; listo
     >
       <p className="text-sm text-mute">
         {conectado
-          ? 'Tu cuenta de Mercado Pago ya está conectada. Cobrás directo en tu cuenta y Potrero descuenta su comisión.'
+          ? 'Tu cuenta de Mercado Pago ya está conectada. Cobrás directo en tu cuenta y te llega el arancel completo.'
           : 'Las inscripciones y cuotas se cobran con Mercado Pago, directo en tu cuenta. Podés conectarla después: mientras tanto registrás los pagos a mano.'}
       </p>
       <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
@@ -268,9 +268,56 @@ function PasoMercadoPago({ estado, listo }: { estado: EstadoConfiguracion; listo
           <b className="block">Tarjeta, dinero en cuenta</b>
         </div>
       </div>
+      <QuienPagaElCargo absorbe={estado.organizacion.absorbeCargoServicio} />
       <MensajeError error={error} />
       <Guardar enviando={enviando} texto={conectado ? 'Continuar' : 'Conectar después'} />
     </form>
+  );
+}
+
+/** Quién paga el cargo por servicio de los pagos online: el equipo (por defecto) o la liga. */
+function QuienPagaElCargo({ absorbe }: { absorbe: boolean }) {
+  const router = useRouter();
+  const { enviando, error, enviar } = useEnvio();
+  const { pct, minimo } = DATOS.cargoPorServicio;
+  const elegir = (valor: boolean) =>
+    enviar(async () => {
+      await api('PATCH', '/configuracion/cargo-servicio', { absorbe: valor });
+      router.refresh();
+    });
+  return (
+    <fieldset className="mt-4 rounded-2xl bg-black/5 p-4 text-sm" data-testid="cargo-servicio">
+      <legend className="sr-only">Cargo por servicio</legend>
+      <b className="block">Quién paga el cargo por servicio de los pagos online</b>
+      <p className="mt-1 text-xs text-mute">
+        Es el {pct} % del arancel (mínimo {pesos(minimo)}) más el costo de Mercado Pago. Efectivo y
+        transferencia no tienen cargo.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={enviando}
+          className={!absorbe ? 'pill-ink' : 'pill'}
+          onClick={() => elegir(false)}
+        >
+          El equipo (recomendado)
+        </button>
+        <button
+          type="button"
+          disabled={enviando}
+          className={absorbe ? 'pill-ink' : 'pill'}
+          onClick={() => elegir(true)}
+        >
+          Lo absorbo yo
+        </button>
+      </div>
+      <p className="mt-2 text-xs text-mute">
+        {absorbe
+          ? 'El equipo paga solo el arancel y el cargo se descuenta de lo que recibís.'
+          : 'El equipo paga el arancel más el cargo y vos recibís el arancel completo.'}
+      </p>
+      <MensajeError error={error} />
+    </fieldset>
   );
 }
 

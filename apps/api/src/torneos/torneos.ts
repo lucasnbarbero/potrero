@@ -37,6 +37,7 @@ import {
 } from '@potrero/shared';
 import { auditar } from '../comun/auditoria.js';
 import { type Contexto, Ctx, ErrorNegocio, noEncontrado, Permiso, Zod } from '../comun/http.js';
+import { exigirLimiteDelPlan } from '../comun/plan.js';
 import { slugUnico } from '../comun/slug.js';
 import { DbService, enSerie, type Tx } from '../db/db.service.js';
 import { Prisma, type Reglamento as ReglamentoDb } from '../generated/prisma/client.js';
@@ -208,6 +209,7 @@ export class TorneosService {
     if (d.formato === 'FLEXIBLE')
       throw new ErrorNegocio('Un torneo por fases se crea desde "Armá el formato".');
     return this.db.enOrg(c.organizacionId, async (tx) => {
+      await exigirLimiteDelPlan(tx, c.organizacionId, 'torneosActivos');
       const slug = await slugUnico(
         d.nombre,
         async (s) => !!(await tx.torneo.findFirst({ where: { slug: s } })),

@@ -5,7 +5,7 @@
 | Aceptada | 2026-10-23 | Tech lead |
 
 ## Contexto
-La caja del torneo (documento 1, módulo 14) tiene que decirle al organizador cuánto entró, cuánto debe pagar y cuánto le queda, y tiene que poder auditarse: la plata es lo más sensible del producto. Ya existen cobros (`Pago`) y comisiones, pero faltan los egresos, los retiros y los gastos que nacen del acta (árbitro y cancha).
+La caja del torneo (documento 1, módulo 14) tiene que decirle al organizador cuánto entró, cuánto debe pagar y cuánto le queda, y tiene que poder auditarse: la plata es lo más sensible del producto. Ya existen cobros (`Pago`) y los costos de los cobros online, pero faltan los egresos, los retiros y los gastos que nacen del acta (árbitro y cancha).
 
 ## Opciones evaluadas
 | Opción | A favor | En contra | Costo |
@@ -16,9 +16,9 @@ La caja del torneo (documento 1, módulo 14) tiene que decirle al organizador cu
 
 ## Decisión
 Libro de partida doble (`Asiento` + `LineaAsiento`). Las reglas puras viven en `packages/shared/src/dominio/caja.ts`:
-- Cuentas de plata (`MP`, `EFECTIVO`, `BANCO`), de ingresos (`INGRESOS:*`), de egresos (`EGRESOS:*`) y la comisión de la plataforma. Saldo = debe − haber.
+- Cuentas de plata (`MP`, `EFECTIVO`, `BANCO`), de ingresos (`INGRESOS:*`), de egresos (`EGRESOS:*`) y la de costos de cobro online (el cargo por servicio y el costo de Mercado Pago cuando el organizador los absorbe, ADR-013 y ADR-027). Saldo = debe − haber.
 - **Inmutable:** un trigger de la base rechaza editar o borrar asientos y líneas. Una corrección es otro asiento que revierte al original (`revierteAId`, una sola vez). La única excepción es la limpieza de una sandbox de demo (ADR-019), que lo declara en su transacción.
-- **Automático e idempotente:** cada pago aprobado genera su asiento de cobro y, si es de Mercado Pago, el de la comisión (`clave: pago:<id>`). Al abrir la caja se asientan los pagos anteriores que faltaran. Al cerrar un acta, y si el organizador lo enciende, se asienta el pago al árbitro (en efectivo) y el alquiler de la cancha (por transferencia).
+- **Automático e idempotente:** cada pago aprobado genera su asiento de cobro y, si es de Mercado Pago y el organizador absorbe el cargo, el de ese costo (`clave: pago:<id>`). Al abrir la caja se asientan los pagos anteriores que faltaran. Al cerrar un acta, y si el organizador lo enciende, se asienta el pago al árbitro (en efectivo) y el alquiler de la cancha (por transferencia).
 - Los ingresos del resultado son los cobrados (base caja); "por cobrar" sale de los cargos pendientes. Un retiro de Mercado Pago al banco mueve plata de lugar y no toca el resultado.
 - Solo el dueño retira. Falta la verificación en dos pasos obligatoria (E04-11).
 
@@ -30,4 +30,4 @@ Libro de partida doble (`Asiento` + `LineaAsiento`). Las reglas puras viven en `
 
 | Se revisa si | Relacionados |
 |---|---|
-| Aparecen retiros automáticos con Mercado Pago real, impuestos que haya que asentar, o la contadora pide otro plan de cuentas. | ADR-004, ADR-007, ADR-013, ADR-019 |
+| Aparecen retiros automáticos con Mercado Pago real, impuestos que haya que asentar, o la contadora pide otro plan de cuentas. | ADR-004, ADR-007, ADR-013, ADR-019, ADR-027 |

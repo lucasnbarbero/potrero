@@ -1,10 +1,48 @@
-// Landing de Potrero. Origen visual: mocks/landing.html. Precios y comisiones salen de docs/datos.json.
+// Landing de Potrero. Origen visual: mocks/landing.html. Precios y cargo por servicio salen de docs/datos.json.
 import { DATOS, type Plan } from '@potrero/shared';
 import { Icono } from '@potrero/ui';
 import { enlaceDemo } from '@/lib/entornos';
 import { pesos } from '@/lib/formato';
 
-const pct = (plan: Plan) => `${String(DATOS.planes[plan].comisionPct).replace('.', ',')}%`;
+const PLANES_LANDING: Plan[] = ['TORNEO', 'LIGA', 'PRO'];
+const cargo = DATOS.cargoPorServicio;
+const fundadoras = DATOS.ligasFundadoras;
+const suscripcion = DATOS.suscripcion;
+
+const cantidad = (n: number | null, uno: string, varios: string) =>
+  n === null ? `${varios} sin límite` : `${n === 1 ? '1' : 'Hasta ' + n} ${n === 1 ? uno : varios}`;
+
+function limites(p: Plan) {
+  const l = DATOS.planes[p].limites;
+  if (l.torneosActivos === null && l.equiposActivos === null && l.usuarios === null) return 'Sin límites.';
+  return [
+    cantidad(l.torneosActivos, 'torneo activo', 'torneos activos'),
+    cantidad(l.equiposActivos, 'equipo activo', 'equipos activos').toLowerCase(),
+    cantidad(l.usuarios, 'usuario', 'usuarios').toLowerCase(),
+  ].join(' · ');
+}
+
+/** Lo que suma cada plan (los módulos del anterior se dan por incluidos). */
+function incluye(p: Plan): string[] {
+  const whatsapp = `WhatsApp: ${DATOS.mensajeria.whatsappIncluidoPorMes[p].toLocaleString('es-AR')} por mes`;
+  if (p === 'TORNEO')
+    return ['Fixture, acta digital y tabla', 'Sitio público', 'Cobros, caja y sanciones', whatsapp];
+  if (p === 'LIGA')
+    return [
+      'Todo lo del plan Torneo, con roles',
+      'Tribunal y documentación',
+      'Cuota por fecha y seguro',
+      'Árbitros, reprogramaciones y métricas',
+      whatsapp,
+    ];
+  return [
+    'Todo lo del plan Liga',
+    'Tu marca y dominio propios',
+    'Sponsors con reporte',
+    'Soporte prioritario',
+    whatsapp,
+  ];
+}
 
 export default function Landing() {
   return (
@@ -90,7 +128,7 @@ export default function Landing() {
             className="rise mt-3 text-center text-sm text-mute"
             style={{ '--d': '3' } as React.CSSProperties}
           >
-            Sin tarjeta · Tu primer torneo en menos de 30 minutos · Pagás solo cuando cobrás
+            Primer mes sin cargo · Tu primer torneo en menos de 30 minutos · Cobrás el 100 % de lo tuyo
           </p>
 
           {/* collage de producto */}
@@ -373,111 +411,74 @@ export default function Landing() {
         <section id="precios" className="mx-auto max-w-6xl px-4 py-16">
           <p className="eyebrow text-center">Precios</p>
           <h2 className="mt-2 text-center text-4xl font-bold tracking-tighter sm:text-6xl">
-            Pagás cuando cobrás.
+            Una cuota fija. Cobrás el 100 %.
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-center text-mute">
-            Sin costo fijo. Pagás un porcentaje solo de lo que se cobra por la plataforma; lo que cobrás en
-            efectivo no paga comisión.
+            Elegís el plan según el tamaño de tu liga.{' '}
+            {suscripcion.primerMesSinCargo ? 'El primer mes no se cobra. ' : ''}
+            Pagando el año, {suscripcion.mesesGratisPagoAnual} meses sin cargo.
           </p>
           <div className="mx-auto mt-10 grid max-w-6xl gap-4 md:grid-cols-3">
-            <div className="tile rise !p-8">
-              <span className="pill">Liga</span>
-              <div className="mt-4 flex items-end gap-1">
-                <span className="text-6xl font-bold tracking-tighter">{pct('LIGA')}</span>
-                <span className="pb-2 text-mute">por cobro online</span>
-              </div>
-              <p className="mt-1 text-sm text-mute">Sin cuota fija.</p>
-              <ul className="mt-6 space-y-3 text-sm">
-                <li className="flex gap-2">
-                  <Icono nombre="check" className="text-emerald-600" />
-                  Todos los módulos
-                </li>
-                <li className="flex gap-2">
-                  <Icono nombre="check" className="text-emerald-600" />
-                  Torneos y equipos ilimitados
-                </li>
-                <li className="flex gap-2">
-                  <Icono nombre="check" className="text-emerald-600" />
-                  Efectivo y transferencia sin comisión
-                </li>
-                <li className="flex gap-2">
-                  <Icono nombre="check" className="text-emerald-600" />
-                  Mensajería incluida con tope
-                </li>
-              </ul>
-              <a href="/registro" className="btn-glass btn-lg mt-8 w-full">
-                Crear mi liga
-              </a>
-            </div>
-            <div className="tile-ink rise !p-8" style={{ '--d': '1' } as React.CSSProperties}>
-              <div className="field-pattern pointer-events-none absolute inset-0 opacity-60"></div>
-              <div className="relative">
-                <span className="pill-volt">Ligas fundadoras</span>
-                <div className="mt-4 flex items-end gap-1">
-                  <span className="text-6xl font-bold tracking-tighter">{pct('FUNDADORA')}</span>
-                  <span className="pb-2 text-white/50">de por vida</span>
+            {PLANES_LANDING.map((p, i) => {
+              const plan = DATOS.planes[p];
+              const destacado = p === 'LIGA';
+              return (
+                <div
+                  key={p}
+                  className={`${destacado ? 'tile-ink' : 'tile'} rise !p-8`}
+                  style={{ '--d': String(i) } as React.CSSProperties}
+                >
+                  {destacado && (
+                    <div className="field-pattern pointer-events-none absolute inset-0 opacity-60"></div>
+                  )}
+                  <div className="relative">
+                    <span className={destacado ? 'pill-volt' : 'pill'}>{plan.nombre}</span>
+                    <div className="mt-4 flex items-end gap-1">
+                      <span className="text-5xl font-bold tracking-tighter">{pesos(plan.cuotaMensual)}</span>
+                      <span className={`pb-2 ${destacado ? 'text-white/50' : 'text-mute'}`}>/ mes</span>
+                    </div>
+                    <p className={`mt-1 text-sm ${destacado ? 'text-white/60' : 'text-mute'}`}>
+                      {limites(p)}
+                    </p>
+                    <ul className="mt-6 space-y-3 text-sm">
+                      {incluye(p).map((x) => (
+                        <li key={x} className="flex gap-2">
+                          <Icono nombre="check" className={destacado ? 'text-volt' : 'text-emerald-600'} />
+                          {x}
+                        </li>
+                      ))}
+                    </ul>
+                    <a
+                      href="/registro"
+                      className={`${destacado ? 'btn-volt' : 'btn-glass'} btn-lg mt-8 w-full`}
+                    >
+                      {p === 'PRO' ? 'Hablar con ventas' : 'Crear mi liga'}
+                    </a>
+                  </div>
                 </div>
-                <p className="mt-1 text-sm text-white/50">
-                  Solo las primeras {DATOS.planes.FUNDADORA.cupo} ligas.
-                </p>
-                <ul className="mt-6 space-y-3 text-sm">
-                  <li className="flex gap-2">
-                    <Icono nombre="check" className="text-volt" />
-                    Todo lo del plan Liga
-                  </li>
-                  <li className="flex gap-2">
-                    <Icono nombre="check" className="text-volt" />
-                    Alta y migración gratis
-                  </li>
-                  <li className="flex gap-2">
-                    <Icono nombre="check" className="text-volt" />
-                    Acompañamiento directo
-                  </li>
-                  <li className="flex gap-2">
-                    <Icono nombre="check" className="text-volt" />
-                    Tu opinión define el producto
-                  </li>
-                </ul>
-                <a href="/registro" className="btn-volt btn-lg mt-8 w-full">
-                  Quiero ser fundadora
-                </a>
-              </div>
+              );
+            })}
+          </div>
+          <div className="mx-auto mt-4 grid max-w-6xl gap-4 md:grid-cols-2">
+            <div className="tile !p-6">
+              <p className="eyebrow">Cargo por servicio</p>
+              <p className="mt-2 text-sm">
+                Lo paga quien paga online (el equipo o el jugador): {cargo.pct} % del arancel, con un mínimo
+                de {pesos(cargo.minimo)}, más el costo de Mercado Pago. Vos recibís el 100 % del arancel. Si
+                preferís, lo podés absorber. Efectivo y transferencia, sin cargo.
+              </p>
             </div>
-            <div className="tile rise !p-8" style={{ '--d': '2' } as React.CSSProperties}>
-              <span className="pill">Pro</span>
-              <div className="mt-4 flex items-end gap-1">
-                <span className="text-6xl font-bold tracking-tighter">
-                  {pesos(DATOS.planes.PRO.cuotaMensual)}
-                </span>
-                <span className="pb-2 text-mute">/ mes</span>
-              </div>
-              <p className="mt-1 text-sm text-mute">+ {pct('PRO')} por cobro online.</p>
-              <ul className="mt-6 space-y-3 text-sm">
-                <li className="flex gap-2">
-                  <Icono nombre="check" className="text-emerald-600" />
-                  Tu marca y dominio propio
-                </li>
-                <li className="flex gap-2">
-                  <Icono nombre="check" className="text-emerald-600" />
-                  WhatsApp ampliado
-                </li>
-                <li className="flex gap-2">
-                  <Icono nombre="check" className="text-emerald-600" />
-                  Sponsors y reportes avanzados
-                </li>
-                <li className="flex gap-2">
-                  <Icono nombre="check" className="text-emerald-600" />
-                  Métricas completas y soporte prioritario
-                </li>
-              </ul>
-              <a href="/registro" className="btn-glass btn-lg mt-8 w-full">
-                Hablar con ventas
-              </a>
+            <div className="tile-volt !p-6">
+              <p className="eyebrow">Ligas fundadoras</p>
+              <p className="mt-2 text-sm">
+                Las primeras {fundadoras.cupo} ligas tienen {fundadoras.descuentoPct} % de descuento de por
+                vida en su plan, con alta y migración gratis.
+              </p>
             </div>
           </div>
           <p className="mt-4 text-center text-xs text-mute">
-            Valores de referencia. Mercado Pago cobra aparte su costo por procesar el pago: podés absorberlo o
-            mostrarlo al equipo como cargo por servicio. Siempre ves cuánto recibís.
+            Precios en pesos, con ajuste cada {suscripcion.ajusteMeses} meses y aviso de{' '}
+            {suscripcion.avisoDias} días.
           </p>
         </section>
 
@@ -538,8 +539,8 @@ export default function Landing() {
               </summary>
               <p className="mt-3 text-mute">
                 Conectás tu cuenta de Mercado Pago. Los equipos pagan con tarjeta o dinero en cuenta y el
-                dinero va directo a tu cuenta, menos nuestra comisión. Lo que cobrás en efectivo lo registrás
-                sin comisión.
+                dinero va directo a tu cuenta, completo: el cargo por servicio lo paga quien paga online. Lo
+                que cobrás en efectivo o por transferencia lo registrás sin cargo.
               </p>
             </details>
             <details className="tile group !py-4">

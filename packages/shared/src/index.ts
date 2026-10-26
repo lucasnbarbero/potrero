@@ -34,3 +34,4 @@ export * from './esquemas-cobros.js';
 // Backoffice de Gregal (E36).
 export * from './dominio/gregal.js';
 export * from './dominio/jugador.js';
+export * from './dominio/planes.js';

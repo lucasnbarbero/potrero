@@ -13,7 +13,7 @@ const ACCION: Record<string, string> = {
   VER_METRICAS: 'Vio las métricas de la plataforma',
   LISTAR_ORGANIZACIONES: 'Listó organizaciones',
   VER_ORGANIZACION: 'Vio el detalle de una organización',
-  VER_DINERO: 'Vio cobros y comisiones',
+  VER_DINERO: 'Vio cobros e ingresos',
   VER_AUDITORIA: 'Vio la auditoría',
 };
 const texto = (accion: string) => {

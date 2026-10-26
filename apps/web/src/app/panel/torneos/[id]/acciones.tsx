@@ -132,7 +132,7 @@ export function InscribirEquipo({
   );
 }
 
-/** Registrar un pago en efectivo o transferencia (sin comisión) o copiar el link de pago online. */
+/** Registrar un pago en efectivo o transferencia (sin cargo por servicio) o copiar el link de pago online. */
 export function AccionesCobro({ cargoId, debe }: { cargoId: string; debe: number }) {
   const router = useRouter();
   const { enviando, error, enviar } = useEnvio();

@@ -126,7 +126,7 @@ describe('backoffice de Gregal', () => {
     });
     const inicio = (await staff('GET', '/gregal/inicio')).body;
     expect(inicio.ligas.total).toBe(2);
-    expect(inicio.cobros).toMatchObject({ efectivo: 10_000, total: 10_000, comision: 0 });
+    expect(inicio.cobros).toMatchObject({ efectivo: 10_000, total: 10_000, cargoServicio: 0 });
     expect(inicio.partidosPorSemana).toHaveLength(8);
     const ligas = (await staff('GET', '/gregal/organizaciones?q=uno')).body;
     expect(ligas.map((l: { nombre: string }) => l.nombre)).toEqual(['Liga Uno']);

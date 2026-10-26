@@ -124,7 +124,9 @@ export class PanelService {
             select: {
               id: true,
               monto: true,
-              comisionPlataforma: true,
+              cargoServicio: true,
+              costoMercadoPago: true,
+              cargoAbsorbido: true,
               metodo: true,
               acreditadoEn: true,
               creadoEn: true,
@@ -234,7 +236,11 @@ export class PanelService {
         .filter((d) => d.debe > 0)
         .sort((a, b) => Number(b.vencido) - Number(a.vencido) || b.debe - a.debe);
       const cobrado = pagos.reduce((s, p) => s + p.monto, 0);
-      const comisiones = pagos.reduce((s, p) => s + p.comisionPlataforma, 0);
+      // El cargo por servicio lo pagan los equipos; solo resta si el organizador eligió absorberlo.
+      const cargoAbsorbido = pagos.reduce(
+        (s, p) => s + (p.cargoAbsorbido ? p.cargoServicio + p.costoMercadoPago : 0),
+        0,
+      );
       const pendiente = deudores.reduce((s, d) => s + d.debe, 0);
       const proximoVence = deudores
         .map((d) => d.vence)
@@ -397,8 +403,8 @@ export class PanelService {
         vivo,
         dinero: {
           cobrado,
-          comisiones,
-          neto: cobrado - comisiones,
+          cargoAbsorbido,
+          neto: cobrado - cargoAbsorbido,
           pendiente,
           online: pagos.filter((p) => p.metodo === 'MERCADO_PAGO').reduce((s, p) => s + p.monto, 0),
           porcentajeCobrado: cobrado + pendiente ? Math.round((cobrado / (cobrado + pendiente)) * 100) : 100,

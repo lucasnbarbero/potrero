@@ -11,9 +11,14 @@ test('landing con los precios vigentes', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Tu torneo');
   const precios = page.locator('#precios');
-  await expect(precios).toContainText('3,5%');
-  await expect(precios).toContainText('2,5%');
-  await expect(precios).toContainText('24.900');
+  // Suscripción por plan (Torneo, Liga, Pro), cargo por servicio y ligas fundadoras: cifras de docs/datos.json.
+  for (const plan of ['Torneo', 'Liga', 'Pro']) await expect(precios).toContainText(plan);
+  await expect(precios).toContainText('100.000');
+  await expect(precios).toContainText('200.000');
+  await expect(precios).toContainText('350.000');
+  await expect(precios).toContainText('Cargo por servicio');
+  await expect(precios).toContainText('Ligas fundadoras');
+  await expect(precios).not.toContainText(/comisi[oó]n/i);
   await expect(page.getByText('Premium')).toHaveCount(0);
   await foto(page, '01-landing');
 });
@@ -35,6 +40,10 @@ test('inscripción pública con pago simulado', async ({ page }) => {
   await foto(page, '03-inscripcion');
   await page.getByRole('button', { name: 'Continuar al pago' }).click();
   await expect(page.getByText('Modo demo')).toBeVisible();
+  // El equipo ve el arancel, el cargo por servicio y el total.
+  await expect(page.getByText('Arancel')).toBeVisible();
+  await expect(page.getByTestId('cargo-servicio')).toContainText('$');
+  await expect(page.getByTestId('total')).toContainText('$');
   await foto(page, '04-checkout');
   await page.getByRole('button', { name: 'Pagar (aprobar)' }).click();
   await expect(page.getByText('¡Pago aprobado!')).toBeVisible();

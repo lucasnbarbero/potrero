@@ -68,8 +68,9 @@ export default async function Organizaciones({ searchParams }: PageProps<'/grega
                     </Link>
                   </td>
                   <td className="td whitespace-nowrap">
-                    <span className={l.plan === 'FUNDADORA' ? 'pill-gregal' : 'pill'}>
+                    <span className={l.fundadora ? 'pill-gregal' : 'pill'}>
                       {DATOS.planes[l.plan].nombre}
+                      {l.fundadora ? ' · Fundadora' : ''}
                     </span>
                   </td>
                   <td className="td whitespace-nowrap">

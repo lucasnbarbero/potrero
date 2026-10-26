@@ -35,6 +35,7 @@ import type { Response } from 'express';
 import { AuthModule, AuthService, ponerCookies } from '../auth/auth.js';
 import { auditar } from '../comun/auditoria.js';
 import { type Contexto, Ctx, ErrorNegocio, noEncontrado, Permiso, Publico, Zod } from '../comun/http.js';
+import { esRolDeUsuario, exigirLimiteDelPlan } from '../comun/plan.js';
 import { config } from '../config.js';
 import { DbService, enSerie, type Tx } from '../db/db.service.js';
 
@@ -111,6 +112,7 @@ export class UsuariosService {
     return this.db.enOrg(c.organizacionId, async (tx) => {
       const ok = puedeInvitar(c.rol, d.rol, d.equipoId);
       if (!ok.ok) throw new ErrorNegocio(ok.motivo, HttpStatus.FORBIDDEN);
+      if (esRolDeUsuario(d.rol)) await exigirLimiteDelPlan(tx, c.organizacionId, 'usuarios');
       const equipoId = d.rol === 'CAPITAN' ? d.equipoId! : null;
       if (equipoId && !(await tx.equipo.findUnique({ where: { id: equipoId } })))
         throw noEncontrado('el equipo');

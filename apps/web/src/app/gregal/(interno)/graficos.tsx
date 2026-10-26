@@ -58,8 +58,8 @@ export function MezclaDeMedios({ cobros }: { cobros: CobrosPorMedio }) {
         ))}
         <li className="flex items-center gap-3 border-t border-black/5 pt-2.5 text-sm">
           <span className="size-3 shrink-0" />
-          <span className="flex-1 font-semibold">Comisión de Gregal</span>
-          <b className="num">{pesos(cobros.comision)}</b>
+          <span className="flex-1 font-semibold">Cargos por servicio (Gregal)</span>
+          <b className="num">{pesos(cobros.cargoServicio)}</b>
           <span className="w-14" />
         </li>
       </ul>

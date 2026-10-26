@@ -38,7 +38,7 @@ Para repetir todo desde cero: cortá con Ctrl+C, `pnpm db:reset` y `pnpm demo`.
 
 ### Datos de la demo
 
-Las fechas se calculan desde el día de la carga. Liga **Liga Barrial Sur** (dirección `liga-barrial-sur`, plan Ligas fundadoras, comisión 2,5 %):
+Las fechas se calculan desde el día de la carga. Liga **Liga Barrial Sur** (dirección `liga-barrial-sur`, plan Pro con el descuento de liga fundadora (50 %), así la demo muestra todos los módulos):
 
 | Torneo | Formato | Estado | Detalle |
 |---|---|---|---|
@@ -97,7 +97,7 @@ Estas pruebas no modifican datos, salvo donde se aclara.
 ### 1.1 Landing `/`
 - [ ] **Barra superior:** "Problemas", "Producto", "Precios", "Preguntas", "Probá la demo", "Ingresar" y "Crear mi liga".
 - [ ] **Hero:** título "Tu torneo, sin planillas ni grupos de WhatsApp.", botones "Quiero ser liga fundadora" (va a `/registro`) y "Probá la demo".
-- [ ] **Precios:** Liga "3,5% por cobro online"; Ligas fundadoras "2,5% de por vida" y "Solo las primeras 15 ligas."; Pro "$ 24.900 / mes" y "+ 2% por cobro online.". Son los precios del modelo actual (ver `docs/propuestas/2026-10-26-modelo-de-cobro.md`).
+- [ ] **Precios:** tres planes con su precio por mes: Torneo $100.000, Liga $200.000 y Pro $350.000, cada uno con sus límites (torneos, equipos, usuarios, WhatsApp por mes) y módulos. Aparte, las ligas fundadoras (primeras 15, 50 % de descuento de por vida, alta y migración gratis) y el cargo por servicio de los pagos online (lo paga quien paga online: 4 % con mínimo $500 más el costo de Mercado Pago; el organizador recibe el 100 %; efectivo y transferencia sin cargo). Las cifras salen de `docs/datos.json` (ADR-027).
 - [ ] **Preguntas:** 5, y la primera ("¿Necesito instalar algo?") viene abierta.
 - [ ] **"Probá la demo":** con `pnpm demo` normal muestra "La demo no está activa acá". Es lo esperado: la demo pública se prueba en la parte 6.
 
@@ -109,7 +109,7 @@ Estas pruebas no modifican datos, salvo donde se aclara.
   - "Apertura 2026 · Fecha 4 · Cancha 1".
   - Marcador **2 : 1** (≈ Deportivo Sur vs Atlético Norte), con los goleadores y su minuto.
   - Botón "Abrir acta".
-- [ ] **Cobrado en total:** número grande (≈ $ 1.575.000), "Neto tras comisión" y la línea "Evolución en los últimos 30 días · Online $…".
+- [ ] **Cobrado en total:** número grande (≈ $ 1.575.000), la aclaración de que el organizador recibe el 100 % y la línea "Evolución en los últimos 30 días · Online $…".
 - [ ] **Equipos:** 9, "en 3 torneos activos".
 - [ ] **Partidos de hoy:** 2, "1 en juego · 1 sin árbitro".
 - [ ] **Pendiente:** ≈ $ 55.000, con las pastillas "Sportivo Barrio · $ 30.000" y "Unión Vecinal · $ 25.000". Cada una lleva a su torneo.
@@ -125,7 +125,7 @@ Estas pruebas no modifican datos, salvo donde se aclara.
 
 - [ ] **Sugerencias:** la principal es "Designá árbitros para hoy…" con el botón "Designar árbitros". Debajo hay hasta 3 más (fixture, tribunal, deudores).
 - [ ] **Tus torneos:** Apertura "Fecha 3/7", Clausura "Inscripción 3/12" y Copa "Ronda 2/3".
-- [ ] **Barra lateral:** Panel, Torneos, Equipos, Canchas, Árbitros, Caja, Sanciones, Documentación, Reprogramar, Comunicación, Métricas, Configuración, Sponsors y Usuarios. Abajo dice "Plan Ligas fundadoras", "Comisión 2,5%" y "Mercado Pago conectado. Cobrás directo en tu cuenta.".
+- [ ] **Barra lateral:** Panel, Torneos, Equipos, Canchas, Árbitros, Caja, Sanciones, Documentación, Reprogramar, Comunicación, Métricas, Configuración, Sponsors y Usuarios. Abajo muestra el plan de la liga con su precio por mes (y el descuento de fundadora) y "Mercado Pago conectado. Cobrás directo en tu cuenta.".
 - [ ] **Celular:** con la ventana a ~390 px de ancho, el panel se ve sin scroll horizontal.
 
 ### 1.3 Torneos
@@ -133,7 +133,7 @@ Estas pruebas no modifican datos, salvo donde se aclara.
 - [ ] **Apertura 2026, pestañas:** "Inscripciones y pagos", "Fixture", "Tabla" y "Sanciones".
 - [ ] **"Inscripciones y pagos":**
   - Cuadros "Equipos" 9/10, "Cobrado" y "Pendiente" $ 30.000.
-  - En la tabla, 7 equipos "Al día" por Mercado Pago con su comisión y Estrella Roja en "Efectivo".
+  - En la tabla, 7 equipos "Al día" por Mercado Pago (el cargo por servicio lo pagó el equipo) y Estrella Roja en "Efectivo".
   - Sportivo Barrio "Pendiente" "$ 30.000 / $ 60.000", con los botones "Link de pago", "Cobré $30.000 en efectivo" y "Registrar pago". **No lo cobres todavía** (parte 6).
   - Cada equipo con pagos tiene "Ver pagos (n)".
 - [ ] **Encabezado del torneo:** "Ver sitio público", "Editar" y los botones de estado ("Finalizar torneo" en un torneo en curso; "Cerrar inscripción" en uno con inscripción abierta). No los toques todavía (3.3).
@@ -249,8 +249,8 @@ Estas pruebas no modifican datos, salvo donde se aclara.
 - [ ] **Conciliación automática:** al abrir la página, el pago de $ 30.000 sin conciliar se asienta solo (sin mensaje: falla conocida). Volvé a `/panel`: la alerta "1 pago sin conciliar" ya no está.
 - [ ] **Cobro automático:** se ve la pastilla "Cobro automático activo" (el botón "Activar cobro automático" aparece solo si está apagado).
 - [ ] **Cuadros:**
-  - "Disponible para retirar · Mercado Pago", con la comisión de Potrero descontada (2,5 %).
-  - "Resultado de la liga" (ingresos, comisión y egresos).
+  - "Disponible para retirar · Mercado Pago", con el 100 % de lo cobrado (el cargo por servicio lo pagaron los equipos).
+  - "Resultado de la liga" (ingresos y egresos).
   - "Por cobrar" ≈ $ 55.000 de 2 equipos.
 - [ ] **Filtros:** pastillas por torneo y pestañas "Todos", "Ingresos" y "Egresos".
 - [ ] **Egresos por rubro:** Canchas, Árbitros, Premios y trofeos, y Otros.
@@ -393,11 +393,11 @@ Entrá en incógnito con cada usuario. El menú lateral muestra solo las seccion
 ### 2.7 Panel de Gregal (staff@gregal.tech, en incógnito)
 - [ ] **Entrar:** desde el pie de la landing, "Equipo Gregal" → `/gregal/ingresar` → staff@gregal.tech. Arriba dice "Uso interno · todo queda auditado".
 - [ ] **Inicio:**
-  - Ligas activas, torneos en curso con equipos y jugadores, cobrado total y comisión de Gregal.
+  - Ligas activas, torneos en curso con equipos y jugadores, cobrado total e ingresos de Gregal (suscripciones y cargos por servicio).
   - Partidos cerrados por semana (últimas 8), cobrado por medio, ligas nuevas por mes.
   - "Ligas para llamar": Liga Amigos de Quilmes en riesgo, y Veteranos del Oeste y Fútbol 5 Palermo en atención.
 - [ ] **Organizaciones:** buscá "quilmes" → detalle con 3 alertas (pocas actas cargadas, solo pagos manuales, sin usar el panel hace 21 días), sus torneos, usuarios y cobros.
-- [ ] **Dinero:** cobros y comisiones por mes y por liga.
+- [ ] **Dinero:** cobros y cargos por servicio por mes y por liga.
 - [ ] **Auditoría:** cada consulta que hiciste figura con tu usuario, la liga que miraste y la hora.
 - [ ] **Sesiones separadas:** con la sesión de demo@ abrí `/gregal` → pide el ingreso del staff. Con la del staff abrí `/panel` → pide el ingreso de organizador.
 - [ ] **Rol soporte:** con soporte@gregal.tech, Dinero y Auditoría muestran que no tiene acceso.
@@ -412,19 +412,19 @@ Entrá en incógnito con cada usuario. El menú lateral muestra solo las seccion
 - [ ] **Equipo nuevo:** "Los Tigres", con capitán, email y WhatsApp → "Continuar al pago".
   - Checkout con "Modo demo: este checkout simula Mercado Pago…", "Inscripción Clausura 2026" y $ 75.000.
 - [ ] **Pagar:** "Pagar (aprobar)" → "¡Pago aprobado! Tu inscripción quedó confirmada." El sitio ahora dice 4 de 12.
-- [ ] **En el panel:** Clausura → Inscripciones: Los Tigres "Confirmada", "Mercado Pago (comisión $1.875)".
+- [ ] **En el panel:** Clausura → Inscripciones: Los Tigres "Confirmada", pagada por Mercado Pago, con el cargo por servicio a cargo del equipo.
 - [ ] **Pago rechazado:** otro equipo, "Los Leones" → "Simular pago rechazado" → "El pago fue rechazado." con el botón "Intentar de nuevo", que abre un checkout nuevo. Dejalo sin pagar: en el panel queda "Pendiente".
 
 ### 3.2 Inscribir y cobrar desde el panel (Clausura 2026)
 - [ ] **Vencimiento:** "Vence el pago de la inscripción" → elegí una fecha → "Guardar vencimiento" → "Guardado."
 - [ ] **Inscribir:** "Inscribir un equipo de la liga" → Atlético Norte → "Inscribir". Aparece una fila "Pendiente $0 / $75.000".
-- [ ] **Cobrar en efectivo:** "Cobré $75.000 en efectivo" → "Confirmada", "Efectivo", sin comisión.
+- [ ] **Cobrar en efectivo:** "Cobré $75.000 en efectivo" → "Confirmada", "Efectivo", sin cargo por servicio.
 - [ ] **Pago parcial por transferencia:**
   - En Los Leones, "Registrar pago" → Monto 30000, Medio "Transferencia", Comprobante "TRF 123". Aparece "Pago parcial: queda debiendo $ 45.000" → registrar.
   - La fila queda "Pendiente $ 30.000 / $ 75.000".
 - [ ] **Completar el pago:** "Registrar pago" otra vez, con el saldo que trae por defecto → "Confirmada · Al día".
 - [ ] **Ver y anular un pago:** "Ver pagos (2)" → "Anular" el de $ 30.000. Vuelve a deber y en Caja aparece la reversa del movimiento.
-- [ ] **Link de pago:** en otro equipo pendiente, "Link de pago" → "Copiado: http://localhost:3000/pago/…". Abrilo y aprobá: queda pagado, con la comisión de Mercado Pago.
+- [ ] **Link de pago:** en otro equipo pendiente, "Link de pago" → "Copiado: http://localhost:3000/pago/…". Abrilo: el checkout muestra el arancel, el cargo por servicio y el total. Aprobá: queda pagado y el organizador recibe el arancel completo.
 - [ ] **Monto de más:** "Registrar pago" con más que el saldo → no lo deja.
 
 ### 3.3 Editar el torneo y cambiar su estado (Clausura 2026)
@@ -673,7 +673,7 @@ Entrá en incógnito con cada usuario. El menú lateral muestra solo las seccion
 
 ### 5.6 Alta de una liga nueva (desde cero)
 - [ ] **Registro:** en incógnito, `/registro` → "Creá tu liga" con un email nuevo y una contraseña de 10 o más caracteres → "Crear mi liga".
-  - Va a `/panel/configuracion` en **0%**. La barra dice "Plan Liga" y "Comisión 3,5%".
+  - Va a `/panel/configuracion` en **0%**. La barra muestra el plan de la liga nueva con su precio por mes.
 - [ ] **Email repetido:** registrar `demo@potrero.app` → "Ya hay una cuenta con ese email. Probá iniciar sesión."
 - [ ] **Asistente:** completá los pasos 1 a 4. Mercado Pago solo ofrece "Conectar después".
 - [ ] **Importar el ejemplo:** subí `potrero-ejemplo.xlsx` → "Importar 8 equipos, 80 jugadores y 4 canchas" → "Listo: importamos todo." → "Ver equipos". **Hacelo solo en la liga nueva:** en la de demo agrega equipos de verdad.

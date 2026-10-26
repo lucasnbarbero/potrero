@@ -44,8 +44,9 @@ export default async function Organizacion({ params }: PageProps<'/gregal/organi
         titulo={o.nombre}
       >
         <div className="flex flex-wrap gap-2">
-          <span className={o.plan === 'FUNDADORA' ? 'pill-gregal' : 'pill'}>
+          <span className={o.fundadora ? 'pill-gregal' : 'pill'}>
             Plan {DATOS.planes[o.plan].nombre}
+            {o.fundadora ? ' · Fundadora' : ''} · {pesos(o.cuotaMensual)}/mes
           </span>
           <span className={o.activa ? 'pill-ink' : 'pill'}>{o.activa ? 'Activa' : 'Sin actividad'}</span>
           <span className={o.mpConectado ? 'pill-gregal' : 'pill-amber'}>
@@ -79,11 +80,13 @@ export default async function Organizacion({ params }: PageProps<'/gregal/organi
           </p>
         </section>
         <section className="tile-ink rise" style={d(4)}>
-          <span className="eyebrow !text-white/50">Comisión generada</span>
+          <span className="eyebrow !text-white/50">Cargos por servicio</span>
           <div className="num text-gregal mt-2 text-4xl font-bold tracking-tighter">
-            {pesos(o.cobros.comision)}
+            {pesos(o.cobros.cargoServicio)}
           </div>
-          <p className="text-sm text-white/50">sobre {pesos(o.cobros.total)} cobrados</p>
+          <p className="text-sm text-white/50">
+            sobre {pesos(o.cobros.online)} online · suscripción {pesos(o.cuotaMensual)}/mes
+          </p>
         </section>
       </div>
 
@@ -173,7 +176,7 @@ export default async function Organizacion({ params }: PageProps<'/gregal/organi
 
       <div className="grid items-start gap-4 xl:grid-cols-[1fr_1fr]">
         <section className="tile rise" style={d(8)}>
-          <h2 className="mb-4 text-xl font-bold">Cobros y comisiones</h2>
+          <h2 className="mb-4 text-xl font-bold">Cobros y cargos por servicio</h2>
           <MezclaDeMedios cobros={o.cobros} />
           <h3 className="mb-3 mt-6 font-semibold">Cobrado por mes</h3>
           <Columnas
@@ -182,7 +185,7 @@ export default async function Organizacion({ params }: PageProps<'/gregal/organi
               clave: m.mes,
               valor: Math.round(m.total / 1000),
               texto: nombreMes(m.mes),
-              titulo: `${nombreMes(m.mes)}: ${pesos(m.total)} (comisión ${pesos(m.comision)})`,
+              titulo: `${nombreMes(m.mes)}: ${pesos(m.total)} (cargos por servicio ${pesos(m.cargoServicio)})`,
             }))}
           />
           <p className="mt-2 text-xs text-mute">En miles de pesos.</p>
@@ -204,8 +207,8 @@ export default async function Organizacion({ params }: PageProps<'/gregal/organi
               <span className={p.medio === 'Online' ? 'pill-gregal' : 'pill'}>{p.medio}</span>
               <div className="w-28 text-right">
                 <b className="num block">{pesos(p.monto)}</b>
-                {p.comision > 0 && (
-                  <span className="num text-xs text-mute">comisión {pesos(p.comision)}</span>
+                {p.cargoServicio > 0 && (
+                  <span className="num text-xs text-mute">cargo {pesos(p.cargoServicio)}</span>
                 )}
               </div>
             </div>

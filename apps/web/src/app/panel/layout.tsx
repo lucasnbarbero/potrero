@@ -6,7 +6,7 @@ import { apiServidor } from '@/lib/api';
 export default async function LayoutPanel({ children }: { children: React.ReactNode }) {
   const yo = await apiServidor<{
     usuario: { nombre: string };
-    organizacion: { nombre: string; slug: string; plan: Plan; mpConectado: boolean };
+    organizacion: { nombre: string; slug: string; plan: Plan; fundadora: boolean; mpConectado: boolean };
     permisos: string[];
   }>('/auth/yo');
   return (

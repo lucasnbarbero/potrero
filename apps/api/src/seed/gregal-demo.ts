@@ -31,7 +31,7 @@ export async function cargarGregalDemo(app: Resolver, password: string) {
   // Datos sintéticos de la semilla: se fechan hacia atrás con la conexión de sistema.
   await db.sistema.organizacion.update({
     where: { id: palermo.organizacionId },
-    data: { creadoEn: hace(10), localidad: 'Palermo', provincia: 'CABA' },
+    data: { creadoEn: hace(10), plan: 'TORNEO', localidad: 'Palermo', provincia: 'CABA' },
   });
   await db.sistema.sesionRefresh.updateMany({
     where: { organizacionActivaId: palermo.organizacionId },
@@ -122,7 +122,13 @@ export async function cargarGregalDemo(app: Resolver, password: string) {
   });
   await db.sistema.organizacion.update({
     where: { id: quilmes.organizacionId },
-    data: { creadoEn: hace(75), plan: 'FUNDADORA', localidad: 'Quilmes', provincia: 'Buenos Aires' },
+    data: {
+      creadoEn: hace(75),
+      plan: 'LIGA',
+      fundadora: true,
+      localidad: 'Quilmes',
+      provincia: 'Buenos Aires',
+    },
   });
   await db.sistema.sesionRefresh.updateMany({
     where: { organizacionActivaId: quilmes.organizacionId },

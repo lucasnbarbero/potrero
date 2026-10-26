@@ -156,9 +156,12 @@ async function PestanaInscripciones({ torneo }: { torneo: DetalleTorneo }) {
                       <div className="text-xs text-mute">
                         {i.pagos
                           .filter((p) => p.estado === 'APROBADO')
-                          .map(
-                            (p) =>
-                              `${p.metodo === 'MERCADO_PAGO' ? 'Mercado Pago' : p.metodo === 'EFECTIVO' ? 'Efectivo' : 'Transferencia'}${p.comision ? ` (comisión ${pesos(p.comision)})` : ''}`,
+                          .map((p) =>
+                            p.metodo === 'MERCADO_PAGO'
+                              ? 'Mercado Pago'
+                              : p.metodo === 'EFECTIVO'
+                                ? 'Efectivo'
+                                : 'Transferencia',
                           )
                           .join(' · ')}
                       </div>

@@ -11,7 +11,11 @@ import { pesos } from '@/lib/formato';
 interface Checkout {
   estado: string;
   concepto: string;
+  /** Arancel que fijó la liga. */
   monto: number;
+  /** Cargo por servicio (cero si lo absorbe la liga). */
+  cargoServicio: number;
+  total: number;
   equipo: string;
   organizacion: string;
   volverA: string;
@@ -40,7 +44,24 @@ export default function PagoSimulado() {
               <h1 className="mt-1 text-2xl font-bold tracking-tight">{c.concepto}</h1>
               <p className="text-sm text-mute">Equipo: {c.equipo}</p>
             </div>
-            <div className="num text-5xl font-bold tracking-tighter">{pesos(c.monto)}</div>
+            <dl className="space-y-1.5 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-mute">Arancel</dt>
+                <dd className="num font-semibold">{pesos(c.monto)}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-mute">Cargo por servicio</dt>
+                <dd className="num font-semibold" data-testid="cargo-servicio">
+                  {c.cargoServicio ? pesos(c.cargoServicio) : 'Sin cargo'}
+                </dd>
+              </div>
+            </dl>
+            <div>
+              <p className="eyebrow">Total</p>
+              <div className="num text-5xl font-bold tracking-tighter" data-testid="total">
+                {pesos(c.total)}
+              </div>
+            </div>
             {c.estado === 'PENDIENTE' ? (
               <div className="space-y-2">
                 <button

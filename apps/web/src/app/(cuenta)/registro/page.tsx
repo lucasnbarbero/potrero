@@ -21,7 +21,8 @@ export default function Registro() {
     >
       <h1 className="text-3xl font-bold tracking-tighter">Creá tu liga</h1>
       <p className="text-sm text-mute">
-        Sin costo fijo: pagás un porcentaje solo de lo que cobrás por la plataforma.
+        El primer mes no se cobra. Después, una cuota mensual según tu plan y recibís el 100 % de lo que
+        cobrás.
       </p>
       <Campo
         etiqueta="Nombre de la liga"

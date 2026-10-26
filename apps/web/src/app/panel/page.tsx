@@ -149,7 +149,13 @@ export default async function Panel() {
             </div>
             <div className="num mt-6 text-5xl font-bold tracking-tighter">{pesos(t.dinero.cobrado)}</div>
             <p className="mt-1 text-sm text-ink/70">
-              Neto tras comisión: <b>{pesos(t.dinero.neto)}</b>
+              {t.dinero.cargoAbsorbido > 0 ? (
+                <>
+                  Neto tras el cargo por servicio que absorbés: <b>{pesos(t.dinero.neto)}</b>
+                </>
+              ) : (
+                'Te llega completo: el cargo por servicio lo paga el equipo.'
+              )}
             </p>
             <Linea serie={t.dinero.serie} />
             <p className="mt-1 text-xs text-ink/60">

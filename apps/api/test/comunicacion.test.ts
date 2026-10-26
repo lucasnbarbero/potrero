@@ -139,7 +139,7 @@ describe('comunicación', () => {
     ]);
     expect(r.body.ejemplo).toMatchObject({ para: 'Ana', canal: 'WHATSAPP' });
     expect(r.body.ejemplo.cuerpo).toContain('Hola Ana!');
-    expect(r.body.tope).toMatchObject({ tope: 200, usados: 0 });
+    expect(r.body.tope).toMatchObject({ tope: 300, usados: 0 });
   });
 
   it('por email no cuesta nada, y un mensaje libre de marketing cuesta más que uno de utilidad', async () => {
@@ -233,11 +233,11 @@ describe('comunicación', () => {
   });
 
   it('el tope de WhatsApp del plan frena un envío que se pasa', async () => {
-    // Se simula que el mes ya va por 199 de 200 WhatsApp.
+    // Se simula que el mes ya va por 299 de 300 WhatsApp.
     const [{ id: orgId }] = await consulta("SELECT id FROM organizacion WHERE slug = 'liga-com'");
     await admin.query(
       `INSERT INTO mensaje (id, organizacion_id, plantilla, version, canal, destinatario, destino, asunto, cuerpo, estado)
-       SELECT 'relleno-' || g, $1, 'LIBRE', 1, 'WHATSAPP', 'x', '1', 'x', 'x', 'ENVIADO' FROM generate_series(1, 199) g`,
+       SELECT 'relleno-' || g, $1, 'LIBRE', 1, 'WHATSAPP', 'x', '1', 'x', 'x', 'ENVIADO' FROM generate_series(1, 299) g`,
       [orgId],
     );
     const previa = await api('POST', '/comunicacion/vista-previa', {
@@ -245,7 +245,7 @@ describe('comunicación', () => {
       canal: 'WHATSAPP',
       segmento: { tipo: 'TORNEO', torneoId },
     });
-    expect(previa.body.tope).toMatchObject({ usados: 199, restantes: 1, excedente: 1 });
+    expect(previa.body.tope).toMatchObject({ usados: 299, restantes: 1, excedente: 1 });
     const r = await api('POST', '/comunicacion/enviar', {
       plantilla: 'FIXTURE_PUBLICADO',
       canal: 'WHATSAPP',

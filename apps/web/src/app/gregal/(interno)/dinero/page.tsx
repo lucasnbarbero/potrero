@@ -13,7 +13,10 @@ export default async function Dinero() {
   const meses = [...m.porMes].reverse();
   return (
     <div className="space-y-4">
-      <Encabezado eyebrow="Cobros y comisiones de todas las ligas · solo lectura" titulo="Dinero" />
+      <Encabezado
+        eyebrow="Cobros, suscripciones y cargos por servicio de todas las ligas · solo lectura"
+        titulo="Dinero"
+      />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <section className="tile rise" style={d(1)}>
@@ -29,16 +32,17 @@ export default async function Dinero() {
           </p>
         </section>
         <section className="tile-ink rise" style={d(3)}>
-          <span className="eyebrow !text-white/50">Comisión de Gregal</span>
+          <span className="eyebrow !text-white/50">Ingresos de Gregal · mes</span>
           <div className="num text-gregal mt-2 text-4xl font-bold tracking-tighter">
-            {pesos(m.total.comision)}
+            {pesos(m.ingresos.total)}
           </div>
           <p className="text-sm text-white/50">
-            take rate {porcentaje(m.tasa.sobreOnline, 1)} sobre lo online
+            MRR {pesos(m.ingresos.suscripciones)} + cargos {pesos(m.ingresos.cargosDelMes)} ·{' '}
+            {porcentaje(m.tasa.sobreOnline, 1)} de lo online
           </p>
         </section>
         <section className="tile rise" style={d(4)}>
-          <span className="eyebrow">Manual (sin comisión)</span>
+          <span className="eyebrow">Manual (sin cargo)</span>
           <div className="num mt-2 text-4xl font-bold tracking-tighter">
             {pesos(m.total.efectivo + m.total.transferencia)}
           </div>
@@ -56,7 +60,7 @@ export default async function Dinero() {
               <th className="th text-right">Transferencia</th>
               <th className="th text-right">Online</th>
               <th className="th text-right">Total</th>
-              <th className="th text-right">Comisión</th>
+              <th className="th text-right">Cargo por servicio</th>
             </tr>
           </thead>
           <tbody>
@@ -67,7 +71,7 @@ export default async function Dinero() {
                 <td className="td num text-right">{pesos(x.transferencia)}</td>
                 <td className="td num text-right">{pesos(x.online)}</td>
                 <td className="td num text-right font-semibold">{pesos(x.total)}</td>
-                <td className="td num text-right font-semibold">{pesos(x.comision)}</td>
+                <td className="td num text-right font-semibold">{pesos(x.cargoServicio)}</td>
               </tr>
             ))}
           </tbody>
@@ -84,7 +88,7 @@ export default async function Dinero() {
               <th className="th text-right">Manual</th>
               <th className="th text-right">Online</th>
               <th className="th text-right">Total</th>
-              <th className="th text-right">Comisión</th>
+              <th className="th text-right">Cargo por servicio</th>
             </tr>
           </thead>
           <tbody>
@@ -96,14 +100,16 @@ export default async function Dinero() {
                   </Link>
                 </td>
                 <td className="td">
-                  <span className={l.plan === 'FUNDADORA' ? 'pill-gregal' : 'pill'}>
+                  <span className={l.fundadora ? 'pill-gregal' : 'pill'}>
                     {DATOS.planes[l.plan].nombre}
+                    {l.fundadora ? ' · Fundadora' : ''}
                   </span>
+                  <span className="num ml-2 text-xs text-mute">{pesos(l.cuotaMensual)}/mes</span>
                 </td>
                 <td className="td num text-right">{pesos(l.efectivo + l.transferencia)}</td>
                 <td className="td num text-right">{pesos(l.online)}</td>
                 <td className="td num text-right font-semibold">{pesos(l.total)}</td>
-                <td className="td num text-right font-semibold">{pesos(l.comision)}</td>
+                <td className="td num text-right font-semibold">{pesos(l.cargoServicio)}</td>
               </tr>
             ))}
           </tbody>

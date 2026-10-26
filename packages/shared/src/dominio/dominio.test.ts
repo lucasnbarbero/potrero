@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { REGLAMENTO_POR_DEFECTO as R } from '../reglamento.js';
 import { goleadores, marcador } from './acta.js';
-import { comisionPlataforma } from './cobros.js';
+import { cargoPorServicio, servicioDeGregal } from './cobros.js';
+import { cuotaMensual, motivoFueraDeLimite, motivoSinModulo, mrr, tieneModulo } from './planes.js';
 import { cantidadDePartidos, detectarConflictos, programar, todosContraTodos } from './fixture.js';
 import { amarillasQueAcumulan, estadoSancion, sancionesDelPartido } from './sanciones.js';
 import { tablaDePosiciones } from './tabla.js';
@@ -253,11 +254,69 @@ describe('sanciones automáticas', () => {
   });
 });
 
-describe('cobros', () => {
-  it('comisión según plan, solo con Mercado Pago', () => {
-    expect(comisionPlataforma(960_000, 'LIGA', 'MERCADO_PAGO')).toBe(33_600);
-    expect(comisionPlataforma(960_000, 'FUNDADORA', 'MERCADO_PAGO')).toBe(24_000);
-    expect(comisionPlataforma(960_000, 'PRO', 'MERCADO_PAGO')).toBe(19_200);
-    expect(comisionPlataforma(960_000, 'LIGA', 'EFECTIVO')).toBe(0);
+describe('cargo por servicio', () => {
+  it('es el 4 % del arancel con mínimo de $500, solo en pagos online', () => {
+    expect(servicioDeGregal(60_000)).toBe(2_400);
+    expect(servicioDeGregal(5_000)).toBe(500);
+    expect(servicioDeGregal(60_000, 'EFECTIVO')).toBe(0);
+    expect(servicioDeGregal(60_000, 'TRANSFERENCIA')).toBe(0);
+  });
+  it('lo paga el equipo: el organizador recibe el arancel completo después de Mercado Pago', () => {
+    const c = cargoPorServicio(60_000);
+    expect(c.absorbe).toBe(false);
+    expect(c.recibeOrganizador).toBe(60_000);
+    expect(c.total).toBe(c.arancel + c.cargo);
+    expect(c.cargo).toBe(c.servicio + c.costoMercadoPago);
+    // Mercado Pago retiene su porcentaje sobre el total y queda arancel + servicio (redondeo a favor del organizador).
+    expect(c.total - Math.round(c.total * 0.08)).toBeGreaterThanOrEqual(60_000 + 2_400);
+  });
+  it('si el organizador lo absorbe, el equipo paga el arancel y el cargo se descuenta de lo que recibe', () => {
+    const c = cargoPorServicio(60_000, { absorbe: true });
+    expect(c.total).toBe(60_000);
+    expect(c.costoMercadoPago).toBe(4_800);
+    expect(c.recibeOrganizador).toBe(60_000 - 2_400 - 4_800);
+  });
+  it('efectivo y transferencia no tienen cargo', () => {
+    expect(cargoPorServicio(60_000, { metodo: 'EFECTIVO' })).toMatchObject({
+      cargo: 0,
+      total: 60_000,
+      recibeOrganizador: 60_000,
+    });
+  });
+});
+
+describe('planes', () => {
+  it('la cuota mensual de una liga fundadora tiene 50 % de descuento', () => {
+    expect(cuotaMensual('TORNEO')).toBe(100_000);
+    expect(cuotaMensual('LIGA')).toBe(200_000);
+    expect(cuotaMensual('PRO', true)).toBe(175_000);
+    expect(
+      mrr([
+        { plan: 'PRO', fundadora: true },
+        { plan: 'LIGA', fundadora: false },
+      ]),
+    ).toBe(375_000);
+  });
+  it('los límites dicen a qué plan pasar', () => {
+    expect(motivoFueraDeLimite('TORNEO', 'torneosActivos', 0)).toBeNull();
+    expect(motivoFueraDeLimite('TORNEO', 'torneosActivos', 1)).toBe(
+      'Tu plan Torneo permite 1 torneo activo: pasá a Liga.',
+    );
+    expect(motivoFueraDeLimite('LIGA', 'equiposActivos', 48)).toBe(
+      'Tu plan Liga permite 48 equipos activos: pasá a Pro.',
+    );
+    expect(motivoFueraDeLimite('TORNEO', 'usuarios', 2)).toBe(
+      'Tu plan Torneo permite 2 usuarios: pasá a Liga.',
+    );
+    expect(motivoFueraDeLimite('LIGA', 'usuarios', 500)).toBeNull();
+    expect(motivoFueraDeLimite('PRO', 'torneosActivos', 99)).toBeNull();
+  });
+  it('los módulos dependen del plan', () => {
+    expect(tieneModulo('TORNEO', 'TRIBUNAL')).toBe(false);
+    expect(tieneModulo('LIGA', 'TRIBUNAL')).toBe(true);
+    expect(tieneModulo('LIGA', 'SPONSORS')).toBe(false);
+    expect(motivoSinModulo('LIGA', 'SPONSORS', 'Sponsors')).toBe(
+      'Sponsors no está en tu plan Liga: pasá a Pro.',
+    );
   });
 });

@@ -368,7 +368,12 @@ describe('inscripción y deuda por fecha', () => {
 
 describe('caja: rubro Seguros', () => {
   it('un pago de seguro entra en INGRESOS:SEGUROS y se ve aparte', () => {
-    const { cobro } = asientosDePago({ metodo: 'EFECTIVO', monto: 7_000, comision: 0, categoria: 'SEGUROS' });
+    const { cobro } = asientosDePago({
+      metodo: 'EFECTIVO',
+      monto: 7_000,
+      cargoAbsorbido: 0,
+      categoria: 'SEGUROS',
+    });
     const s = saldos(cobro);
     expect(ingresoDeCategoria(s, 'SEGUROS')).toBe(7_000);
     expect(ingresoDeCategoria(s, 'INSCRIPCIONES')).toBe(0);

@@ -101,20 +101,30 @@ describe('caja del torneo', () => {
       const ins = await api('POST', `/torneos/${torneoId}/inscripciones`, { equipoId: e.body.id });
       cargo[n] = ins.body.cargo.id;
     }
-    // A: efectivo. B: online con Mercado Pago (plan Liga: 3,5 % de comisión).
+    // A: efectivo. B: online con Mercado Pago, con el cargo por servicio absorbido por el organizador
+    // (10.000 de arancel: 500 de servicio, el mínimo, más 800 de Mercado Pago = 1.300 que se descuentan).
+    expect((await api('PATCH', '/configuracion/cargo-servicio', { absorbe: true })).body).toEqual({
+      absorbe: true,
+    });
     await api('POST', `/cargos/${cargo.A}/pagos`, { metodo: 'EFECTIVO', monto: 10_000 });
     const link = await api('POST', `/cargos/${cargo.B}/link`);
     const n = { preferenciaId: link.body.preferenciaId, pasarelaPagoId: 'PAGO-CAJA-1', estado: 'aprobado' };
     await publico('POST', '/webhooks/pagos', n, { 'x-firma': firmar(JSON.stringify(n)) });
   });
 
-  it('cada pago aprobado quedó asentado, con su comisión, y el resumen sale del libro', async () => {
+  it('cada pago aprobado quedó asentado, con el cargo absorbido, y el resumen sale del libro', async () => {
     const r = await api('GET', '/caja');
     expect(r.status).toBe(200);
-    expect(r.body.plan).toEqual({ nombre: 'Liga', comisionPct: 3.5 });
-    expect(r.body.disponible).toEqual({ MP: 9_650, EFECTIVO: 10_000, BANCO: 0 });
-    expect(r.body.comisionTotal).toBe(350);
-    expect(r.body.resultado).toEqual({ ingresos: 20_000, comision: 350, egresos: 0, resultado: 19_650 });
+    expect(r.body.plan).toEqual({ nombre: 'Liga', cuotaMensual: 200_000, fundadora: false });
+    expect(r.body.absorbeCargoServicio).toBe(true);
+    expect(r.body.disponible).toEqual({ MP: 8_700, EFECTIVO: 10_000, BANCO: 0 });
+    expect(r.body.cargoAbsorbidoTotal).toBe(1_300);
+    expect(r.body.resultado).toEqual({
+      ingresos: 20_000,
+      cargoAbsorbido: 1_300,
+      egresos: 0,
+      resultado: 18_700,
+    });
     expect(r.body.porCobrar).toEqual({ monto: 10_000, equipos: 1 });
   });
 
@@ -127,12 +137,16 @@ describe('caja del torneo', () => {
     expect(await consulta('SELECT sum(debe) - sum(haber) AS d FROM linea_asiento')).toEqual([{ d: '0' }]);
   });
 
-  it('los movimientos muestran cada cobro y la comisión con su efecto en el resultado', async () => {
+  it('los movimientos muestran cada cobro y el cargo absorbido con su efecto en el resultado', async () => {
     const r = await api('GET', '/caja/movimientos');
     expect(r.body.total).toBe(3);
     const porTipo = (t: string) => r.body.movimientos.filter((m: { tipo: string }) => m.tipo === t);
     expect(porTipo('COBRO')).toHaveLength(2);
-    expect(porTipo('COMISION')[0]).toMatchObject({ efecto: -350, monto: 350, detalle: 'Mercado Pago' });
+    expect(porTipo('CARGO_SERVICIO')[0]).toMatchObject({
+      efecto: -1_300,
+      monto: 1_300,
+      detalle: 'Mercado Pago',
+    });
     expect(
       porTipo('COBRO')
         .map((m: { detalle: string }) => m.detalle)
@@ -141,14 +155,14 @@ describe('caja del torneo', () => {
     const ingresos = await api('GET', '/caja/movimientos?tipo=INGRESOS');
     expect(ingresos.body.movimientos.every((m: { efecto: number }) => m.efecto > 0)).toBe(true);
     const egresos = await api('GET', '/caja/movimientos?tipo=EGRESOS');
-    expect(egresos.body.movimientos.map((m: { tipo: string }) => m.tipo)).toEqual(['COMISION']);
+    expect(egresos.body.movimientos.map((m: { tipo: string }) => m.tipo)).toEqual(['CARGO_SERVICIO']);
   });
 
   it('los pagos anteriores a la caja se asientan solos al mirarla (y una sola vez)', async () => {
     // Un pago aprobado "viejo", insertado sin pasar por el cobro: no tiene asiento.
     const [{ id: orgId }] = await consulta("SELECT id FROM organizacion WHERE slug = 'liga-caja'");
     await admin.query(
-      `INSERT INTO pago (id, organizacion_id, cargo_id, metodo, monto, estado, comision_plataforma, creado_en)
+      `INSERT INTO pago (id, organizacion_id, cargo_id, metodo, monto, estado, cargo_servicio, creado_en)
        VALUES ('pago-viejo', $1, $2, 'TRANSFERENCIA', 10000, 'APROBADO', 0, now())`,
       [orgId, cargo.C],
     );
@@ -174,7 +188,7 @@ describe('caja del torneo', () => {
     egresoId = r.body.id;
     const caja = await api('GET', '/caja');
     expect(caja.body.disponible.EFECTIVO).toBe(4_000);
-    expect(caja.body.resultado).toMatchObject({ egresos: 6_000, resultado: 30_000 - 350 - 6_000 });
+    expect(caja.body.resultado).toMatchObject({ egresos: 6_000, resultado: 30_000 - 1_300 - 6_000 });
     expect(caja.body.porRubro).toEqual([{ rubro: 'CANCHAS', monto: 6_000, pct: 100, nombre: 'Canchas' }]);
   });
 
@@ -216,12 +230,12 @@ describe('caja del torneo', () => {
     const antes = (await api('GET', '/caja')).body;
     const demasiado = await api('POST', '/caja/retiros', { monto: 20_000 });
     expect(demasiado.status).toBe(422);
-    expect(demasiado.body.mensaje).toMatch(/Solo tenés \$\s?9\.650 disponibles en Mercado Pago/);
+    expect(demasiado.body.mensaje).toMatch(/Solo tenés \$\s?8\.700 disponibles en Mercado Pago/);
     const ok = await api('POST', '/caja/retiros', { monto: 5_000, destino: 'CBU ...4321' });
     expect(ok.status).toBe(201);
-    expect(ok.body.disponibleEnMp).toBe(4_650);
+    expect(ok.body.disponibleEnMp).toBe(3_700);
     const despues = (await api('GET', '/caja')).body;
-    expect(despues.disponible).toEqual({ MP: 4_650, EFECTIVO: 4_000, BANCO: 20_000 });
+    expect(despues.disponible).toEqual({ MP: 3_700, EFECTIVO: 4_000, BANCO: 20_000 });
     expect(despues.resultado).toEqual(antes.resultado);
     expect(await consulta("SELECT descripcion FROM asiento WHERE tipo = 'RETIRO'")).toEqual([
       { descripcion: 'Retiro a CBU ...4321' },
@@ -241,9 +255,9 @@ describe('caja del torneo', () => {
   it('filtrar por torneo cambia el resultado pero no la plata disponible', async () => {
     const t = (await api('GET', `/caja?torneoId=${torneoId}`)).body;
     expect(t.resultado).toMatchObject({ ingresos: 30_000, egresos: 6_000 }); // sin el sponsor, que no es de ningún torneo
-    expect(t.disponible).toEqual({ MP: 4_650, EFECTIVO: 4_000, BANCO: 20_000 });
+    expect(t.disponible).toEqual({ MP: 3_700, EFECTIVO: 4_000, BANCO: 20_000 });
     const otro = (await api('GET', `/caja?torneoId=${otroTorneoId}`)).body;
-    expect(otro.resultado).toEqual({ ingresos: 0, comision: 0, egresos: 0, resultado: 0 });
+    expect(otro.resultado).toEqual({ ingresos: 0, cargoAbsorbido: 0, egresos: 0, resultado: 0 });
     expect(otro.disponible.BANCO).toBe(20_000);
     expect((await api('GET', `/caja/movimientos?torneoId=${otroTorneoId}`)).body.total).toBe(0);
   });

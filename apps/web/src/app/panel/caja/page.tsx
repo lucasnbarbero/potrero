@@ -43,7 +43,6 @@ export default async function Caja({ searchParams }: PageProps<'/panel/caja'>) {
   const cobroAutomatico = await apiServidor<Automatizacion[]>('/comunicacion/automatizaciones')
     .then((a) => a.find((x) => x.clave === 'COBRO_ESCALONADO')?.activa ?? false)
     .catch(() => null);
-  const comisionTexto = `${String(caja.plan.comisionPct).replace('.', ',')}%`;
 
   return (
     <div className="space-y-6">
@@ -84,8 +83,9 @@ export default async function Caja({ searchParams }: PageProps<'/panel/caja'>) {
               {pesos(disponible.MP)}
             </b>
             <p className="mt-2 text-sm text-white/60">
-              Ya descontada la comisión de Potrero: {pesos(caja.comisionTotal)} (plan {caja.plan.nombre},{' '}
-              {comisionTexto}).
+              {caja.cargoAbsorbidoTotal > 0
+                ? `Ya descontado el cargo por servicio que absorbiste: ${pesos(caja.cargoAbsorbidoTotal)}.`
+                : 'Recibís el arancel completo: el cargo por servicio lo paga el equipo.'}
             </p>
             <p className="mt-1 text-xs text-white/50">
               Efectivo {pesos(disponible.EFECTIVO)} · Banco {pesos(disponible.BANCO)}
@@ -106,7 +106,7 @@ export default async function Caja({ searchParams }: PageProps<'/panel/caja'>) {
             {signo(r.resultado)}
             {pesos(Math.abs(r.resultado))}
           </b>
-          <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
+          <dl className={`mt-3 grid gap-2 text-sm ${r.cargoAbsorbido > 0 ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <div>
               <dt className="text-xs text-ink/60">Ingresos</dt>
               <dd className="num font-bold">{pesos(r.ingresos)}</dd>
@@ -115,10 +115,12 @@ export default async function Caja({ searchParams }: PageProps<'/panel/caja'>) {
               <dt className="text-xs text-ink/60">Egresos</dt>
               <dd className="num font-bold">{pesos(r.egresos)}</dd>
             </div>
-            <div>
-              <dt className="text-xs text-ink/60">Comisión</dt>
-              <dd className="num font-bold">{pesos(r.comision)}</dd>
-            </div>
+            {r.cargoAbsorbido > 0 && (
+              <div>
+                <dt className="text-xs text-ink/60">Cargo absorbido</dt>
+                <dd className="num font-bold">{pesos(r.cargoAbsorbido)}</dd>
+              </div>
+            )}
           </dl>
         </section>
 

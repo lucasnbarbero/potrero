@@ -66,7 +66,7 @@ interface Inscripcion {
     metodo: string;
     monto: number;
     estado: string;
-    comision: number;
+    cargoServicio: number;
     comprobante: string | null;
   }[];
 }
@@ -105,7 +105,7 @@ describe('pagos manuales, edición y estado del torneo', () => {
     expect((await inscripciones()).map((i) => i.estado)).toEqual(['PENDIENTE', 'PENDIENTE', 'PENDIENTE']);
   });
 
-  it('un pago parcial por transferencia deja el cargo pendiente y entra al banco sin comisión', async () => {
+  it('un pago parcial por transferencia deja el cargo pendiente y entra al banco sin cargo por servicio', async () => {
     const r = await api('POST', `/inscripciones/${ins.Norte}/pagos`, {
       metodo: 'TRANSFERENCIA',
       monto: 20_000,
@@ -117,7 +117,11 @@ describe('pagos manuales, edición y estado del torneo', () => {
     const n = await de('Norte');
     expect(n).toMatchObject({ estado: 'PENDIENTE', pagado: 20_000, total: 60_000 });
     expect(n.cargos[0]).toMatchObject({ estado: 'PENDIENTE', pagado: 20_000 });
-    expect(n.pagos[0]).toMatchObject({ metodo: 'TRANSFERENCIA', comision: 0, comprobante: 'Transf. 123' });
+    expect(n.pagos[0]).toMatchObject({
+      metodo: 'TRANSFERENCIA',
+      cargoServicio: 0,
+      comprobante: 'Transf. 123',
+    });
     expect(await disponible()).toEqual({ MP: 0, EFECTIVO: 0, BANCO: 20_000 });
     const [pago] = await consulta('SELECT acreditado_en FROM pago WHERE id = $1', [n.pagos[0]!.id]);
     expect(new Date(pago.acreditado_en).toISOString().slice(0, 10)).toBe(corrido(-1));

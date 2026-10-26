@@ -7,7 +7,7 @@ import type { Asiento } from '../generated/prisma/client.js';
 
 export interface NuevoAsiento {
   descripcion: string;
-  /** COBRO, COMISION, EGRESO, INGRESO, RETIRO o REVERSA. */
+  /** COBRO, CARGO_SERVICIO, EGRESO, INGRESO, RETIRO o REVERSA. */
   tipo: string;
   lineas: Linea[];
   fecha?: Date;
@@ -51,8 +51,8 @@ export async function crearAsiento(tx: Tx, organizacionId: string, a: NuevoAsien
 }
 
 /**
- * Asienta un pago aprobado: la plata entra por el medio con el que se pagó y, si cobró Mercado Pago, sale la comisión de
- * la plataforma. Idempotente por pago, así que se puede llamar al aprobarlo y de nuevo al conciliar.
+ * Asienta un pago aprobado: el arancel entra completo por el medio con el que se pagó. El cargo por servicio lo paga el
+ * equipo y es de Gregal, así que no se asienta; solo si el organizador lo absorbió sale de Mercado Pago como gasto. Idempotente por pago, así que se puede llamar al aprobarlo y de nuevo al conciliar.
  */
 export async function registrarPago(tx: Tx, organizacionId: string, pagoId: string) {
   const pago = await tx.pago.findUniqueOrThrow({
@@ -60,10 +60,10 @@ export async function registrarPago(tx: Tx, organizacionId: string, pagoId: stri
     include: { cargo: { include: { inscripcion: { include: { equipo: true } } } } },
   });
   if (pago.estado !== 'APROBADO') return;
-  const { cobro, comision } = asientosDePago({
+  const { cobro, cargo } = asientosDePago({
     metodo: pago.metodo,
     monto: pago.monto,
-    comision: pago.comisionPlataforma,
+    cargoAbsorbido: pago.cargoAbsorbido ? pago.cargoServicio + pago.costoMercadoPago : 0,
     categoria: (pago.cargo.categoria as CategoriaIngreso) ?? 'INSCRIPCIONES',
   });
   const comun = {
@@ -80,13 +80,13 @@ export async function registrarPago(tx: Tx, organizacionId: string, pagoId: stri
     clave: `pago:${pago.id}`,
     comprobante: pago.comprobante,
   });
-  if (comision)
+  if (cargo)
     await crearAsiento(tx, organizacionId, {
       ...comun,
-      tipo: 'COMISION',
-      descripcion: `Comisión de Potrero · ${pago.cargo.inscripcion.equipo.nombre}`,
-      lineas: comision,
-      clave: `comision:${pago.id}`,
+      tipo: 'CARGO_SERVICIO',
+      descripcion: `Cargo por servicio absorbido · ${pago.cargo.inscripcion.equipo.nombre}`,
+      lineas: cargo,
+      clave: `cargo-servicio:${pago.id}`,
     });
 }
 

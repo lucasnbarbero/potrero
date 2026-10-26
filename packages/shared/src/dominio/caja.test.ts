@@ -62,19 +62,19 @@ describe('caja: asientos de partida doble', () => {
     expect(cuentaDeMetodo('TRANSFERENCIA')).toBe('BANCO');
   });
 
-  it('un pago online genera el cobro y la comisión de la plataforma, y los dos cierran', () => {
-    const { cobro, comision } = asientosDePago({ metodo: 'MERCADO_PAGO', monto: 60_000, comision: 2_100 });
+  it('si el organizador absorbe el cargo por servicio, sale de Mercado Pago como gasto y los dos asientos cierran', () => {
+    const { cobro, cargo } = asientosDePago({ metodo: 'MERCADO_PAGO', monto: 60_000, cargoAbsorbido: 2_100 });
     expect(() => validarAsiento(cobro)).not.toThrow();
-    expect(() => validarAsiento(comision!)).not.toThrow();
-    const s = saldos([...cobro, ...comision!]);
+    expect(() => validarAsiento(cargo!)).not.toThrow();
+    const s = saldos([...cobro, ...cargo!]);
     expect(s.MP).toBe(57_900); // 60.000 menos 2.100
     expect(s['INGRESOS:INSCRIPCIONES']).toBe(-60_000);
-    expect(s.COMISION_PLATAFORMA).toBe(2_100);
+    expect(s.CARGO_SERVICIO).toBe(2_100);
   });
 
-  it('un pago manual no tiene comisión', () => {
-    const { comision } = asientosDePago({ metodo: 'EFECTIVO', monto: 60_000, comision: 0 });
-    expect(comision).toBeNull();
+  it('un pago sin cargo absorbido entra completo y no genera otro asiento', () => {
+    const { cargo } = asientosDePago({ metodo: 'EFECTIVO', monto: 60_000, cargoAbsorbido: 0 });
+    expect(cargo).toBeNull();
   });
 
   it('un egreso saca plata de donde se pagó y suma al rubro', () => {
@@ -97,7 +97,7 @@ describe('caja: asientos de partida doble', () => {
   it('un retiro mueve la plata de Mercado Pago al banco sin tocar el resultado', () => {
     const a = asientoDeRetiro(100_000);
     expect(saldos(a)).toEqual({ BANCO: 100_000, MP: -100_000 });
-    expect(resultadoDeCaja(saldos(a))).toEqual({ ingresos: 0, comision: 0, egresos: 0, resultado: 0 });
+    expect(resultadoDeCaja(saldos(a))).toEqual({ ingresos: 0, cargoAbsorbido: 0, egresos: 0, resultado: 0 });
   });
 
   it('un asiento invertido anula al original', () => {
@@ -111,9 +111,9 @@ describe('caja: asientos de partida doble', () => {
 
 describe('caja: resultado y saldos', () => {
   const libro: Linea[] = [
-    ...asientosDePago({ metodo: 'MERCADO_PAGO', monto: 100_000, comision: 3_500 }).cobro,
-    ...asientosDePago({ metodo: 'MERCADO_PAGO', monto: 100_000, comision: 3_500 }).comision!,
-    ...asientosDePago({ metodo: 'EFECTIVO', monto: 60_000, comision: 0 }).cobro,
+    ...asientosDePago({ metodo: 'MERCADO_PAGO', monto: 100_000, cargoAbsorbido: 0 }).cobro,
+    ...asientosDePago({ metodo: 'MERCADO_PAGO', monto: 100_000, cargoAbsorbido: 3_500 }).cargo!,
+    ...asientosDePago({ metodo: 'EFECTIVO', monto: 60_000, cargoAbsorbido: 0 }).cobro,
     ...asientoDeIngreso({ categoria: 'SPONSORS', monto: 50_000, cobradoEn: 'BANCO' }),
     ...asientoDeEgreso({ rubro: 'CANCHAS', monto: 90_000, pagadoCon: 'MP' }),
     ...asientoDeEgreso({ rubro: 'ARBITROS', monto: 30_000, pagadoCon: 'EFECTIVO' }),
@@ -121,10 +121,10 @@ describe('caja: resultado y saldos', () => {
   ];
   const s = saldos(libro);
 
-  it('el resultado resta la comisión y los egresos de los ingresos', () => {
+  it('el resultado resta el cargo absorbido y los egresos de los ingresos', () => {
     expect(resultadoDeCaja(s)).toEqual({
       ingresos: 210_000, // 100.000 + 60.000 + 50.000
-      comision: 3_500,
+      cargoAbsorbido: 3_500,
       egresos: 130_000,
       resultado: 76_500,
     });
@@ -147,7 +147,7 @@ describe('caja: resultado y saldos', () => {
   });
 
   it('sin movimientos, todo da cero', () => {
-    expect(resultadoDeCaja({})).toEqual({ ingresos: 0, comision: 0, egresos: 0, resultado: 0 });
+    expect(resultadoDeCaja({})).toEqual({ ingresos: 0, cargoAbsorbido: 0, egresos: 0, resultado: 0 });
     expect(egresosPorRubro({})).toEqual([]);
     expect(disponible({})).toEqual({ MP: 0, EFECTIVO: 0, BANCO: 0 });
   });

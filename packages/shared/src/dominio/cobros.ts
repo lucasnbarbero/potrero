@@ -1,19 +1,82 @@
 import { DATOS } from '../datos.js';
 import { sumarDias } from './fixture.js';
-import type { MetodoPago, Plan } from './tipos.js';
+import type { MetodoPago } from './tipos.js';
 
-/** Porcentaje de comisión de la plataforma según el plan (de docs/datos.json). */
-export function porcentajeComision(plan: Plan): number {
-  return DATOS.planes[plan].comisionPct;
+/**
+ * Cargo por servicio de un pago online (modelo de cobro, docs/datos.json): lo paga quien paga online (equipo o jugador).
+ * Es el porcentaje de Gregal sobre el arancel, con un mínimo, más el costo de Mercado Pago. Los pagos en efectivo y
+ * transferencia no tienen cargo. El organizador recibe el 100 % del arancel, salvo que elija absorber el cargo.
+ */
+export interface CargoPorServicio {
+  /** Lo que fijó el organizador (inscripción, cuota, multa...). */
+  arancel: number;
+  /** Ingreso de Gregal: porcentaje del arancel con mínimo. */
+  servicio: number;
+  /** Lo que retiene Mercado Pago por el cobro. */
+  costoMercadoPago: number;
+  /** servicio + costo de Mercado Pago: lo que se muestra como "cargo por servicio". */
+  cargo: number;
+  /** Lo que paga el equipo o jugador. */
+  total: number;
+  /** Lo que le queda al organizador: el arancel completo, o el arancel menos el cargo si lo absorbe. */
+  recibeOrganizador: number;
+  absorbe: boolean;
+}
+
+/** La parte de Gregal: porcentaje del arancel, con mínimo. Cero en pagos manuales. */
+export function servicioDeGregal(arancel: number, metodo: MetodoPago = 'MERCADO_PAGO'): number {
+  if (metodo !== 'MERCADO_PAGO' || arancel <= 0) return 0;
+  const { pct, minimo } = DATOS.cargoPorServicio;
+  return Math.max(Math.round((arancel * pct) / 100), minimo);
 }
 
 /**
- * Comisión de Potrero sobre un cobro, en pesos enteros.
- * Solo se cobra sobre pagos con Mercado Pago: los pagos manuales no pagan comisión.
+ * Desglose de un pago online. Si paga el equipo, el total se calcula para que, después de lo que retiene Mercado Pago
+ * (sobre el total), al organizador le llegue el arancel completo. Si el organizador absorbe el cargo, el equipo paga
+ * solo el arancel y el cargo se descuenta de lo que recibe.
  */
-export function comisionPlataforma(monto: number, plan: Plan, metodo: MetodoPago): number {
-  if (metodo !== 'MERCADO_PAGO' && !DATOS.pagosManualesConComision) return 0;
-  return Math.round((monto * porcentajeComision(plan)) / 100);
+export function cargoPorServicio(
+  arancel: number,
+  o: { metodo?: MetodoPago; absorbe?: boolean } = {},
+): CargoPorServicio {
+  const metodo = o.metodo ?? 'MERCADO_PAGO';
+  const absorbe = o.absorbe ?? DATOS.cargoPorServicio.absorbeOrganizadorPorDefecto;
+  const servicio = servicioDeGregal(arancel, metodo);
+  if (servicio === 0)
+    return {
+      arancel,
+      servicio: 0,
+      costoMercadoPago: 0,
+      cargo: 0,
+      total: arancel,
+      recibeOrganizador: arancel,
+      absorbe,
+    };
+  const mp = DATOS.ejemploTorneo.comisionMercadoPagoPct / 100;
+  if (absorbe) {
+    const costoMercadoPago = Math.round(arancel * mp);
+    const cargo = servicio + costoMercadoPago;
+    return {
+      arancel,
+      servicio,
+      costoMercadoPago,
+      cargo,
+      total: arancel,
+      recibeOrganizador: arancel - cargo,
+      absorbe,
+    };
+  }
+  const total = Math.ceil((arancel + servicio) / (1 - mp));
+  const costoMercadoPago = total - arancel - servicio;
+  return {
+    arancel,
+    servicio,
+    costoMercadoPago,
+    cargo: total - arancel,
+    total,
+    recibeOrganizador: arancel,
+    absorbe,
+  };
 }
 
 export function formatoPesos(monto: number): string {

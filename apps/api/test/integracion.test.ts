@@ -157,7 +157,7 @@ describe('Potrero de punta a punta', () => {
     ).toBe(404);
   });
 
-  it('inscribe: pago manual sin comisión y pago online con comisión y webhook idempotente', async () => {
+  it('inscribe: pago manual sin cargo y pago online con cargo por servicio y webhook idempotente', async () => {
     const i0 = await org('POST', `/torneos/${torneoId}/inscripciones`, { equipoId: equipos[0]!.id });
     await org('POST', `/cargos/${i0.body.cargo.id}/pagos`, { metodo: 'EFECTIVO', monto: 50000 });
 
@@ -180,8 +180,9 @@ describe('Potrero de punta a punta', () => {
 
     const lista = (await org('GET', `/torneos/${torneoId}/inscripciones`)).body;
     expect(lista.map((x: { estado: string }) => x.estado)).toEqual(['CONFIRMADA', 'CONFIRMADA']);
-    expect(lista[0].pagos[0].comision).toBe(0);
-    expect(lista[1].pagos[0].comision).toBe(1750); // 3,5 % de 50.000 (plan Liga)
+    // El cargo por servicio lo paga el equipo: el organizador recibe el arancel completo.
+    expect(lista[0].pagos[0].cargoServicio).toBe(0);
+    expect(lista[1].pagos[0]).toMatchObject({ monto: 50_000, cargoServicio: 2_000 }); // 4 % de 50.000
   });
 
   it('inscripción pública: crea equipo y link de pago; el checkout simulado confirma', async () => {
@@ -196,6 +197,9 @@ describe('Potrero de punta a punta', () => {
     expect((await publico('GET', `/pagos/simulado/${pref}`)).body).toMatchObject({
       equipo: 'Negro',
       monto: 50000,
+      // El equipo paga el arancel más el cargo por servicio (4 % + lo que retiene Mercado Pago sobre el total).
+      cargoServicio: 6_522,
+      total: 56_522,
       estado: 'PENDIENTE',
     });
     expect((await publico('POST', `/pagos/simulado/${pref}/aprobar`)).body.estado).toBe('APROBADO');

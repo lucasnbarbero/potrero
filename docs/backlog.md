@@ -46,7 +46,7 @@ Fuente: documentos 1 a 6 (`docs/src`). Si algo de este backlog contradice esos d
 | E23 | Sponsors | H6 | 18 | E13, E07 |
 | E24 | Métricas | H6 | 19 | E06, E09, E11 |
 | E25 | Configuración inicial e importación | H6 | 20 | E06, E05 |
-| E26 | Planes, comisiones y facturación | H6 | — | E06, E16 |
+| E26 | Planes, suscripción y facturación | H6 | — | E06, E16 |
 | E27 | Landing y sitio de marketing | H6 | landing | E03, E26 |
 | E28 | Legal dentro del producto | H6 | — | E00-05 |
 | E29 | Seguridad | H7 (y continuo) | — | todo |
@@ -77,9 +77,9 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 - [ ] **E00-05** `legal` Primera consulta con el abogado: menores, DNI, aptos físicos, biometría, inscripción de bases de datos, UIF y split. _Hecho cuando:_ las preguntas del documento 6 (sección 8) tienen respuesta escrita.
 - [ ] **E00-06** `ops` Decidir hosting y proveedor de nube. _Hecho cuando:_ el ADR de hosting queda decidido.
 - [ ] **E00-07** `legal` Buscar la marca "Potrero" en INPI, verificar dominios y redes, y decidir el nombre definitivo. _Hecho cuando:_ el nombre está confirmado o reemplazado y el dominio está comprado.
-- [ ] **E00-08** `legal` Definir forma societaria y régimen fiscal con el contador. _Hecho cuando:_ se sabe cómo se factura la comisión (IVA, Ingresos Brutos).
+- [ ] **E00-08** `legal` Definir forma societaria y régimen fiscal con el contador. _Hecho cuando:_ se sabe cómo se facturan la suscripción al organizador y el cargo por servicio a quien paga online (IVA, Ingresos Brutos).
 - [ ] **E00-09** `ops` Crear las cuentas: grupo de GitLab, Mercado Pago Developers, Meta Business, nube, proveedor de email, monitoreo de errores. _Hecho cuando:_ las credenciales de prueba están en el gestor de secretos.
-- [ ] **E00-10** `neg` Validar precios con datos reales (3,5 %, 2,5 % fundadoras, Pro $24.900 + 2 %). _Hecho cuando:_ `docs/datos.json` y el documento 2 reflejan los valores validados.
+- [ ] **E00-10** `neg` Validar los precios de la suscripción con datos reales (Torneo $100.000/mes, Liga $200.000/mes, Pro $350.000/mes, 50 % de descuento para fundadoras) y el cargo por servicio (4 %, mínimo $500). _Hecho cuando:_ `docs/datos.json` y el documento 2 reflejan los valores validados.
 - [ ] **E00-11** `neg` Conseguir 3 organizadores que comprometan su próximo torneo para la beta. _Hecho cuando:_ se cumple el criterio de salida de la fase A del documento 5.
 - [ ] **E00-12** `neg` Relevar el calendario de torneos de las ligas (cuándo arrancan las temporadas) para fijar la ventana de la beta.
 
@@ -163,11 +163,11 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 - [x] **E06-02** `dev` Link público de inscripción con cupos; el capitán inscribe su equipo.
 - [x] **E06-03** `dev` `Registration` y generación automática de `Charge` según las reglas del torneo.
 - [ ] **E06-04** `dev` Conexión de la cuenta de Mercado Pago del organizador por OAuth; tokens cifrados y renovación automática.
-- [ ] **E06-05** `dev` Cobro con split 1:1: preferencia de pago con comisión de plataforma (`application_fee`) según el plan.
+- [ ] **E06-05** `dev` Cobro con split 1:1: preferencia de pago donde el arancel va completo al organizador y el cargo por servicio a Gregal (`application_fee`), más el costo de Mercado Pago.
 - [~] **E06-06** `dev` Webhooks de Mercado Pago: validación de firma, procesamiento en cola, idempotencia por `payment_id`.
 - [ ] **E06-07** `dev` Conciliación nocturna contra la API de Mercado Pago y alerta de diferencias.
-- [ ] **E06-08** `dev` Cargo por servicio configurable: lo absorbe el organizador o lo paga el equipo; valor por defecto según ADR.
-- [x] **E06-09** `dev` Pagos manuales (efectivo, transferencia) con comprobante, sin comisión de plataforma.
+- [ ] **E06-08** `dev` Cargo por servicio en pagos online: lo paga quien paga online (4 % con mínimo $500, más el costo de Mercado Pago) y el organizador recibe el 100 %; el organizador puede absorberlo (ADR-013, ADR-027). Efectivo y transferencia, sin cargo.
+- [x] **E06-09** `dev` Pagos manuales (efectivo, transferencia) con comprobante, sin cargo por servicio.
 - [ ] **E06-10** `dev` Pago individual por jugador cuando el capitán lo habilita.
 - [x] **E06-11** `dev` Estado de pago por equipo y deuda en tiempo real.
 - [ ] **E06-12** `dev` Reembolsos, contemplando el rechazo por falta de saldo del vendedor y el aviso al organizador.
@@ -183,7 +183,7 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 
 ## E07 · Caja del torneo · módulo 14
 - [x] **E07-01** `dev` Ledger de partida doble (`LedgerEntry`): cuentas, débitos, créditos, categoría, referencia.
-- [~] **E07-02** `dev` Cada cobro, pago manual, reembolso y comisión genera asientos automáticamente. _Hecho: cada pago aprobado y su comisión se asientan solos; los pagos manuales (efectivo o transferencia, completos o parciales) entran a su cuenta y se anulan con un asiento que revierte. Falta: reembolsos (E06-12)._
+- [~] **E07-02** `dev` Cada cobro, pago manual, reembolso y costo de cobro online genera asientos automáticamente. _Hecho: cada pago aprobado y sus costos se asientan solos; los pagos manuales (efectivo o transferencia, completos o parciales) entran a su cuenta y se anulan con un asiento que revierte. Falta: reembolsos (E06-12)._
 - [~] **E07-03** `dev` Egresos por rubro (cancha, árbitros, premios, otros) con comprobante. _Hecho: egresos por rubro con comprobante como texto, y anulación. Falta: comprobante como archivo (E02-14)._
 - [x] **E07-04** `dev` Cargos automáticos por partido (árbitro, cancha). _Depende de:_ E08.
 - [x] **E07-05** `dev` Resultado del torneo en vivo: ingresos, egresos, ganancia.
@@ -354,7 +354,7 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 - [x] **E24-02** `dev` Tasa de cobro y cobro antes del inicio.
 - [x] **E24-03** `dev` Ocupación de canchas y mapa de horarios más pedidos.
 - [x] **E24-04** `dev` Pantalla de métricas (mock 19).
-- [x] **E24-05** `dev` Métricas internas de la plataforma: ligas activas, GMV, take rate, partidos cerrados por semana (norte del producto). Se muestran en el backoffice (E36-12). _En el inicio del panel de Gregal (`/gregal`)._
+- [x] **E24-05** `dev` Métricas internas de la plataforma: ligas activas, GMV, ingresos de Gregal por suscripción y por cargos por servicio, partidos cerrados por semana (norte del producto). Se muestran en el backoffice (E36-12). _En el inicio del panel de Gregal (`/gregal`)._
 
 ## E25 · Configuración inicial e importación · módulo 20
 - [~] **E25-01** `dev` Asistente de 5 pasos: organización, Mercado Pago, marca y dominio, reglamento, importación. _Hecho: asistente de 5 pasos que se puede retomar. Falta: conectar Mercado Pago de verdad (hoy es informativo) y un reglamento propio de la liga (hoy muestra el de por defecto)._
@@ -362,14 +362,14 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 - [ ] **E25-03** `dev` Migración asistida por el equipo de Potrero (herramienta del backoffice, E36-04).
 - [x] **E25-04** `dev` Pantalla de configuración (mock 20). _Hecho cuando:_ una liga nueva queda dada de alta en menos de 30 minutos.
 
-## E26 · Planes, comisiones y facturación
-- [~] **E26-01** `dev` Planes Liga (3,5 %), Ligas fundadoras (2,5 % de por vida, primeras 15) y Pro ($24.900/mes + 2 %), leídos de la configuración y no fijos en el código. _Hecho: planes y comisiones leídos de `docs/datos.json`. Falta: control del cupo de fundadoras y pantalla de planes._
-- [ ] **E26-02** `dev` Habilitación de funciones por plan (marca y dominio propio, WhatsApp ampliado, sponsors y métricas avanzadas, soporte prioritario).
-- [~] **E26-03** `dev` Comisión de plataforma según el plan en cada cobro. _Hecho: comisión según el plan en cada cobro por pasarela, asentada en la caja. Falta: `application_fee` real en Mercado Pago (E06-05)._
-- [ ] **E26-04** `dev` Cobro de la suscripción Pro (mecanismo a definir con Mercado Pago).
-- [ ] **E26-05** `dev` Programa de ligas fundadoras: cupo, asignación y logo de socio fundador.
+## E26 · Planes, suscripción y facturación
+- [~] **E26-01** `dev` Planes Torneo ($100.000/mes), Liga ($200.000/mes) y Pro ($350.000/mes) con suscripción mensual o anual (2 meses sin cargo), primer mes sin cargo y ajuste de precios cada 3 meses con aviso de 30 días, leídos de la configuración y no fijos en el código. _Hecho: planes y cifras leídos de `docs/datos.json`. Falta: suscripción, pago anual y pantalla de planes._
+- [ ] **E26-02** `dev` Límites y funciones por plan: torneos activos, equipos, usuarios y WhatsApp por mes (Torneo 1/16/2/100, Liga 4/48/sin límite/300, Pro sin límites/2.000); Liga suma tribunal, documentación, cuota por fecha y seguro, árbitros, reprogramaciones y métricas; Pro suma marca y dominio propios, sponsors con reporte y soporte prioritario.
+- [~] **E26-03** `dev` Cargo por servicio en cada cobro online (4 % con mínimo $500, más el costo de Mercado Pago), pagado por quien paga y opcionalmente absorbido por el organizador. _Hecho: cálculo por cobro en la pasarela, asentado en la caja. Falta: `application_fee` real en Mercado Pago (E06-05) y la opción de absorberlo (E06-08)._
+- [ ] **E26-04** `dev` Cobro recurrente de la suscripción al organizador, mensual o anual (mecanismo a definir con Mercado Pago), con aviso y suspensión por falta de pago.
+- [ ] **E26-05** `dev` Programa de ligas fundadoras: cupo de 15, 50 % de descuento de por vida sobre el plan (no es un plan aparte), alta y migración gratis, y logo de socio fundador.
 - [ ] **E26-06** `dev` Programa de referidos entre ligas.
-- [ ] **E26-07** `dev` Facturación electrónica de la comisión (ARCA) según el régimen definido en E00-08.
+- [ ] **E26-07** `dev` Facturación electrónica (ARCA) de la suscripción al organizador y del cargo por servicio a quien paga online, según el régimen definido en E00-08.
 - [ ] **E26-08** `dev` Exportación de todos los datos de la organización y baja sin costo.
 - [ ] **E26-09** `dev` Pantalla de plan y facturación de la organización.
 
@@ -445,7 +445,7 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 - [ ] **E34-01** `ops` Checklist go/no-go del documento 5 (sección 12) cumplido en todas sus áreas.
 - [ ] **E34-02** `ops` Runway de al menos 12 meses confirmado.
 - [ ] **E34-03** `dev` Apertura del registro público y activación de los planes.
-- [ ] **E34-04** `neg` Campaña de lanzamiento ("Dejá el Excel"), evento con ligas fundadoras y promoción para ligas nuevas.
+- [ ] **E34-04** `neg` Campaña de lanzamiento ("Dejá el Excel"), evento con ligas fundadoras y promoción para ligas nuevas (primer mes sin cargo, pago anual con 2 meses sin cargo).
 - [ ] **E34-05** `ops` Monitoreo reforzado y guardia ampliada durante las primeras semanas.
 - [ ] **E34-06** `neg` Reporte mensual de métricas y revisión de los supuestos del documento 2.
 
@@ -457,13 +457,13 @@ Aplicación interna separada del producto (`apps/admin`), solo para el equipo de
 - [x] **E36-03** `dev` Auditoría de toda acción interna, consultable desde el backoffice. _Cada ingreso y consulta del staff queda en una auditoría inmutable, con pantalla propia._
 - [~] **E36-04** `dev` Organizaciones: listado, búsqueda, detalle, plan, estado, ligas fundadoras, migración asistida y acceso de soporte temporal con motivo (E04-13, E25-03). _Hecho: listado con búsqueda, plan, estado, torneos, equipos, cobrado y último uso; detalle con torneos, usuarios y cobros. Falta: marcar fundadoras, migración asistida y acceso de soporte temporal._
 - [x] **E36-05** `dev` Salud de cada liga: alertas de riesgo de abandono del documento 5 (sin equipos a los 7 días, menos del 50 % de actas cargadas, solo pagos manuales, panel sin uso). _Alertas de riesgo con umbrales en `datos.json` (`saludDeLiga`) y lista "Ligas para llamar"._
-- [~] **E36-06** `dev` Dinero: cobros y comisiones de todas las ligas, conciliación con Mercado Pago, diferencias, reembolsos y contracargos. _Depende de:_ E06. _Hecho: cobros y comisiones por mes y por liga (lectura). Falta: conciliación con Mercado Pago, reembolsos y contracargos._
-- [ ] **E36-07** `dev` Facturación de comisiones: comprobantes emitidos, pendientes y errores ante ARCA. _Depende de:_ E26-07.
-- [ ] **E36-08** `dev` Suscripciones y planes: altas, bajas y cambios de Pro, cupo de fundadoras, referidos, packs de mensajes y descuentos aprobados. _Depende de:_ E26.
-- [ ] **E36-09** `dev` Configuración global: precios y comisiones vigentes, feature flags por organización, plantillas de WhatsApp y textos legales versionados.
+- [~] **E36-06** `dev` Dinero: cobros, suscripciones y cargos por servicio de todas las ligas, conciliación con Mercado Pago, diferencias, reembolsos y contracargos. _Depende de:_ E06. _Hecho: cobros y cargos por mes y por liga (lectura). Falta: conciliación con Mercado Pago, reembolsos y contracargos._
+- [ ] **E36-07** `dev` Facturación de suscripciones y cargos por servicio: comprobantes emitidos, pendientes y errores ante ARCA. _Depende de:_ E26-07.
+- [ ] **E36-08** `dev` Suscripciones y planes: altas, bajas y cambios de plan, cobro de la suscripción, cupo y descuento de fundadoras, referidos, packs de mensajes y descuentos aprobados. _Depende de:_ E26.
+- [ ] **E36-09** `dev` Configuración global: precios de los planes y cargo por servicio vigentes, feature flags por organización, plantillas de WhatsApp y textos legales versionados.
 - [ ] **E36-10** `dev` Operación: colas y jobs, webhooks fallidos, actas con error de sincronización, mensajes fallidos y costo de mensajería por liga; panel de estado del fin de semana (E02-07, E31-05).
 - [ ] **E36-11** `dev` Moderación y datos personales: fotos, crónicas, mercado de pases, sponsors, denuncias, pedidos de acceso, rectificación y supresión, y auditoría de accesos a documentos (E28-04).
-- [~] **E36-12** `dev` Métricas del negocio: ligas activas, GMV, take rate, retención, embudo de ventas y partidos cerrados por semana (E24-05). _Hecho: ligas activas, GMV por medio, comisión, partidos cerrados por semana y ligas nuevas por mes. Falta: retención y embudo de ventas._
+- [~] **E36-12** `dev` Métricas del negocio: ligas activas, GMV, ingresos de Gregal por suscripción y por cargos por servicio, retención, embudo de ventas y partidos cerrados por semana (E24-05). _Hecho: ligas activas, GMV por medio, cargos cobrados, partidos cerrados por semana y ligas nuevas por mes. Falta: retención y embudo de ventas._
 - [ ] **E36-13** `dev` Exportaciones para dirección y contabilidad (CSV) y reporte mensual.
 
 ## E37 · Demo pública con sandbox por visitante

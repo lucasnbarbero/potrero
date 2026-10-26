@@ -16,7 +16,7 @@ Formato de la plantilla GT-D2 de Gregal Tech. Una decisión por archivo. Para un
 | [ADR-010](010-sesion-con-cookies-httponly-en-el-mismo-origen.md) | Sesión con cookies httpOnly en el mismo origen | Aceptada |
 | [ADR-011](011-hosting-y-proveedor-de-nube.md) | Hosting y proveedor de nube | Propuesta (abierta) |
 | [ADR-012](012-proveedor-de-whatsapp-business-bsp.md) | Proveedor de WhatsApp Business (BSP) | Propuesta (abierta) |
-| [ADR-013](013-quien-paga-el-costo-de-mercado-pago-por-defecto.md) | Quién paga el costo de Mercado Pago por defecto | Propuesta (abierta) |
+| [ADR-013](013-quien-paga-el-costo-de-mercado-pago-por-defecto.md) | Quién paga el costo de Mercado Pago por defecto | Aceptada |
 | [ADR-014](014-verificacion-de-identidad.md) | Verificación de identidad | Propuesta (abierta) |
 | [ADR-015](015-motor-de-fixture-heuristica-propia-o-cp-sat.md) | Motor de fixture: heurística propia o CP-SAT | Propuesta (abierta) |
 | [ADR-016](016-app-nativa-en-el-lanzamiento.md) | App nativa en el lanzamiento | Propuesta (abierta) |
@@ -29,3 +29,4 @@ Formato de la plantilla GT-D2 de Gregal Tech. Una decisión por archivo. Para un
 | [ADR-023](023-libro-de-caja-de-partida-doble-inmutable.md) | Libro de caja de partida doble, inmutable y con asientos automáticos | Aceptada |
 | [ADR-025](025-documentacion-con-cifrado-de-campos-revision-humana-y-links-firmados.md) | Documentación con cifrado de campos, revisión humana y links firmados | Aceptada |
 | [ADR-026](026-torneos-con-formato-flexible-por-fases.md) | Torneos con formato flexible por fases | Aceptada |
+| [ADR-027](027-modelo-de-cobro-suscripcion-por-plan-y-cargo-por-servicio.md) | Modelo de cobro: suscripción por plan y cargo por servicio | Aceptada |

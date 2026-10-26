@@ -1,10 +1,10 @@
 'use client';
-import { DATOS, type Plan } from '@potrero/shared';
+import { cuotaMensual, DATOS, type ModuloPlan, type Plan, tieneModulo } from '@potrero/shared';
 import { Icono, Logo, type NombreIcono, ProductoDeGregal } from '@potrero/ui';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { iniciales } from '@/lib/formato';
+import { iniciales, pesos } from '@/lib/formato';
 import { MenuCuenta } from './MenuCuenta';
 
 type Item = [href: string, icono: NombreIcono, texto: string];
@@ -42,6 +42,18 @@ const PERMISO_DEL_MENU: Record<string, string> = {
   '/panel/sponsors': 'torneo.escribir',
   '/panel/usuarios': 'usuario.gestionar',
 };
+// Módulo del plan que pide cada sección (E26-02): el menú oculta lo que el plan no incluye.
+const MODULO_DEL_MENU: Record<string, ModuloPlan> = {
+  '/panel/arbitros': 'ARBITROS',
+  '/panel/documentacion': 'DOCUMENTACION',
+  '/panel/reprogramaciones': 'REPROGRAMACIONES',
+  '/panel/metricas': 'METRICAS',
+  '/panel/sponsors': 'SPONSORS',
+};
+const enElPlan = (plan: Plan, href: string) => {
+  const m = MODULO_DEL_MENU[href];
+  return !m || tieneModulo(plan, m);
+};
 const puede = (permisos: readonly string[] | undefined, href: string) => {
   const p = PERMISO_DEL_MENU[href];
   return !p || !permisos || permisos.includes('*') || permisos.includes(p);
@@ -52,7 +64,7 @@ export function BarraLateral({
   usuario,
   permisos,
 }: {
-  organizacion: { nombre: string; slug: string; plan: Plan; mpConectado?: boolean };
+  organizacion: { nombre: string; slug: string; plan: Plan; fundadora?: boolean; mpConectado?: boolean };
   usuario: { nombre: string };
   permisos?: readonly string[];
 }) {
@@ -106,22 +118,25 @@ export function BarraLateral({
           <div className="px-3.5 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-[.14em] text-white/35">
             Operación
           </div>
-          {MENU.filter(([href]) => puede(permisos, href)).map(([href, icono, texto]) => (
-            <Link
-              key={href}
-              href={href}
-              onClick={() => setAbierta(false)}
-              className={`flex items-center gap-3 rounded-xl px-3.5 py-2 text-[13.5px] font-medium transition ${activo(href) ? 'bg-volt font-semibold text-ink' : 'text-white/65 hover:bg-white/10 hover:text-white'}`}
-            >
-              <Icono nombre={icono} className="text-[1.05rem]" />
-              {texto}
-            </Link>
-          ))}
+          {MENU.filter(([href]) => puede(permisos, href) && enElPlan(organizacion.plan, href)).map(
+            ([href, icono, texto]) => (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setAbierta(false)}
+                className={`flex items-center gap-3 rounded-xl px-3.5 py-2 text-[13.5px] font-medium transition ${activo(href) ? 'bg-volt font-semibold text-ink' : 'text-white/65 hover:bg-white/10 hover:text-white'}`}
+              >
+                <Icono nombre={icono} className="text-[1.05rem]" />
+                {texto}
+              </Link>
+            ),
+          )}
         </div>
         <div className="relative mt-2 rounded-2xl bg-white/10 p-3.5 text-xs text-white/60">
           <div className="mb-1 flex items-center gap-1.5 font-semibold text-volt">
             <Icono nombre="spark" />
-            Comisión {String(plan.comisionPct).replace('.', ',')}%
+            Plan {plan.nombre} · {pesos(cuotaMensual(organizacion.plan, organizacion.fundadora))}/mes
+            {organizacion.fundadora && ' · Fundadora'}
           </div>
           {organizacion.mpConectado ? (
             'Mercado Pago conectado. Cobrás directo en tu cuenta.'

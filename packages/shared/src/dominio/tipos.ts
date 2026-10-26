@@ -10,7 +10,7 @@ export type Formato = (typeof FORMATOS)[number];
 export const DESEMPATES = ['DIFERENCIA_GOL', 'GOLES_FAVOR', 'ENTRE_SI', 'JUEGO_LIMPIO', 'SORTEO'] as const;
 export type Desempate = (typeof DESEMPATES)[number];
 
-export const PLANES = ['LIGA', 'FUNDADORA', 'PRO'] as const;
+export const PLANES = ['TORNEO', 'LIGA', 'PRO'] as const;
 export type Plan = (typeof PLANES)[number];
 
 export const METODOS_PAGO = ['MERCADO_PAGO', 'EFECTIVO', 'TRANSFERENCIA'] as const;

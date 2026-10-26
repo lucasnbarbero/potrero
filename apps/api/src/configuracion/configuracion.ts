@@ -4,6 +4,8 @@
 import { randomUUID } from 'node:crypto';
 import { Body, Controller, Get, HttpStatus, Injectable, Module, Patch, Post } from '@nestjs/common';
 import {
+  cargoServicioSchema,
+  type CargoServicioInput,
   claveDeNombre,
   confirmarPasoSchema,
   type ConfirmarPasoInput,
@@ -54,6 +56,8 @@ export class ConfiguracionService {
           nombre: org.nombre,
           slug: org.slug,
           plan: org.plan,
+          fundadora: org.fundadora,
+          absorbeCargoServicio: org.absorbeCargoServicio,
           colorMarca: org.colorMarca,
           logo: org.logo,
           localidad: org.localidad,
@@ -108,6 +112,22 @@ export class ConfiguracionService {
         });
       await this.marcarPaso(tx, c, 'marca');
       return { ok: true };
+    });
+  }
+
+  /** Quién paga el cargo por servicio de los pagos online: el equipo (por defecto) o el organizador. */
+  cargoServicio(c: Contexto, d: CargoServicioInput) {
+    return this.db.enOrg(c.organizacionId, async (tx) => {
+      const antes = await tx.organizacion.findUniqueOrThrow({ where: { id: c.organizacionId } });
+      await tx.organizacion.update({
+        where: { id: c.organizacionId },
+        data: { absorbeCargoServicio: d.absorbe },
+      });
+      await auditar(tx, c, 'organizacion.cargo_servicio', 'organizacion', c.organizacionId, {
+        antes: antes.absorbeCargoServicio,
+        despues: d.absorbe,
+      });
+      return { absorbe: d.absorbe };
     });
   }
 
@@ -257,6 +277,12 @@ export class ConfiguracionController {
   @Permiso('organizacion.configurar')
   marca(@Ctx() c: Contexto, @Body(new Zod(marcaSchema)) d: MarcaInput) {
     return this.s.marca(c, d);
+  }
+
+  @Patch('configuracion/cargo-servicio')
+  @Permiso('organizacion.configurar')
+  cargoServicio(@Ctx() c: Contexto, @Body(new Zod(cargoServicioSchema)) d: CargoServicioInput) {
+    return this.s.cargoServicio(c, d);
   }
 
   @Post('configuracion/pasos')

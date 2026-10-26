@@ -10,7 +10,8 @@ import {
   porMes,
   porSemana,
   sumarCobros,
-  tasaDeComision,
+  tasaDeCargo,
+  ingresosDeGregal,
   ultimasSemanas,
 } from './gregal.js';
 
@@ -58,25 +59,25 @@ describe('semanas y meses en hora de Argentina', () => {
 
 describe('dinero de la plataforma', () => {
   const pagos = [
-    { metodo: 'MERCADO_PAGO' as const, monto: 100_000, comision: 3_500, fecha: '2026-10-10T12:00:00Z' },
-    { metodo: 'EFECTIVO' as const, monto: 50_000, comision: 0, fecha: '2026-10-11T12:00:00Z' },
-    { metodo: 'TRANSFERENCIA' as const, monto: 30_000, comision: 0, fecha: '2026-09-11T12:00:00Z' },
+    { metodo: 'MERCADO_PAGO' as const, monto: 100_000, cargoServicio: 3_500, fecha: '2026-10-10T12:00:00Z' },
+    { metodo: 'EFECTIVO' as const, monto: 50_000, cargoServicio: 0, fecha: '2026-10-11T12:00:00Z' },
+    { metodo: 'TRANSFERENCIA' as const, monto: 30_000, cargoServicio: 0, fecha: '2026-09-11T12:00:00Z' },
   ];
-  it('suma lo cobrado por medio y la comisión', () => {
+  it('suma lo cobrado por medio y el cargo por servicio', () => {
     expect(sumarCobros(pagos)).toEqual({
       efectivo: 50_000,
       transferencia: 30_000,
       online: 100_000,
       total: 180_000,
-      comision: 3_500,
+      cargoServicio: 3_500,
       pagos: 3,
     });
   });
-  it('la tasa de comisión se mide sobre lo online y sobre el total', () => {
-    const t = tasaDeComision(sumarCobros(pagos));
+  it('el cargo por servicio se mide sobre lo online y sobre el total', () => {
+    const t = tasaDeCargo(sumarCobros(pagos));
     expect(t.sobreOnline).toBeCloseTo(0.035);
     expect(t.sobreTotal).toBeCloseTo(3_500 / 180_000);
-    expect(tasaDeComision(sumarCobros([]))).toEqual({ sobreOnline: 0, sobreTotal: 0 });
+    expect(tasaDeCargo(sumarCobros([]))).toEqual({ sobreOnline: 0, sobreTotal: 0 });
   });
   it('agrupa por mes', () => {
     const m = cobrosPorMes(pagos, ahora, 3);
@@ -128,5 +129,23 @@ describe('liga activa', () => {
     expect(esLigaActiva({ torneosActivos: 0, ultimoPartidoCerrado: haceDias(10) }, ahora)).toBe(true);
     expect(esLigaActiva({ torneosActivos: 0, ultimoPartidoCerrado: haceDias(45) }, ahora)).toBe(false);
     expect(esLigaActiva({ torneosActivos: 0, ultimoPartidoCerrado: null }, ahora)).toBe(false);
+  });
+});
+
+describe('ingresos de Gregal', () => {
+  it('suma las suscripciones (con descuento de fundadora) y los cargos por servicio del mes', () => {
+    const ahora = new Date('2026-10-20T12:00:00Z');
+    const r = ingresosDeGregal(
+      [
+        { plan: 'PRO', fundadora: true },
+        { plan: 'TORNEO', fundadora: false },
+      ],
+      [
+        { metodo: 'MERCADO_PAGO', monto: 60_000, cargoServicio: 2_400, fecha: '2026-10-05T12:00:00Z' },
+        { metodo: 'MERCADO_PAGO', monto: 60_000, cargoServicio: 2_400, fecha: '2026-09-05T12:00:00Z' },
+      ],
+      ahora,
+    );
+    expect(r).toEqual({ suscripciones: 275_000, cargosDelMes: 2_400, total: 277_400 });
   });
 });

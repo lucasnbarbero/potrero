@@ -6,7 +6,7 @@ Actualizar al cerrar cada bloque de trabajo. Detalle de tareas: `docs/backlog.md
 - Registro e ingreso con sesión segura; organizaciones aisladas por RLS (probado en base y API).
 - Torneos: crear (modalidad, formato, cupo, inscripción, reglamento), vista previa de partidos, estados.
 - Equipos con plantel, canchas por sede.
-- Inscripción: desde el panel o por link público; cobro con pasarela simulada (mismo flujo que Mercado Pago), webhook firmado e idempotente, pagos manuales sin comisión, comisión según plan.
+- Inscripción: desde el panel o por link público; cobro con pasarela simulada (mismo flujo que Mercado Pago), webhook firmado e idempotente, pagos manuales sin cargo; cargo por servicio en los pagos online, pagado por quien paga (el modelo de suscripción por plan, ADR-027, se está llevando a la app).
 - Fixture automático de liga (rotación + franjas de cancha y horario), sin choques. Copa con sorteo y cabezas de serie, liga + playoffs y grupos + playoffs: la llave se completa sola, con penales y equipos ausentes
 - Acta digital: planilla con habilitación, goles/tarjetas/en contra, anulaciones, idempotencia, cierre con firmas o justificación, equipo ausente Funciona sin conexión (cola local + service worker, ADR-020) y tiene un solo dueño por partido; es instalable como app (PWA).
 - Tabla, goleadores y sanciones automáticas (roja, doble amarilla, acumulación) derivadas.
@@ -14,7 +14,7 @@ Actualizar al cerrar cada bloque de trabajo. Detalle de tareas: `docs/backlog.md
 - Panel con dinero cobrado, pendiente, alertas (deudas, actas sin cerrar, "No puedo", mensajes fallidos) y próximos partidos.
 - Comunicación: mensajes con plantillas y variables, canal según el consentimiento de cada capitán, costo y tope del plan a la vista, envíos programados, automatizaciones (recordatorio de partido, cobro escalonado, aviso de suspensión), historial y bandeja de lo enviado.
 - Documentación: DNI y apto físico con revisión humana, DNI y datos de salud cifrados, duplicados, vencimientos con alerta, autorización del tutor en línea, consentimiento de imagen, requisitos por torneo, acta que marca a los no habilitados y retención automática. La selfie queda apagada.
-- Caja: libro de partida doble inmutable con asientos automáticos por cada cobro y comisión, resultado en vivo, egresos por rubro, ingresos de sponsors, retiros, anulaciones, exportación a CSV y cargos automáticos al cerrar el acta (árbitro y cancha).
+- Caja: libro de partida doble inmutable con asientos automáticos por cada cobro y sus costos, resultado en vivo, egresos por rubro, ingresos de sponsors, retiros, anulaciones, exportación a CSV y cargos automáticos al cerrar el acta (árbitro y cancha).
 - Tribunal: expedientes (automáticos por roja y por jugador no habilitado, o abiertos a mano), informe, descargo, resolución que amplía o reduce, multa como cargo al equipo e historial disciplinario.
 - Árbitros y canchas: árbitros con tarifa, valoración y disponibilidad; designación manual y automática (un árbitro por franja), confirmación, costo y bloqueo de canchas, ocupación del día y alerta de partidos sin árbitro.
 - Reprogramaciones: alerta de clima, propuesta con conflictos, aplicar con aviso a los capitanes, confirmaciones por link y seguimiento de las respuestas. Cuenta regresiva para marcar un equipo ausente en el acta.

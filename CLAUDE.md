@@ -6,8 +6,8 @@ Sistema para organizar ligas y torneos de fútbol amateur en Argentina: cobros c
 - Idioma: español rioplatense con voseo en UI, docs, comentarios y commits. Dominio en español, framework en inglés (ADR-008).
 - Claude implementa todo (frontend y backend). Guía: `docs/backlog.md` (E00–E37, en orden). Al terminar una tarea, marcala `[x]` con su ID.
 - Fuente de verdad: documentos 1–6 en `docs/src/*.html` (los PDF se generan). Si algo contradice esos documentos, se corrige lo otro o se actualiza el documento a propósito.
-- Cifras (precios, comisiones, metas, reglamento por defecto): solo en `docs/datos.json`. Después de cambiarlo: `pnpm datos` y `pnpm check:alineacion`.
-- Decisiones técnicas: `docs/adr/` (formato GT-D2). Nueva decisión → skill `adr`. Abiertas: 011–016.
+- Cifras (precios de los planes, cargo por servicio, metas, reglamento por defecto): solo en `docs/datos.json`. Después de cambiarlo: `pnpm datos` y `pnpm check:alineacion`.
+- Decisiones técnicas: `docs/adr/` (formato GT-D2). Nueva decisión → skill `adr`. Abiertas: 011, 012, 014, 015 y 016. Modelo de cobro: ADR-027.
 - Repo en GitHub (`origin`: lucasnbarbero/potrero), rama `main`. No commitear ni subir sin pedido explícito.
 - Para contexto de negocio NO leer los HTML/PDF completos: usar `docs/contexto/` (reglas, glosario, estado actual). Modelo de datos: `apps/api/prisma/schema.prisma`.
 

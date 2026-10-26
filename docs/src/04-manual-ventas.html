@@ -6,28 +6,28 @@
 
 <h1 class="sec first"><p class="eyebrow">1</p>Qué vendemos y cuál es tu trabajo</h1>
 <p>Vendemos <b>fines de semana libres y dinero cobrado</b>, no software. El organizador no quiere una app: quiere dejar de perseguir pagos, rehacer fixtures y avisar uno por uno cuando llueve. Tu trabajo es conseguir que pruebe <b>un torneo real</b> con Potrero. La venta se gana cuando el organizador ve su propio torneo funcionando.</p>
-<div class="callout dark"><b class="t">Objetivo comercial de esta etapa</b>Conseguir las <b>15 ligas fundadoras</b> y 8–10 entrevistas de descubrimiento antes del lanzamiento público. La meta no es facturar: es aprender, conseguir casos de éxito y confirmar cuánto dinero cobra cada liga.</div>
+<div class="callout dark"><b class="t">Objetivo comercial de esta etapa</b>Conseguir las <b>15 ligas fundadoras</b> y 8–10 entrevistas de descubrimiento antes del lanzamiento público. La meta no es facturar: es aprender, conseguir casos de éxito y confirmar qué plan paga cada liga.</div>
 <h2>Qué hay que tener claro antes de hablar</h2>
 <ul><li><b>Hoy se muestra la aplicación real</b>, no diseños: con <code>pnpm demo</code> se levanta Potrero con una liga de ejemplo cargada (Liga Barrial Sur), con torneos en curso, un partido en vivo, capitán y jugador. También existe una <b>demo pública</b> donde cada visitante entra a su propia liga de prueba, que se borra sola; todavía no está publicada, así que por ahora la demo la hacés vos.</li>
 <li><b>Qué está simulado</b> y hay que decirlo siempre: el cobro con Mercado Pago (mismo recorrido, sin plata real; la conexión real todavía no está hecha), los envíos por WhatsApp y email, y el pronóstico del clima. Todo lo demás (base de datos, reglas, permisos, acta sin señal, caja) funciona de verdad.</li>
 <li>Nunca prometas fechas que no estén confirmadas ni muestres como existente algo que no está (ver "Fallas ya conocidas" y "Límites" en <code>docs/guia-demo.md</code> y <code>docs/contexto/estado-actual.md</code>).</li>
-<li>Los precios son de referencia. Los de las ligas fundadoras (2,5 % de por vida) son los únicos que podés cerrar.</li>
+<li>Los precios de los planes son de lista y se ajustan cada 3 meses. El único precio que podés cerrar hoy es el de liga fundadora: 50 % de descuento de por vida.</li>
 <li>Todo lo que se diga sobre Mercado Pago, WhatsApp y datos personales debe ser verdad. Ante la duda: "lo confirmo y te respondo".</li></ul>
 
 <h1 class="sec"><p class="eyebrow">2</p>Cliente ideal y calificación</h1>
 <h2>Perfil ideal (ICP)</h2>
 <table><tr><th>Criterio</th><th>Ideal</th><th>Señal de alerta</th></tr>
 <tr><td>Tamaño</td><td>12–24 equipos por torneo; 1 o más divisiones</td><td>Menos de 8 equipos o torneo único y esporádico</td></tr>
-<tr><td>Quién decide</td><td>El organizador/dueño de la liga</td><td>Hay que pedir permiso a una comisión que no usa tecnología</td></tr>
-<tr><td>Cobros</td><td>Cobra inscripción y cuotas por fecha, hoy por transferencia, con morosos</td><td>Todo en efectivo y sin interés en cobrar online</td></tr>
+<tr><td>Quién decide</td><td>El organizador/dueño de la liga</td><td>Hay que pedir permiso a una comisión directiva que no usa tecnología</td></tr>
+<tr><td>Cobros</td><td>Cobra inscripción y cuotas por fecha (en efectivo, por transferencia u online) y tiene morosos</td><td>No cobra nada a los equipos, o no podría sostener una cuota mensual</td></tr>
 <tr><td>Dolor</td><td>Pierde horas semanales en cobros, fixture y avisos</td><td>"Así estamos bien"</td></tr>
 <tr><td>Formato</td><td>Cuota por fecha, seguro por jugador, copa estímulo o torneos por fases (grupos, playoffs ida y vuelta)</td><td>No descalifica: sirve para saber qué mostrar en la demo</td></tr>
 <tr><td>Calendario</td><td>Torneo próximo a empezar (próximos 1–3 meses)</td><td>Temporada recién terminada, sin fecha de inicio</td></tr>
 <tr><td>Actitud</td><td>Prueba herramientas y comparte con sus equipos</td><td>Rechaza cambios de plano</td></tr></table>
 <h2>Preguntas de calificación (rápidas)</h2>
-<ol><li>¿Cuántas ligas o divisiones organizás y cuántos equipos en total?</li><li>¿Cuándo empieza tu próximo torneo?</li><li>¿Cuánto cobrás por equipo (inscripción y por fecha)? ¿Cobrás seguro por jugador? ¿Cómo te pagan hoy?</li><li>¿Qué formato jugás? ¿Grupos, playoffs ida y vuelta, copa estímulo para los eliminados?</li><li>¿Cuántas horas por semana te lleva organizar?</li><li>¿Quién más decide?</li></ol>
+<ol><li>¿Cuántas ligas o divisiones organizás y cuántos equipos en total?</li><li>¿Cuándo empieza tu próximo torneo?</li><li>¿Cuánto cobrás por equipo (inscripción y por fecha)? ¿Cobrás seguro por jugador? ¿Cómo te pagan hoy?</li><li>¿Pagás hoy alguna herramienta, planilla o app para organizar?</li><li>¿Qué formato jugás? ¿Grupos, playoffs ida y vuelta, copa estímulo para los eliminados?</li><li>¿Cuántas horas por semana te lleva organizar?</li><li>¿Quién más decide?</li></ol>
 <p><b>Puntaje:</b> torneo en menos de 3 meses (3), 12+ equipos (2), cobra por fecha además de inscripción (2), decide solo (2), dolor claro (1). 7 o más: prioridad alta. 4–6: seguimiento. Menos de 4: lista de espera.</p>
-<div class="callout"><b class="t">Dato clave que debés relevar siempre</b>¿Cuánto cobra la liga por equipo y por fecha en total en un torneo? Es el número que decide el negocio (documento 2). Anotalo en el CRM en cada conversación.</div>
+<div class="callout"><b class="t">Dato clave que debés relevar siempre</b>¿Cuánto paga cada equipo por fecha y cuántos equipos y torneos tiene la liga? Con eso elegís el plan y le mostrás que la cuota cuesta menos de lo que paga un equipo por una fecha. Anotalo en el CRM en cada conversación.</div>
 
 <h1 class="sec"><p class="eyebrow">3</p>Mensajes por tipo de organizador</h1>
 <table><tr><th>Perfil</th><th>Qué le duele</th><th>Mensaje principal</th><th>Prueba</th></tr>
@@ -40,9 +40,10 @@
 <tr><td>Jugador</td><td>Enterarse tarde, no saber si está habilitado</td><td>"Confirmás si vas con un toque y ves tus goles, sanciones y papeles."</td><td>Panel del jugador ("Voy / No voy"), página del partido y perfil.</td></tr></table>
 <p class="fn">Capitán y jugador no pagan: se les habla para que el organizador vea que su gente lo va a usar.</p>
 <h2>Frases que funcionan</h2>
-<ul><li>"¿Cuántas horas te lleva hoy saber quién pagó?"</li><li>"El día que llueve, ¿cuánto tardás en avisar a todos?"</li><li>"Cuando un equipo reclama una suspensión, ¿tenés dónde mostrar la tarjeta?"</li><li>"¿Sabés cuánto ganaste en el último torneo, descontando cancha y árbitros?"</li></ul>
+<ul><li>"¿Cuántas horas te lleva hoy saber quién pagó?"</li><li>"El día que llueve, ¿cuánto tardás en avisar a todos?"</li><li>"Cuando un equipo reclama una suspensión, ¿tenés dónde mostrar la tarjeta?"</li><li>"¿Sabés cuánto ganaste en el último torneo, descontando cancha y árbitros?"</li><li>"¿Cuánto paga cada equipo por fecha? El plan sale menos que eso por mes."</li></ul>
+<div class="callout"><b class="t">El argumento de precio, en una frase</b>"Es un precio fijo por mes, previsible, que repartido entre tus equipos sale menos de lo que paga cada uno por una fecha (plan Liga: ≈ $12.500 por equipo con 16 equipos). No te sacamos nada de lo que cobrás: lo que entra es tuyo. Y el que paga online paga su cargo, como cuando compra una entrada."</div>
 <h2>Frases que no hay que usar</h2>
-<ul><li>"Es gratis" (no lo es: hay comisión). Decí "no pagás nada fijo; pagás solo cuando cobrás por la plataforma".</li>
+<ul><li>"Es gratis" (no lo es: es una suscripción mensual; solo el primer mes no tiene cargo). Decí "es un precio fijo por mes, menos de lo que paga cada equipo por una fecha, y no te cobramos nada sobre lo que cobrás".</li>
 <li>"Es el único que hace X" sin haber verificado la competencia.</li>
 <li>Prometer fechas de entrega, integraciones o funciones que no estén confirmadas.</li></ul>
 
@@ -52,9 +53,9 @@
 <tr><td>2. Primer contacto</td><td>Mensaje o llamada de 5 minutos.</td><td>Acepta una charla de 20 min.</td><td>1–3 días</td></tr>
 <tr><td>3. Descubrimiento</td><td>Charla de 20 minutos con preguntas (sección 6).</td><td>Dolor confirmado; datos de cobros relevados.</td><td>Misma semana</td></tr>
 <tr><td>4. Demo</td><td>Demo de la app real, con su caso en mente (sección 7).</td><td>Pide ver precio o fecha.</td><td>3–5 días</td></tr>
-<tr><td>5. Propuesta</td><td>Oferta de liga fundadora o plan según perfil.</td><td>Acepta torneo piloto.</td><td>1 semana</td></tr>
+<tr><td>5. Propuesta</td><td>Oferta de liga fundadora o del plan que le corresponde (Torneo, Liga o Pro).</td><td>Acepta torneo piloto.</td><td>1 semana</td></tr>
 <tr><td>6. Piloto</td><td>Alta, migración, primer torneo acompañado.</td><td>Torneo cobrado y cerrado en plataforma.</td><td>Duración de un torneo</td></tr>
-<tr><td>7. Cliente</td><td>Continúa con precio fundador, referidos.</td><td>Segundo torneo planificado.</td><td>—</td></tr></table>
+<tr><td>7. Cliente</td><td>Sigue con su plan a precio fundador, referidos.</td><td>Segundo torneo planificado.</td><td>—</td></tr></table>
 <p>Regla: <b>no pases de etapa sin cumplir el criterio</b>. Registrá cada paso en el CRM con fecha, próxima acción y quién la hace.</p>
 
 <h1 class="sec"><p class="eyebrow">5</p>Prospección</h1>
@@ -64,7 +65,7 @@
 <pre>Hola [Nombre], soy [Tu nombre] de Potrero. Hicimos un sistema para que
 organizadores de torneos como el tuyo dejen de perseguir pagos y rehacer
 el fixture cuando llueve. Ya funciona y buscamos 15 ligas para probarlo con
-nosotros, sin costo fijo y con precio especial de por vida. ¿Tenés 20 minutos
+nosotros: primer mes sin cargo y la mitad de precio de por vida. ¿Tenés 20 minutos
 esta semana para mostrártelo y que me cuentes cómo lo manejás hoy?</pre>
 <h2>Llamada de 5 minutos</h2>
 <ol><li><b>Apertura:</b> "Te llamo por el torneo [nombre]. ¿Tenés un minuto?"</li><li><b>Contexto:</b> "Tenemos una herramienta para organizadores y la estamos abriendo a las primeras ligas. Quiero entender cómo lo hacés hoy."</li><li><b>Una pregunta de dolor:</b> "¿Qué es lo que más tiempo te lleva en cada torneo?"</li><li><b>Cierre:</b> "Te muestro en 20 minutos cómo lo resuelve, funcionando. ¿Martes o jueves?"</li></ol>
@@ -101,31 +102,37 @@ esta semana para mostrártelo y que me cuentes cómo lo manejás hoy?</pre>
 <p>Mostrá <b>los 3 dolores que mencionó</b>: cambiá un bloque por Reprogramar, Sanciones y tribunal, Caja, Árbitros o Sponsors si hace falta. Terminá siempre con un pedido concreto de próximo paso y fecha.</p>
 
 <h1 class="sec"><p class="eyebrow">8</p>Precios y cómo explicarlos</h1>
-<table><tr><th>Plan</th><th>Precio</th><th>Para quién</th></tr>
-<tr><td>Ligas fundadoras (primeras 15)</td><td>2,5 % por cobro online, de por vida; sin cuota fija; alta y migración gratis</td><td>Organizadores que dan su próximo torneo como piloto y ayudan a mejorar el producto.</td></tr>
-<tr><td>Liga</td><td>3,5 % por cobro online; sin cuota fija</td><td>Cliente estándar luego del lanzamiento.</td></tr>
-<tr><td>Pro</td><td>$24.900/mes + 2 %</td><td>Ligas con más de ~$20 M de recaudación online anual o que quieren marca y dominio propios.</td></tr></table>
-<h2>Cómo explicar la comisión</h2>
-<ol><li>"No pagás nada fijo. Pagás un porcentaje solo de lo que se cobra por la plataforma."</li>
-<li>"Lo que cobrás en efectivo o por transferencia lo registrás vos y no paga comisión."</li>
-<li>"Mercado Pago cobra aparte su costo por procesar la tarjeta, como en cualquier cobro online. Podés absorberlo o mostrárselo al equipo como cargo por servicio. En el panel siempre ves cuánto recibís."</li>
-<li>Usá el ejemplo: 16 equipos × $60.000 = $960.000; te quedan ≈ $849.700 absorbiendo ambos costos.</li></ol>
+<p>Potrero se paga con <b>un precio fijo por mes</b>. No cobramos nada sobre lo que cobra la liga: lo que entra es del organizador. Primer mes sin cargo y sin permanencia.</p>
+<table><tr><th>Plan</th><th>Precio</th><th>Qué incluye</th><th>Para quién</th></tr>
+<tr><td>Torneo</td><td>$100.000/mes</td><td>1 torneo activo, hasta 16 equipos, 2 usuarios; fixture, acta, tabla, sitio, cobros, caja y sanciones; 100 WhatsApp por mes.</td><td>El que arranca con un solo torneo.</td></tr>
+<tr><td><b>Liga</b></td><td><b>$200.000/mes</b></td><td>Hasta 4 torneos y 48 equipos, usuarios sin límite con roles; además tribunal, documentación, cuota por fecha y seguro, árbitros, reprogramaciones y métricas; 300 WhatsApp por mes.</td><td><b>Nuestro cliente principal</b>: liga mediana con más de un torneo o división.</td></tr>
+<tr><td>Pro</td><td>$350.000/mes</td><td>Sin límites; además marca y dominio propios, sponsors con reporte y soporte prioritario; 2.000 WhatsApp por mes.</td><td>Ligas grandes o que quieren su propia marca.</td></tr>
+<tr><td>Ligas fundadoras (primeras 15)</td><td>50 % de descuento de por vida</td><td>El plan que elijan (Liga: $100.000/mes), alta y migración gratis, acompañamiento y voz en el producto.</td><td>Organizadores que dan su próximo torneo como piloto.</td></tr></table>
+<p class="fn">Pago anual: 2 meses sin cargo (Liga: $2.000.000 por año). Precios en pesos con ajuste cada 3 meses y aviso de 30 días. Sin permanencia.</p>
+<h2>Cómo explicar el precio</h2>
+<ol><li><b>Bajalo a equipo y a fecha.</b> "En una liga de 16 equipos, el plan Liga son unos $12.500 por equipo por mes: menos de lo que paga cada equipo por una sola fecha. Muchos organizadores lo suman a la cuota y listo."</li>
+<li><b>Precio fijo y previsible.</b> "Pagás lo mismo todos los meses, cobres mucho o poco. No te sacamos un porcentaje de lo que cobrás: lo que entra es tuyo."</li>
+<li><b>Efectivo y transferencia, sin cargo.</b> "Lo que te pagan en mano o por transferencia lo registrás con su comprobante y no paga nada extra."</li>
+<li><b>Pagos online, como en la venta de entradas.</b> "Si un equipo paga con Mercado Pago, paga un cargo por servicio (4 %, mínimo $500) más el costo de Mercado Pago, y vos recibís el 100 % de la inscripción. Si preferís, lo absorbés vos."</li>
+<li><b>Sin riesgo.</b> "El primer mes no tiene cargo y no hay permanencia: si no te sirve, no seguís."</li></ol>
+<div class="callout"><b class="t">Ejemplo para la charla</b>Torneo de 16 equipos con $60.000 de inscripción: $960.000. Si todos pagan online, a vos te llegan los <b>$960.000 completos</b>; cada equipo paga $60.000 + $2.400 de cargo por servicio + ≈ $4.800 de Mercado Pago. Tu plan Liga es aparte: $200.000 por mes para todos tus torneos, o $100.000 si sos liga fundadora.</div>
 <h2>Reglas de descuento</h2>
-<ul><li>No se negocia el porcentaje de las ligas fundadoras (es el mejor precio que existe).</li>
-<li>Para ligas fuera del programa: ofrecer el plan correspondiente; descuentos solo con aprobación del responsable comercial y por razones de estructura (volumen, convenio con complejo, referido).</li>
-<li>Nunca regalar meses sin contrapartida (caso de éxito, referido, feedback).</li></ul>
+<ul><li>No se negocia el 50 % de las ligas fundadoras (es el mejor precio que existe) ni el cargo por servicio.</li>
+<li>Para ligas fuera del programa: ofrecer el plan que le corresponde; descuentos solo con aprobación del responsable comercial y por razones de estructura (pago anual, convenio con complejo, referido).</li>
+<li>Nunca regalar meses además del primero sin contrapartida (caso de éxito, referido, feedback).</li>
+<li>Recomendá el plan por lo que la liga necesita, no por lo que paga menos: una liga con dos torneos o tribunal necesita Liga aunque pida Torneo.</li></ul>
 
 <h1 class="sec"><p class="eyebrow">9</p>Objeciones y respuestas</h1>
 <table><tr><th>Objeción</th><th>Qué hay detrás</th><th>Cómo responder</th></tr>
 <tr><td>"Ya uso Excel y me funciona."</td><td>Miedo al cambio</td><td>"Perfecto, no hace falta cambiar todo. ¿Cuántas horas te lleva por semana? Tu planilla la importás en minutos: el sistema revisa fila por fila y te dice qué corregir (DNI repetidos, equipos mal escritos). Si preferís, la importamos nosotros."</td></tr>
-<tr><td>"¿Cuánto cuesta?"</td><td>Pide precio sin ver valor</td><td>Preguntar primero cuánto cobra y cuánto tiempo pierde; luego dar el precio con el ejemplo de cuentas.</td></tr>
-<tr><td>"Me parece caro (la comisión)."</td><td>Compara con 0 hoy</td><td>"Hoy pagás con tu tiempo y con plata que no cobrás. Con el piloto medimos cuánto recuperás. Si no te cierra, no seguís."</td></tr>
-<tr><td>"Mis equipos pagan en efectivo."</td><td>Duda de utilidad</td><td>"Lo registrás igual, completo o en partes y con el comprobante, sin comisión. Las métricas te muestran cómo te paga tu liga. El link es para el que prefiere pagar online."</td></tr>
-<tr><td>"Mercado Pago me cobra mucho."</td><td>Costo real</td><td>"Es el costo de cualquier cobro con tarjeta. Podés elegir un plazo de acreditación más largo, que es más barato, o pasárselo al equipo como cargo por servicio."</td></tr>
+<tr><td>"¿Cuánto cuesta?"</td><td>Pide precio sin ver valor</td><td>Preguntar primero cuántos equipos tiene, cuánto cobra por fecha y cuánto tiempo pierde; después dar el precio del plan que le corresponde, bajado a equipo: "Son unos $12.500 por equipo por mes, menos de lo que paga cada equipo por una fecha."</td></tr>
+<tr><td>"Me parece caro."</td><td>Compara con 0 hoy</td><td>"Hoy lo pagás con tus horas y con plata que no cobrás. Repartido, son unos $12.500 por equipo por mes: con que un solo equipo moroso te pague a tiempo, ya lo cubriste. Y es fijo: no te sacamos nada de lo que cobrás. El primer mes no tiene cargo y no hay permanencia; si no te cierra, no seguís. Si arrancás con un solo torneo, el plan Torneo cuesta la mitad."</td></tr>
+<tr><td>"Mis equipos pagan en efectivo."</td><td>Duda de utilidad</td><td>"Perfecto: Potrero no vive de los pagos online. El efectivo lo registrás completo o en partes, con comprobante y sin cargo, y la caja y la deuda de cada equipo quedan al día igual. Pagás tu plan fijo, nada más. El link es para el equipo que prefiere pagar online."</td></tr>
+<tr><td>"Mercado Pago me cobra mucho."</td><td>Costo real</td><td>"Con Potrero ese costo no lo pagás vos: el que paga online paga el cargo por servicio y el costo de Mercado Pago, como cuando comprás una entrada, y a vos te llega el 100 % de la inscripción. Si querés regalárselo a tus equipos, lo absorbés. Y el que no quiera pagar online, paga en efectivo o por transferencia sin cargo."</td></tr>
 <tr><td>"No quiero datos de mis jugadores en una app."</td><td>Privacidad</td><td>"DNI y datos de salud se guardan cifrados, con consentimiento, y nunca se muestran al público. En el sitio el nombre sale con iniciales por defecto y los menores no tienen perfil sin autorización del tutor. Vos elegís qué documentación pide cada torneo."</td></tr>
 <tr><td>"¿Y si se cae en plena fecha?"</td><td>Confianza técnica</td><td>"El acta guarda todo en el celular y lo envía cuando vuelve la señal, sin duplicar nada; solo hay que abrirla una vez con conexión antes del partido. Lo probamos en el navegador, incluso con el servidor apagado; en el piloto lo probamos juntos en los celulares de tus árbitros. Y durante el piloto estamos con vos."</td></tr>
 <tr><td>"¿Ya está listo?"</td><td>Riesgo</td><td>"Probalo: te lo muestro ahora funcionando, con una liga de ejemplo cargada. Las ligas fundadoras son las primeras en usarlo en un torneo real y marcan las prioridades. Lo que todavía está simulado te lo digo de entrada: el cobro con Mercado Pago y los envíos por WhatsApp y email."</td></tr>
-<tr><td>"Tengo que consultarlo con la comisión."</td><td>Decide otro</td><td>"Armemos 15 minutos con ellos. Te preparo un resumen de una página."</td></tr>
+<tr><td>"Tengo que consultarlo con la comisión directiva."</td><td>Decide otro</td><td>"Armemos 15 minutos con ellos. Te preparo un resumen de una página."</td></tr>
 <tr><td>"Después te aviso."</td><td>Falta urgencia</td><td>"¿Cuándo empieza el torneo? Para que quede listo, necesitamos arrancar [fecha]. ¿Te escribo ese día?"</td></tr></table>
 
 <h1 class="sec"><p class="eyebrow">10</p>Competencia (fichas rápidas)</h1>
@@ -143,12 +150,12 @@ esta semana para mostrártelo y que me cuentes cómo lo manejás hoy?</pre>
 
 <h1 class="sec"><p class="eyebrow">11</p>Ligas fundadoras y piloto</h1>
 <table><tr><th>Qué recibe la liga</th><th>Qué pedimos a cambio</th></tr>
-<tr><td>Ser una de las primeras 15 ligas<br>Alta y migración desde Excel gratis, hechas con nosotros<br>Acompañamiento directo durante el torneo<br>Voz en las prioridades del producto<br>Probarlo sin riesgo: sin permanencia ni costo de baja<br>2,5 % de por vida (en lugar de 3,5 %)<br>Logo como socio fundador (opcional)</td><td>Su próximo torneo como piloto<br>Una reunión de feedback cada 2 semanas<br>Datos reales de cobros (confidenciales) para validar el modelo<br>Un testimonio y permiso para citar su caso<br>2 referidos de otras ligas, si el piloto funciona</td></tr></table>
+<tr><td>Ser una de las primeras 15 ligas<br>Alta y migración desde Excel gratis, hechas con nosotros<br>Acompañamiento directo durante el torneo<br>Voz en las prioridades del producto<br>Probarlo sin riesgo: sin permanencia ni costo de baja<br>50 % de descuento de por vida en su plan (Liga: $100.000 por mes)<br>Primer mes sin cargo<br>Logo como socio fundador (opcional)</td><td>Su próximo torneo como piloto<br>Una reunión de feedback cada 2 semanas<br>Datos reales de cobros (confidenciales) para validar el modelo<br>Un testimonio y permiso para citar su caso<br>2 referidos de otras ligas, si el piloto funciona</td></tr></table>
 <h2>Lo que podemos ofrecer hoy</h2>
 <ul><li><b>Alta con importación:</b> cargamos sus equipos, jugadores y canchas desde su Excel con la importación de Potrero, que valida fila por fila.</li><li><b>Demo con su liga:</b> antes de decidir, le mostramos la app con sus datos o con la liga de ejemplo.</li><li><b>Acompañamiento:</b> canal directo con el equipo, presencia en las primeras fechas y reunión de resultados.</li><li><b>Todo lo que ya funciona:</b> torneos y fases, fixture, acta, sanciones y tribunal, documentación, caja, sitio público, paneles del capitán y del jugador.</li></ul>
-<div class="callout warn"><b class="t">Lo que todavía no, y cómo se resuelve en el piloto</b><b>Mercado Pago real no está conectado todavía:</b> el piloto arranca registrando efectivo y transferencias en Potrero (sin comisión); el cobro online se suma cuando la integración esté lista, sin prometer fecha. <b>WhatsApp y email están simulados:</b> los links (inscripción, confirmaciones, invitaciones) se comparten a mano por WhatsApp. <b>El sitio público todavía no lleva el logo ni los colores de la liga.</b></div>
+<div class="callout warn"><b class="t">Lo que todavía no, y cómo se resuelve en el piloto</b><b>Mercado Pago real no está conectado todavía:</b> el piloto arranca registrando efectivo y transferencias en Potrero (sin cargo); el cobro online se suma cuando la integración esté lista, sin prometer fecha. <b>WhatsApp y email están simulados:</b> los links (inscripción, confirmaciones, invitaciones) se comparten a mano por WhatsApp. <b>El sitio público todavía no lleva el logo ni los colores de la liga.</b></div>
 <h2>Criterios para aceptar una liga fundadora</h2>
-<ul><li>Torneo real con fecha de inicio en los próximos 1–3 meses.</li><li>12 equipos o más y disposición a cobrar parte por Mercado Pago cuando esté conectado.</li><li>Organizador con tiempo para el acompañamiento y buena reputación en la zona.</li><li>Mezcla de perfiles: al menos un complejo y una liga independiente.</li></ul>
+<ul><li>Torneo real con fecha de inicio en los próximos 1–3 meses.</li><li>12 equipos o más y una cuota mensual que la liga pueda sostener (plan Liga a precio fundador).</li><li>Organizador con tiempo para el acompañamiento y buena reputación en la zona.</li><li>Mezcla de perfiles: al menos un complejo y una liga independiente.</li></ul>
 <h2>Cómo se hace el piloto</h2>
 <ol><li><b>Alta (semana 0):</b> el asistente de 5 pasos: organización, Mercado Pago ("conectar después" por ahora), dirección y logo, reglamento e importación. Usuarios con su rol (administrador, tesorero, árbitro, tribunal).</li><li><b>Migración (semana 0–1):</b> importamos equipos, jugadores y canchas desde su Excel; corregimos con él lo que marque la validación.</li><li><b>Prueba del acta (semana 0–1):</b> abrirla en el celular de cada árbitro, con y sin señal, antes de la primera fecha.</li><li><b>Inscripciones (semana 1–3):</b> link a capitanes; pagos registrados; cuota por fecha y seguro si los cobra; invitación a capitanes y jugadores a sus paneles.</li><li><b>Fixture y publicación:</b> armamos el formato con el organizador (fijo o por fases), ajustamos a mano y compartimos el sitio.</li><li><b>Fechas:</b> presencia en las primeras jornadas; acta y contingencias.</li><li><b>Cierre:</b> reunión de resultados con cifras (horas ahorradas, cobro anticipado, errores).</li></ol>
 <h2>Compromisos que SÍ podemos hacer / que NO</h2>
@@ -169,7 +176,7 @@ esta semana para mostrártelo y que me cuentes cómo lo manejás hoy?</pre>
 <tr><td>Ciclo de venta</td><td>Días del primer contacto a piloto</td><td>≤ 30</td></tr>
 <tr><td>Dato de recaudación relevado</td><td>Ligas con el dato cargado</td><td>100 %</td></tr></table>
 <h2>Compensación (a definir)</h2>
-<p>Propuesta: sueldo base + variable por ligas que completan un torneo cobrado (no por demos ni por altas), para alinear el esfuerzo con retención y no solo con cierre. <span class="pill v">DECIDIR</span></p>
+<p>Propuesta: sueldo base + variable por ligas que siguen pagando después de su primer torneo, según el plan (no por demos ni por altas), para alinear el esfuerzo con retención y no solo con cierre. <span class="pill v">DECIDIR</span></p>
 
 <h1 class="sec"><p class="eyebrow">13</p>Material y listas de control</h1>
 <table><tr><th>Material</th><th>Estado</th><th>Dónde</th></tr>

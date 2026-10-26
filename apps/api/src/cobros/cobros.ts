@@ -16,17 +16,17 @@ import {
   Post,
 } from '@nestjs/common';
 import { crearAsiento, registrarPago } from '../caja/libro.js';
+import { exigirLimiteDelPlan } from '../comun/plan.js';
 import {
   cobrosPorFechaSchema,
   type CobrosPorFechaInput,
-  comisionPlataforma,
+  cargoPorServicio,
   DIAS_ANTICIPACION_COBRO_POR_FECHA,
   desdeFechaAlConfigurar,
   deudaPorFecha,
   inscripcionConfirmada,
   pagoManualSchema,
   type PagoManualInput,
-  type Plan,
   anularPagoSchema,
   type AnularPagoInput,
   imputarPago,
@@ -61,8 +61,10 @@ export interface Preferencia {
 export interface Pasarela {
   crearPreferencia(d: {
     titulo: string;
+    /** Lo que paga el equipo: arancel más el cargo por servicio (o solo el arancel si lo absorbe el organizador). */
     monto: number;
-    comision: number;
+    /** Cargo por servicio de Gregal (marketplace fee). */
+    cargoServicio: number;
     referencia: string;
   }): Promise<Preferencia>;
 }
@@ -146,6 +148,7 @@ export async function inscribirEquipo(tx: Tx, organizacionId: string, torneoId: 
   const torneo = await tx.torneo.findUnique({ where: { id: torneoId } });
   if (!torneo) throw noEncontrado('el torneo');
   if (torneo.estado !== 'INSCRIPCION') throw new ErrorNegocio('La inscripción de este torneo está cerrada.');
+  await exigirLimiteDelPlan(tx, organizacionId, 'equiposActivos', { equipoId });
   const inscriptos = await tx.inscripcion.count({ where: { torneoId, estado: { not: 'BAJA' } } });
   if (inscriptos >= torneo.cupo)
     throw new ErrorNegocio(`El torneo completó su cupo de ${torneo.cupo} equipos.`);
@@ -233,7 +236,7 @@ export class CobrosService implements OnModuleInit, OnModuleDestroy {
             metodo: p.metodo,
             monto: p.monto,
             estado: p.estado,
-            comision: p.comisionPlataforma,
+            cargoServicio: p.cargoServicio,
             fecha: p.acreditadoEn ?? p.creadoEn,
           })),
         };
@@ -407,7 +410,10 @@ export class CobrosService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  /** Genera el link de pago de un cargo. La comisión de Potrero depende del plan de la organización. */
+  /**
+   * Genera el link de pago de un cargo. El equipo paga el arancel más el cargo por servicio; el organizador recibe el
+   * arancel completo, salvo que haya elegido absorber el cargo.
+   */
   async linkDePago(organizacionId: string, cargoId: string): Promise<Preferencia> {
     return this.db.enOrg(organizacionId, async (tx) => {
       const cargo = await tx.cargo.findUnique({ where: { id: cargoId }, include: { pagos: true } });
@@ -416,11 +422,11 @@ export class CobrosService implements OnModuleInit, OnModuleDestroy {
       const pagado = cargo.pagos.filter((p) => p.estado === 'APROBADO').reduce((s, p) => s + p.monto, 0);
       const monto = cargo.monto - pagado;
       const org = await tx.organizacion.findUniqueOrThrow({ where: { id: organizacionId } });
-      const comision = comisionPlataforma(monto, org.plan as Plan, 'MERCADO_PAGO');
+      const cargoServicio = cargoPorServicio(monto, { absorbe: org.absorbeCargoServicio });
       const pref = await this.pasarela.crearPreferencia({
         titulo: cargo.concepto,
-        monto,
-        comision,
+        monto: cargoServicio.total,
+        cargoServicio: cargoServicio.servicio,
         referencia: cargo.id,
       });
       await tx.pago.create({
@@ -429,7 +435,9 @@ export class CobrosService implements OnModuleInit, OnModuleDestroy {
           cargoId,
           metodo: 'MERCADO_PAGO',
           monto,
-          comisionPlataforma: comision,
+          cargoServicio: cargoServicio.servicio,
+          costoMercadoPago: cargoServicio.costoMercadoPago,
+          cargoAbsorbido: cargoServicio.absorbe,
           preferenciaId: pref.preferenciaId,
         },
       });
@@ -437,7 +445,7 @@ export class CobrosService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  /** Pago en efectivo o transferencia registrado por el organizador. No paga comisión. */
+  /** Pago en efectivo o transferencia registrado por el organizador. No tiene cargo por servicio. */
   pagoManual(c: Contexto, cargoId: string, d: PagoManualInput) {
     return this.db.enOrg(c.organizacionId, async (tx) => {
       const cargo = await tx.cargo.findUnique({ where: { id: cargoId }, include: { pagos: true } });
@@ -452,7 +460,6 @@ export class CobrosService implements OnModuleInit, OnModuleDestroy {
           cargoId,
           metodo: d.metodo,
           monto: d.monto,
-          comisionPlataforma: 0,
           estado: 'APROBADO',
           comprobante: d.comprobante ?? null,
           registradoPorId: c.usuarioId,
@@ -467,7 +474,7 @@ export class CobrosService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Pago en efectivo o transferencia de un equipo, completo o parcial (sin comisión). Se imputa al cargo elegido o, si no
+   * Pago en efectivo o transferencia de un equipo, completo o parcial (sin cargo por servicio). Se imputa al cargo elegido o, si no
    * se elige, a los pendientes por vencimiento: un pago que cubre dos cargos se guarda como un pago por cargo. Cada uno
    * entra a la caja en efectivo o en el banco según el medio.
    */
@@ -502,7 +509,6 @@ export class CobrosService implements OnModuleInit, OnModuleDestroy {
             cargoId: imp.cargoId,
             metodo: d.metodo,
             monto: imp.monto,
-            comisionPlataforma: 0,
             estado: 'APROBADO',
             comprobante: d.comprobante || null,
             registradoPorId: c.usuarioId,
@@ -585,10 +591,15 @@ export class CobrosService implements OnModuleInit, OnModuleDestroy {
     if (!pago) throw noEncontrado('el pago');
     const org = await this.db.sistema.organizacion.findUniqueOrThrow({ where: { id: pago.organizacionId } });
     const t = pago.cargo.inscripcion.torneo;
+    const total = pago.cargoAbsorbido ? pago.monto : pago.monto + pago.cargoServicio + pago.costoMercadoPago;
     return {
       estado: pago.estado,
       concepto: pago.cargo.concepto,
+      /** Arancel que fijó el organizador. */
       monto: pago.monto,
+      /** Cargo por servicio que paga el equipo (cero si lo absorbe el organizador). */
+      cargoServicio: total - pago.monto,
+      total,
       equipo: pago.cargo.inscripcion.equipo.nombre,
       organizacion: org.nombre,
       volverA: `/t/${org.slug}/${t.slug}`,

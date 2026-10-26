@@ -8,11 +8,15 @@ Fuente: documento 1 (secciones 5–8) y documento 2. Cifras: `docs/datos.json`. 
 - Modalidades F5/F7/F8/F11. Formatos: liga, copa, grupos + playoffs, liga + playoffs.
 
 ## Planes y cobros
-- Liga 3,5 % · Ligas fundadoras 2,5 % de por vida (primeras 15) · Pro $24.900/mes + 2 %. Sin permanencia.
-- La comisión se cobra solo sobre pagos con Mercado Pago (split 1:1, `application_fee`). Efectivo y transferencia: sin comisión.
-- Mercado Pago cobra aparte su costo; el organizador elige absorberlo o mostrarlo como "cargo por servicio" (default: ADR-013 abierto).
+- Suscripción mensual que paga el organizador según su plan (ADR-027). Sin permanencia.
+  - **Torneo** $100.000/mes: 1 torneo activo, hasta 16 equipos, 2 usuarios, módulos básicos, 100 WhatsApp/mes.
+  - **Liga** $200.000/mes: 4 torneos, 48 equipos, usuarios sin límite; + tribunal, documentación, cuota por fecha y seguro, árbitros, reprogramaciones y métricas; 300 WhatsApp/mes.
+  - **Pro** $350.000/mes: sin límites; + marca y dominio propios, sponsors con reporte, soporte prioritario; 2.000 WhatsApp/mes.
+- Ligas fundadoras: las primeras 15, 50 % de descuento de por vida + alta y migración gratis (descuento, no plan aparte).
+- Pago anual: 2 meses sin cargo. Primer mes sin cargo. Precios ajustados cada 3 meses con aviso de 30 días.
+- Cargo por servicio en pagos online: lo paga quien paga online, 4 % con mínimo $500, más el costo de Mercado Pago (ADR-013). El organizador recibe el 100 %; puede absorber el cargo. Se cobra con el split de Mercado Pago (`application_fee`). Efectivo y transferencia: sin cargo.
 - Una inscripción genera cargos; el cargo queda PAGADO cuando los pagos aprobados cubren el monto; sin cargos pendientes, la inscripción pasa a CONFIRMADA.
-- Pagos manuales (efectivo o transferencia): completos o parciales, con fecha y comprobante; sin comisión. Un pago puede cubrir varios cargos (del más viejo al más nuevo) y se guarda uno por cargo. Un pago manual se anula con un asiento que revierte; uno de Mercado Pago se devuelve con un reembolso (pendiente). Registran el dueño, el administrador y el tesorero (`cobro.registrar`).
+- Pagos manuales (efectivo o transferencia): completos o parciales, con fecha y comprobante; sin cargo por servicio. Un pago puede cubrir varios cargos (del más viejo al más nuevo) y se guarda uno por cargo. Un pago manual se anula con un asiento que revierte; uno de Mercado Pago se devuelve con un reembolso (pendiente). Registran el dueño, el administrador y el tesorero (`cobro.registrar`).
 - Cuota por fecha (E06-20): monto fijo por equipo y por fecha, con o sin inscripción. Un cargo por equipo y fecha, vence el día del partido. Por defecto: no se cobra la fecha libre ni el partido suspendido; el partido con equipo ausente sí. La deuda alerta y recuerda; bloquear al deudor es opcional. Activada con el torneo empezado, se cobra desde la próxima fecha (la siguiente a la última con partidos jugados), nunca las ya jugadas; cuota y seguro guardan cada uno su inicio (`cuotaDesdeFecha`, `seguroDesdeFecha`). Valores en `datos.json` (`cobrosPorFechaPorDefecto`).
 - Seguro por jugador (E06-21): monto × jugadores del plantel en cada fecha que el equipo juega (juegue o no cada jugador). Cargo aparte al equipo, rubro Seguros en la caja.
 - Cuotas y seguros se generan 7 días antes del partido (`anticipacionDias`), uno por equipo, tipo y fecha (clave única: idempotente). Siguen al partido si se mueve; si se suspende, el cargo pendiente sin pagos se anula; un cargo con pagos no se toca. El monto queda fijo al generarse, salvo que el organizador cambie la configuración (se recalculan los pendientes sin pagos). La cuota entra en Inscripciones de la caja.
@@ -45,8 +49,8 @@ Fuente: documento 1 (secciones 5–8) y documento 2. Cifras: `docs/datos.json`. 
 - Planilla con habilitación visible antes de empezar. Cargar a un suspendido: se registra con advertencia y (E14) abre expediente.
 
 ## Caja
-- Libro de partida doble inmutable (ADR-023): cada cobro, comisión, egreso, ingreso manual y retiro es un asiento que suma cero. No se edita ni se borra (lo impide la base): se corrige con un asiento que lo revierte.
-- Cada pago aprobado se asienta solo (con la comisión si fue por Mercado Pago). Resultado = ingresos cobrados − comisión − egresos. "Por cobrar" sale de los cargos pendientes. Un retiro mueve plata de Mercado Pago al banco y no cambia el resultado.
+- Libro de partida doble inmutable (ADR-023): cada cobro, costo de cobro online absorbido, egreso, ingreso manual y retiro es un asiento que suma cero. No se edita ni se borra (lo impide la base): se corrige con un asiento que lo revierte.
+- Cada pago aprobado se asienta solo (con el cargo por servicio y el costo de Mercado Pago solo si el organizador los absorbe). Resultado = ingresos cobrados − costos de cobro absorbidos − egresos. "Por cobrar" sale de los cargos pendientes. Un retiro mueve plata de Mercado Pago al banco y no cambia el resultado.
 - Egresos por rubro: canchas, árbitros, premios, otros (con comprobante). Ingresos manuales: sponsors y otros.
 - Cargos automáticos al cerrar el acta (se encienden en Caja): pago al árbitro designado (su tarifa, en efectivo) y alquiler de la cancha (su costo por partido, por transferencia).
 - Permisos: el dueño retira; el tesorero opera la caja; el administrador la ve. Pendiente: verificación en dos pasos para retirar (E04-11).

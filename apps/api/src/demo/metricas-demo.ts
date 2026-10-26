@@ -1,7 +1,7 @@
 // Historia de la liga para que las métricas (E24) tengan sentido en la demo: dos torneos del año pasado ya terminados
 // (con equipos que repiten y otros que se fueron, cobros con mezcla de medios y partidos jugados) y fechas de pago
 // realistas en los torneos de la plantilla. Se llama una sola vez desde la semilla, después de `cargarPlantilla`.
-import { comisionPlataforma, REGLAMENTO_POR_DEFECTO, type MetodoPago } from '@potrero/shared';
+import { cargoPorServicio, REGLAMENTO_POR_DEFECTO, type MetodoPago } from '@potrero/shared';
 import type { Contexto } from '../comun/http.js';
 import { registrarPago } from '../caja/libro.js';
 import { CobrosService } from '../cobros/cobros.js';
@@ -73,8 +73,9 @@ export async function cargarHistorialDeMetricas(app: Resolver, c: Contexto) {
   const torneos = app.get(TorneosService);
   const equipos = app.get(EquiposService);
   const cobros = app.get(CobrosService);
-  const { plan } = await db.app.organizacion.findUniqueOrThrow({ where: { id: c.organizacionId } });
-  const canchas = await db.enOrg(c.organizacionId, (tx) => tx.cancha.findMany({ orderBy: { nombre: 'asc' } }));
+  const canchas = await db.enOrg(c.organizacionId, (tx) =>
+    tx.cancha.findMany({ orderBy: { nombre: 'asc' } }),
+  );
   let azarS = 20250308;
   const azar = () => {
     azarS = (azarS * 1103515245 + 12345) % 2147483648;
@@ -108,10 +109,10 @@ export async function cargarHistorialDeMetricas(app: Resolver, c: Contexto) {
             cargoId: cargo!.id,
             metodo: p.metodo,
             monto,
-            comisionPlataforma: comisionPlataforma(monto, plan, p.metodo),
+            cargoServicio: cargoPorServicio(monto, { metodo: p.metodo }).servicio,
+            costoMercadoPago: cargoPorServicio(monto, { metodo: p.metodo }).costoMercadoPago,
             estado: 'APROBADO',
-            pasarelaPagoId:
-              p.metodo === 'MERCADO_PAGO' ? `SIM-HIST-${c.organizacionId}-${t.id}-${i}` : null,
+            pasarelaPagoId: p.metodo === 'MERCADO_PAGO' ? `SIM-HIST-${c.organizacionId}-${t.id}-${i}` : null,
             comprobante: p.metodo === 'EFECTIVO' ? `Recibo ${String(100 + i).padStart(4, '0')}` : null,
             registradoPorId: p.metodo === 'MERCADO_PAGO' ? null : c.usuarioId,
             creadoEn: cuando,
@@ -141,7 +142,10 @@ export async function cargarHistorialDeMetricas(app: Resolver, c: Contexto) {
     // Todo jugado. Los resultados se cargan directo (sin acta): el torneo es historia y no debe disparar avisos,
     // sanciones ni gastos automáticos de la caja de hoy.
     await db.enOrg(c.organizacionId, async (tx) => {
-      const partidos = await tx.partido.findMany({ where: { torneoId: t.id }, orderBy: [{ fecha: 'asc' }, { inicio: 'asc' }] });
+      const partidos = await tx.partido.findMany({
+        where: { torneoId: t.id },
+        orderBy: [{ fecha: 'asc' }, { inicio: 'asc' }],
+      });
       for (const [i, p] of partidos.entries()) {
         const cerradoEn = new Date(p.inicio!.getTime() + 60 * 60 * 1000);
         const wo = p.fecha === h.fechaWO && partidos.findIndex((x) => x.fecha === h.fechaWO) === i;
@@ -179,7 +183,10 @@ export async function cargarHistorialDeMetricas(app: Resolver, c: Contexto) {
       const inicio = t.partidos[0]?.inicio;
       if (!inicio) continue;
       const pagos = await tx.pago.findMany({
-        where: { estado: 'APROBADO', cargo: { fecha: null, categoria: 'INSCRIPCIONES', inscripcion: { torneoId: t.id } } },
+        where: {
+          estado: 'APROBADO',
+          cargo: { fecha: null, categoria: 'INSCRIPCIONES', inscripcion: { torneoId: t.id } },
+        },
         orderBy: { creadoEn: 'asc' },
       });
       for (const [i, p] of pagos.entries()) {

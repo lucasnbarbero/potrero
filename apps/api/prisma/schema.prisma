@@ -16,43 +16,48 @@ datasource db {
 // ───────────── Identidad y organizaciones (globales) ─────────────
 
 model Usuario {
-  id           String          @id @default(cuid())
-  email        String          @unique
-  nombre       String
-  passwordHash String          @map("password_hash")
-  creadoEn     DateTime        @default(now()) @map("creado_en")
-  membresias   Membresia[]
-  sesiones     SesionRefresh[]
+  id                String          @id @default(cuid())
+  email             String          @unique
+  nombre            String
+  passwordHash      String          @map("password_hash")
+  creadoEn          DateTime        @default(now()) @map("creado_en")
+  membresias        Membresia[]
+  sesiones          SesionRefresh[]
   // Cuenta (E04-02): email verificado y links de un solo uso (recuperación y verificación).
-  emailVerificadoEn DateTime?    @map("email_verificado_en")
+  emailVerificadoEn DateTime?       @map("email_verificado_en")
   linksCuenta       LinkCuenta[]
 
   @@map("usuario")
 }
 
+/// Plan de suscripción mensual (cuota, límites y módulos en docs/datos.json).
 enum Plan {
+  TORNEO
   LIGA
-  FUNDADORA
   PRO
 }
 
 model Organizacion {
-  id           String      @id @default(cuid())
-  nombre       String
-  slug         String      @unique
-  plan         Plan        @default(LIGA)
-  colorMarca   String?     @map("color_marca")
+  id                   String      @id @default(cuid())
+  nombre               String
+  slug                 String      @unique
+  plan                 Plan        @default(LIGA)
+  /// Liga fundadora: 50 % de descuento de por vida en su plan (no es un plan aparte).
+  fundadora            Boolean     @default(false)
+  /// El organizador absorbe el cargo por servicio de los pagos online (por defecto lo paga el equipo).
+  absorbeCargoServicio Boolean     @default(false) @map("absorbe_cargo_servicio")
+  colorMarca           String?     @map("color_marca")
   /// Cuenta de Mercado Pago conectada por OAuth. En modo simulado, un identificador ficticio.
-  mpCuentaId   String?     @map("mp_cuenta_id")
-  creadoEn     DateTime    @default(now()) @map("creado_en")
+  mpCuentaId           String?     @map("mp_cuenta_id")
+  creadoEn             DateTime    @default(now()) @map("creado_en")
   /// Solo en el entorno de demo (ADR-019): las sandboxes de visitantes vencen y un job las elimina. Nulo en una liga real.
-  demoExpiraEn DateTime?   @map("demo_expira_en")
-  membresias   Membresia[]
+  demoExpiraEn         DateTime?   @map("demo_expira_en")
+  membresias           Membresia[]
   /// Configuración inicial (E25): logo (data URL), localidad, provincia y los pasos confirmados del asistente.
   logo                 String?
   localidad            String?
   provincia            String?
-  configuracionInicial Json?   @map("configuracion_inicial")
+  configuracionInicial Json?       @map("configuracion_inicial")
 
   @@index([demoExpiraEn])
   @@map("organizacion")
@@ -90,16 +95,16 @@ model Membresia {
 
 /// Token de renovación. Se guarda solo el hash; cada uso lo rota. Si se reutiliza uno ya rotado, se revoca la familia.
 model SesionRefresh {
-  id         String    @id @default(cuid())
-  usuarioId  String    @map("usuario_id")
-  familia    String
-  tokenHash  String    @unique @map("token_hash")
-  expiraEn   DateTime  @map("expira_en")
-  revocadoEn DateTime? @map("revocado_en")
-  creadoEn   DateTime  @default(now()) @map("creado_en")
-  usuario    Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  id                   String    @id @default(cuid())
+  usuarioId            String    @map("usuario_id")
+  familia              String
+  tokenHash            String    @unique @map("token_hash")
+  expiraEn             DateTime  @map("expira_en")
+  revocadoEn           DateTime? @map("revocado_en")
+  creadoEn             DateTime  @default(now()) @map("creado_en")
+  usuario              Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   /// Organización activa de la sesión (E04-10): la renovación la mantiene. Nula = la primera membresía.
-  organizacionActivaId String? @map("organizacion_activa_id")
+  organizacionActivaId String?   @map("organizacion_activa_id")
 
   @@index([familia])
   @@map("sesion_refresh")
@@ -282,7 +287,7 @@ model Jugador {
   /// Sitio público (E20-04): apodo y cómo se lo nombra (INICIALES, APODO o COMPLETO; ver jugadorPublico en @potrero/shared).
   apodo               String?
   nombrePublico       String             @default("INICIALES") @map("nombre_publico")
-  plantel            PlantelJugador[]
+  plantel             PlantelJugador[]
   documentos          DocumentoJugador[]
   consentimientos     Consentimiento[]
 
@@ -372,23 +377,27 @@ enum EstadoPago {
 }
 
 model Pago {
-  id                 String     @id @default(cuid())
-  organizacionId     String     @map("organizacion_id")
-  cargoId            String     @map("cargo_id")
-  metodo             MetodoPago
-  monto              Int
-  /// Comisión de Potrero según el plan. Cero en pagos manuales.
-  comisionPlataforma Int        @default(0) @map("comision_plataforma")
-  estado             EstadoPago @default(PENDIENTE)
+  id               String     @id @default(cuid())
+  organizacionId   String     @map("organizacion_id")
+  cargoId          String     @map("cargo_id")
+  metodo           MetodoPago
+  monto            Int
+  /// Cargo por servicio de Gregal (ingreso de Gregal, no del organizador). Cero en pagos manuales.
+  cargoServicio    Int        @default(0) @map("cargo_servicio")
+  /// Lo que retuvo Mercado Pago por el cobro.
+  costoMercadoPago Int        @default(0) @map("costo_mercado_pago")
+  /// El organizador absorbió el cargo: se descontó de lo que recibió.
+  cargoAbsorbido   Boolean    @default(false) @map("cargo_absorbido")
+  estado           EstadoPago @default(PENDIENTE)
   /// Preferencia de la pasarela (link de pago).
-  preferenciaId      String?    @unique @map("preferencia_id")
+  preferenciaId    String?    @unique @map("preferencia_id")
   /// Identificador del pago en la pasarela: da idempotencia a las notificaciones.
-  pasarelaPagoId     String?    @unique @map("pasarela_pago_id")
-  comprobante        String?
-  registradoPorId    String?    @map("registrado_por_id")
-  creadoEn           DateTime   @default(now()) @map("creado_en")
-  acreditadoEn       DateTime?  @map("acreditado_en")
-  cargo              Cargo      @relation(fields: [cargoId], references: [id], onDelete: Cascade)
+  pasarelaPagoId   String?    @unique @map("pasarela_pago_id")
+  comprobante      String?
+  registradoPorId  String?    @map("registrado_por_id")
+  creadoEn         DateTime   @default(now()) @map("creado_en")
+  acreditadoEn     DateTime?  @map("acreditado_en")
+  cargo            Cargo      @relation(fields: [cargoId], references: [id], onDelete: Cascade)
 
   @@map("pago")
 }
@@ -740,7 +749,7 @@ model Asiento {
   organizacionId String         @map("organizacion_id")
   fecha          DateTime       @default(now())
   descripcion    String
-  /// COBRO, COMISION, EGRESO, INGRESO, RETIRO o REVERSA.
+  /// COBRO, CARGO_SERVICIO, EGRESO, INGRESO, RETIRO o REVERSA.
   tipo           String
   torneoId       String?        @map("torneo_id")
   referenciaTipo String?        @map("referencia_tipo")

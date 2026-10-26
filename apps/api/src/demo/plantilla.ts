@@ -115,10 +115,10 @@ export async function cargarPlantilla(app: Resolver, c: Contexto, semilla = SEMI
   const tribunal = app.get(TribunalService);
   const { azar, elegir } = generador(semilla);
 
-  // Plan de ligas fundadoras y cuenta de la pasarela simulada, para que los cobros online funcionen.
+  // Plan Pro de liga fundadora (la demo muestra todos los módulos, sponsors incluidos) y cuenta de la pasarela simulada, para que los cobros online funcionen.
   await db.app.organizacion.update({
     where: { id: c.organizacionId },
-    data: { plan: 'FUNDADORA', mpCuentaId: 'SIM-CUENTA-DEMO' },
+    data: { plan: 'PRO', fundadora: true, mpCuentaId: 'SIM-CUENTA-DEMO' },
   });
 
   const canchas = [

@@ -19,7 +19,8 @@ export interface Tablero {
   vivo: PartidoEnVivo[];
   dinero: {
     cobrado: number;
-    comisiones: number;
+    /** Cargo por servicio que absorbió el organizador (cero si lo pagan los equipos). */
+    cargoAbsorbido: number;
     neto: number;
     pendiente: number;
     online: number;

@@ -1,6 +1,6 @@
 ---
 name: dominio-potrero
-description: Reglas de negocio de Potrero (tabla, desempates, fixture, acta, sanciones, habilitación, cobros, comisiones, roles). Usar antes de escribir o cambiar lógica de negocio en packages/shared o en la API.
+description: Reglas de negocio de Potrero (tabla, desempates, fixture, acta, sanciones, habilitación, cobros, planes y cargo por servicio, roles). Usar antes de escribir o cambiar lógica de negocio en packages/shared o en la API.
 ---
 
 # Lógica de negocio de Potrero

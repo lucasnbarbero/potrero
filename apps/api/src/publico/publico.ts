@@ -1,10 +1,9 @@
 import { Body, Controller, Get, HttpStatus, Injectable, Module, Param, Post } from '@nestjs/common';
 import {
-  comisionPlataforma,
+  cargoPorServicio,
   DATOS,
   inscripcionPublicaSchema,
   type InscripcionPublicaInput,
-  type Plan,
 } from '@potrero/shared';
 import { auditar } from '../comun/auditoria.js';
 import { type Contexto, Ctx, ErrorNegocio, noEncontrado, Publico, Zod } from '../comun/http.js';
@@ -133,7 +132,7 @@ export class PublicoService {
     return {
       urlPago: pref.urlPago,
       monto: r.cargo.monto,
-      comision: comisionPlataforma(r.cargo.monto, org.plan as Plan, 'MERCADO_PAGO'),
+      cargoServicio: cargoPorServicio(r.cargo.monto, { absorbe: org.absorbeCargoServicio }).cargo,
     };
   }
 }
@@ -184,7 +183,13 @@ export class PanelController {
           () =>
             tx.pago.findMany({
               where: { estado: 'APROBADO' },
-              select: { monto: true, comisionPlataforma: true, metodo: true },
+              select: {
+                monto: true,
+                cargoServicio: true,
+                costoMercadoPago: true,
+                cargoAbsorbido: true,
+                metodo: true,
+              },
             }),
           () =>
             tx.cargo.findMany({
@@ -243,7 +248,10 @@ export class PanelController {
         debe: x.monto - x.pagos.reduce((s, p) => s + p.monto, 0),
       }));
       const cobrado = pagos.reduce((s, p) => s + p.monto, 0);
-      const comisiones = pagos.reduce((s, p) => s + p.comisionPlataforma, 0);
+      const cargoAbsorbido = pagos.reduce(
+        (s, p) => s + (p.cargoAbsorbido ? p.cargoServicio + p.costoMercadoPago : 0),
+        0,
+      );
       const alertas = [
         ...(sinCerrar.length
           ? [
@@ -288,8 +296,8 @@ export class PanelController {
         torneos,
         dinero: {
           cobrado,
-          comisiones,
-          neto: cobrado - comisiones,
+          cargoAbsorbido,
+          neto: cobrado - cargoAbsorbido,
           pendiente: deudores.reduce((s, d) => s + d.debe, 0),
           online: pagos.filter((p) => p.metodo === 'MERCADO_PAGO').reduce((s, p) => s + p.monto, 0),
         },

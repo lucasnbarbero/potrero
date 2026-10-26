@@ -29,6 +29,9 @@ export interface LigaResumen {
   nombre: string;
   slug: string;
   plan: Plan;
+  fundadora: boolean;
+  /** Suscripción mensual que paga (con el descuento de fundadora). */
+  cuotaMensual: number;
   localidad: string | null;
   mpConectado: boolean;
   creadaEn: string;
@@ -40,10 +43,17 @@ export interface LigaResumen {
   partidosCerrados: number;
   actas: { cargadas: number; vencidos: number };
   cobrado: number;
-  comision: number;
+  cargoServicio: number;
   ultimoUso: string | null;
   salud: EstadoDeSalud;
   alertas: AlertaDeSalud[];
+}
+
+/** Ingresos de Gregal: suscripciones (MRR) más cargos por servicio del mes. */
+export interface IngresosGregal {
+  suscripciones: number;
+  cargosDelMes: number;
+  total: number;
 }
 
 export interface InicioGregal {
@@ -53,6 +63,7 @@ export interface InicioGregal {
   jugadores: number;
   cobros: CobrosPorMedio;
   tasa: { sobreOnline: number; sobreTotal: number };
+  ingresos: IngresosGregal;
   partidosPorSemana: { semana: string; cantidad: number }[];
   ligasPorMes: { mes: string; cantidad: number }[];
   enRiesgo: { id: string; nombre: string; salud: EstadoDeSalud; alertas: AlertaDeSalud[] }[];
@@ -79,7 +90,7 @@ export type OrganizacionGregal = Omit<LigaResumen, 'torneos'> & {
     id: string;
     medio: string;
     monto: number;
-    comision: number;
+    cargoServicio: number;
     fecha: string;
     concepto: string;
     equipo: string;
@@ -89,8 +100,15 @@ export type OrganizacionGregal = Omit<LigaResumen, 'torneos'> & {
 export interface DineroGregal {
   total: CobrosPorMedio;
   tasa: { sobreOnline: number; sobreTotal: number };
+  ingresos: IngresosGregal;
   porMes: CobrosDelMes[];
-  porLiga: (CobrosPorMedio & { id: string; nombre: string; plan: Plan })[];
+  porLiga: (CobrosPorMedio & {
+    id: string;
+    nombre: string;
+    plan: Plan;
+    fundadora: boolean;
+    cuotaMensual: number;
+  })[];
 }
 
 export interface FilaAuditoria {

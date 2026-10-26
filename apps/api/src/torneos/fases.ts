@@ -31,6 +31,7 @@ import {
 } from '@potrero/shared';
 import { auditar } from '../comun/auditoria.js';
 import { type Contexto, Ctx, ErrorNegocio, noEncontrado, Permiso, Zod } from '../comun/http.js';
+import { exigirLimiteDelPlan } from '../comun/plan.js';
 import { slugUnico } from '../comun/slug.js';
 import { DbService, enSerie, type Tx } from '../db/db.service.js';
 import type { Fase, Prisma } from '../generated/prisma/client.js';
@@ -273,6 +274,7 @@ export class FasesService {
     if (errores.length)
       throw new ErrorNegocio(`El formato tiene errores: ${errores.map((e) => e.mensaje).join(' ')}`);
     return this.db.enOrg(c.organizacionId, async (tx) => {
+      await exigirLimiteDelPlan(tx, c.organizacionId, 'torneosActivos');
       const slug = await slugUnico(
         d.nombre,
         async (s) => !!(await tx.torneo.findFirst({ where: { slug: s } })),
