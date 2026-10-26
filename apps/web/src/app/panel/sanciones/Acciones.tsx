@@ -1,7 +1,7 @@
 'use client';
 import { Icono } from '@potrero/ui';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Campo, MensajeError, Selector, useEnvio } from '@/componentes/formulario';
 import { api } from '@/lib/cliente';
 import { pesos } from '@/lib/formato';
@@ -100,6 +100,17 @@ const TIPOS = [
   ['OTRO', 'Otro'],
 ] as const;
 
+type PartidoParaExpediente = {
+  id: string;
+  fecha: number;
+  fase: string;
+  estado: string;
+  localId: string;
+  visitanteId: string;
+  local: string;
+  visitante: string;
+};
+
 /** Abrir un expediente a mano: un caso que no salió del acta (agresión, hinchada). */
 export function AbrirExpediente({
   torneoId,
@@ -111,6 +122,44 @@ export function AbrirExpediente({
   const router = useRouter();
   const { enviando, error, enviar } = useEnvio();
   const [abierto, setAbierto] = useState(false);
+  // Jugador (del equipo elegido) y partido opcional (F16): con jugador, el tribunal puede suspender.
+  const [equipoId, setEquipoId] = useState(equipos[0]?.id ?? '');
+  const [jugadores, setJugadores] = useState<{ id: string; nombre: string }[]>([]);
+  const [partidos, setPartidos] = useState<PartidoParaExpediente[]>([]);
+  useEffect(() => {
+    if (!abierto) return;
+    let vivo = true;
+    void api<PartidoParaExpediente[]>('GET', `/torneos/${torneoId}/partidos`)
+      .then((ps) => vivo && setPartidos(ps))
+      .catch(() => undefined);
+    return () => {
+      vivo = false;
+    };
+  }, [abierto, torneoId]);
+  useEffect(() => {
+    if (!abierto || !equipoId) return;
+    let vivo = true;
+    void api<{
+      plantel: { numero: number | null; jugador: { id: string; nombre: string; apellido: string } }[];
+    }>('GET', `/equipos/${equipoId}`)
+      .then(
+        (e) =>
+          vivo &&
+          setJugadores(
+            e.plantel.map((p) => ({
+              id: p.jugador.id,
+              nombre: `${p.numero != null ? `${p.numero} · ` : ''}${p.jugador.nombre} ${p.jugador.apellido}`,
+            })),
+          ),
+      )
+      .catch(() => vivo && setJugadores([]));
+    return () => {
+      vivo = false;
+    };
+  }, [abierto, equipoId]);
+  const delEquipo = partidos.filter(
+    (p) => (p.localId === equipoId || p.visitanteId === equipoId) && p.estado !== 'PROGRAMADO',
+  );
   if (!abierto)
     return (
       <button className="btn-volt" onClick={() => setAbierto(true)}>
@@ -130,6 +179,8 @@ export function AbrirExpediente({
             tipo: f.get('tipo'),
             torneoId,
             equipoId: f.get('equipoId'),
+            jugadorId: (f.get('jugadorId') as string) || undefined,
+            partidoId: (f.get('partidoId') as string) || undefined,
             motivo: f.get('motivo'),
             informeArbitro: (f.get('informeArbitro') as string) || undefined,
           });
@@ -145,10 +196,31 @@ export function AbrirExpediente({
           </option>
         ))}
       </Selector>
-      <Selector etiqueta="Equipo" name="equipoId">
+      <Selector
+        etiqueta="Equipo"
+        name="equipoId"
+        value={equipoId}
+        onChange={(e) => setEquipoId(e.target.value)}
+      >
         {equipos.map((q) => (
           <option key={q.id} value={q.id}>
             {q.nombre}
+          </option>
+        ))}
+      </Selector>
+      <Selector etiqueta="Jugador" name="jugadorId" key={`j-${equipoId}`}>
+        <option value="">Todo el equipo (solo multa)</option>
+        {jugadores.map((j) => (
+          <option key={j.id} value={j.id}>
+            {j.nombre}
+          </option>
+        ))}
+      </Selector>
+      <Selector etiqueta="Partido (opcional)" name="partidoId" key={`p-${equipoId}`}>
+        <option value="">Sin partido</option>
+        {delEquipo.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.fase === 'LLAVE' ? 'Llave' : `Fecha ${p.fecha}`} · {p.local} - {p.visitante}
           </option>
         ))}
       </Selector>

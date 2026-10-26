@@ -25,6 +25,13 @@ const nombreDelDia = (dia: string) =>
     month: 'long',
   }).format(new Date(`${dia}T12:00:00-03:00`));
 
+const ESTADO_PARTIDO: Record<string, string> = {
+  FINALIZADO: 'Jugado',
+  EN_JUEGO: 'En juego',
+  SUSPENDIDO: 'Suspendido',
+  WO: 'Equipo ausente',
+};
+
 export default async function ArbitrosYCanchas({ searchParams }: PageProps<'/panel/arbitros'>) {
   const sp = await searchParams;
   let dia = typeof sp.dia === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(sp.dia) ? sp.dia : '';
@@ -91,7 +98,7 @@ export default async function ArbitrosYCanchas({ searchParams }: PageProps<'/pan
                   </div>
                 ) : (
                   <span className="pill">
-                    {p.estado === 'FINALIZADO' ? 'Jugado' : p.estado}
+                    {ESTADO_PARTIDO[p.estado] ?? p.estado}
                     {p.arbitro ? ` · ${p.arbitro}` : ''}
                   </span>
                 )}
@@ -114,6 +121,7 @@ export default async function ArbitrosYCanchas({ searchParams }: PageProps<'/pan
                   key={a.id}
                   a={a}
                   partidosDelDia={d.arbitros.find((x) => x.id === a.id)?.partidosDelDia ?? 0}
+                  cuando={dia === hoyAR() ? 'hoy' : 'ese día'}
                 />
               ))}
               {arbitros.length === 0 && (

@@ -16,7 +16,8 @@
     "@potrero/ui": "workspace:*",
     "next": "^16.4.2",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "read-excel-file": "^9.3.12"
   },
   "devDependencies": {
     "@potrero/config": "workspace:*",

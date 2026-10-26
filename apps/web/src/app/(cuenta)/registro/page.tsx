@@ -13,7 +13,8 @@ export default function Registro() {
         const f = Object.fromEntries(new FormData(e.currentTarget));
         enviar(async () => {
           await api('POST', '/auth/registro', f);
-          window.location.href = '/panel';
+          // Una liga recién creada arranca por el asistente de configuración inicial (E25-01).
+          window.location.href = '/panel/configuracion';
         });
       }}
     >

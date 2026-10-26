@@ -242,3 +242,735 @@ test('sanciones: levantar una suspensión pagando (opción del reglamento) y el 
   await expect(page.locator('tr', { hasText: `Juan Rayo ${n}` })).toContainText('1');
   await foto(page, '24-sanciones-historial');
 });
+
+test('métricas: retención, cobro por medio, canchas y horarios con filtro por período y torneo', async ({ page }) => {
+  await page.goto('/panel/metricas');
+  await expect(page).toHaveURL(/ingresar/);
+  await page.getByLabel('Email').fill('demo@potrero.app');
+  await page.getByLabel('Contraseña').fill('potrero-demo-2026');
+  await page.getByRole('button', { name: 'Ingresar' }).click();
+  await page.getByRole('complementary').getByRole('link', { name: 'Métricas' }).click();
+  await expect(page.getByRole('heading', { name: 'Métricas', level: 1 })).toBeVisible();
+
+  // Temporada: de Clausura 2025 a Apertura 2026 volvieron 5 de 7 equipos.
+  await expect(page.getByTestId('kpi-retencion')).toHaveText('71%');
+  await expect(page.getByTestId('retencion')).toContainText('5 de 7');
+  await expect(page.getByTestId('kpi-cobro')).toHaveText(/\d+%/);
+  await expect(page.getByTestId('medio-EFECTIVO')).toContainText('%');
+  await expect(page.getByTestId('insight-horarios')).toContainText('los sábados');
+  await expect(page.getByTestId('cobro-por-torneo')).toContainText('Apertura 2026');
+  await expect(page.getByTestId('canchas')).toContainText('Cancha 1');
+  await foto(page, '40-metricas');
+
+  // Histórico: entran los torneos del año pasado y el efectivo pasa a ser el medio principal.
+  await page.getByRole('link', { name: 'Histórico' }).click();
+  await expect(page).toHaveURL(/periodo=HISTORICO/);
+  await expect(page.getByTestId('kpi-retencion')).toHaveText('57%');
+  await expect(page.getByTestId('cobro-por-torneo')).toContainText('Apertura 2025');
+  await expect(page.getByTestId('kpi-ocupacion')).not.toHaveText('—');
+
+  // Un torneo puntual: Clausura 2025 y quiénes no volvieron.
+  await page.getByRole('navigation', { name: 'Torneo' }).getByRole('link', { name: 'Clausura 2025' }).click();
+  await expect(page).toHaveURL(/torneo=/);
+  await expect(page.getByTestId('cobro-por-torneo').locator('tbody tr')).toHaveCount(1);
+  await expect(page.getByTestId('retencion')).toContainText('Los Halcones');
+  await foto(page, '41-metricas-torneo');
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/panel/metricas');
+  await expect(page.getByTestId('kpi-retencion')).toBeVisible();
+  const ancho = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(ancho).toBeLessThanOrEqual(390);
+  await foto(page, '42-metricas-celular');
+});
+
+test('configuración inicial: asistente de 5 pasos e importación desde Excel (E25)', async ({ page }) => {
+  // El usuario demo abre el asistente desde el menú aunque su liga ya esté configurada.
+  await page.goto('/ingresar');
+  await page.getByLabel('Email').fill('demo@potrero.app');
+  await page.getByLabel('Contraseña').fill('potrero-demo-2026');
+  await page.getByRole('button', { name: 'Ingresar' }).click();
+  await page.waitForURL(/\/panel/);
+  await page.getByRole('link', { name: 'Configuración' }).click();
+  await expect(page.getByRole('heading', { name: 'Tu liga lista en menos de 30 minutos.' })).toBeVisible();
+  await expect(page.getByTestId('paso-mercadoPago')).toContainText('Conectado');
+  await foto(page, '40-configuracion-demo');
+
+  // Un archivo con errores muestra fila, columna y motivo, y no deja importar.
+  await page.goto('/panel/configuracion?paso=importacion');
+  await page
+    .getByTestId('archivo-importacion')
+    .setInputFiles('public/plantillas/potrero-ejemplo-con-errores.xlsx');
+  const errores = page.getByTestId('errores-importacion');
+  await expect(errores).toContainText('Hay 5 errores');
+  await expect(errores).toContainText('Jugadores · fila 6 · DNI: El DNI se repite con la fila 3.');
+  await expect(page.getByTestId('confirmar-importacion')).toBeDisabled();
+  await foto(page, '41-importacion-errores');
+
+  // Una liga recién creada arranca por el asistente.
+  await page.context().clearCookies();
+  const n = Date.now() % 1_000_000;
+  await page.goto('/registro');
+  await page.getByLabel('Nombre de la liga').fill(`Liga Nueva ${n}`);
+  await page.getByLabel('Tu nombre').fill('Organizador Demo');
+  await page.getByLabel('Email').fill(`nueva-${n}@potrero.app`);
+  await page.getByLabel('Contraseña').fill('clave-segura-2026');
+  await page.getByRole('button', { name: 'Crear mi liga' }).click();
+  await page.waitForURL(/\/panel\/configuracion/);
+  await expect(page.getByTestId('progreso')).toHaveText('0%');
+
+  // 1 · Organización
+  const paso1 = page.getByTestId('paso-organizacion');
+  await paso1.getByLabel('Localidad').fill('Lanús');
+  await paso1.getByLabel('Provincia').fill('Buenos Aires');
+  await paso1.getByRole('button', { name: 'Guardar y continuar' }).click();
+  // 2 · Mercado Pago (informativo)
+  await page.getByTestId('paso-mercadoPago').getByRole('button', { name: 'Conectar después' }).click();
+  // 3 · Marca
+  const paso3 = page.getByTestId('paso-marca');
+  await paso3.getByRole('button', { name: 'Color #38bdf8' }).click();
+  await foto(page, '42-configuracion-marca');
+  await paso3.getByRole('button', { name: 'Guardar y continuar' }).click();
+  // 4 · Reglamento
+  await page.getByTestId('paso-reglamento').getByRole('button', { name: 'Usar este reglamento' }).click();
+  await expect(page.getByTestId('progreso')).toHaveText('80%');
+
+  // 5 · Importación del ejemplo: vista previa y confirmación.
+  await page.getByTestId('archivo-importacion').setInputFiles('public/plantillas/potrero-ejemplo.xlsx');
+  await expect(page.getByTestId('vista-previa')).toBeVisible();
+  await page.getByRole('button', { name: /Jugadores \(80\)/ }).click();
+  await foto(page, '43-importacion-vista-previa');
+  await page.getByRole('button', { name: 'Importar 8 equipos, 80 jugadores y 4 canchas' }).click();
+  await expect(page.getByTestId('importacion-lista')).toContainText('8 equipos, 80 jugadores y 4 canchas');
+  await expect(page.getByTestId('progreso')).toHaveText('100%');
+  await foto(page, '44-importacion-lista');
+  await page.getByRole('link', { name: 'Ver equipos' }).click();
+  await expect(page.getByText('Defensores de Lanús')).toBeVisible();
+});
+
+test('sponsors: sitio público con "Publicidad", medición, panel, regla de menores y reporte', async ({
+  page,
+}) => {
+  // Sitio público: el banner de cabecera se señaliza como publicidad y suma una impresión sin cookies.
+  const impresion = page.waitForRequest(
+    (r) => r.url().includes('/api/sponsors-publico/liga-barrial-sur/impresiones') && r.method() === 'POST',
+  );
+  await page.goto('/t/liga-barrial-sur/apertura-2026');
+  const cabecera = page.getByTestId('sponsors-CABECERA');
+  await expect(cabecera).toContainText('Publicidad');
+  await expect(cabecera).toContainText('Kiosco Don Pepe');
+  await expect(page.getByTestId('sponsors-GOLEADORES')).toContainText('Gimnasio Movimiento');
+  await expect(page.getByTestId('sponsors-TARJETA_RESULTADO')).toContainText('Pizzería Roma');
+  expect((await impresion).headers()['cookie']).toBeUndefined();
+  await foto(page, '30-sitio-sponsors');
+  // El clic pasa por un redirect que lo cuenta y lleva al link del sponsor.
+  const href = await cabecera.getByRole('link').first().getAttribute('href');
+  expect(href).toMatch(/\/api\/sponsors-publico\/liga-barrial-sur\/clic\//);
+  const clic = await page.request.get(href!, { maxRedirects: 0 });
+  expect(clic.status()).toBe(302);
+  expect(clic.headers()['location']).toBe('https://example.com/kiosco-don-pepe');
+
+  // Panel del organizador.
+  await page.goto('/ingresar');
+  await page.getByLabel('Email').fill('demo@potrero.app');
+  await page.getByLabel('Contraseña').fill('potrero-demo-2026');
+  await page.getByRole('button', { name: 'Ingresar' }).click();
+  await expect(page.getByRole('heading', { name: 'Hoy en tu liga' })).toBeVisible();
+  await page.getByRole('link', { name: 'Sponsors' }).first().click();
+  await expect(page.getByRole('heading', { name: 'Sponsors', level: 1 })).toBeVisible();
+  const lista = page.getByTestId('auspiciantes');
+  for (const n of ['Kiosco Don Pepe', 'Gimnasio Movimiento', 'Pizzería Roma', 'Seguros La Cancha'])
+    await expect(lista).toContainText(n);
+  await expect(lista).toContainText('Vence en 5 días');
+  await expect(page.getByTestId('impresiones')).toContainText('mil');
+  await expect(page.getByTestId('espacios').getByRole('button', { name: 'Ofrecer' })).toHaveCount(1);
+  await foto(page, '31-sponsors');
+
+  // Regla: en un torneo con menores no se vende alcohol.
+  const n = Date.now() % 100000;
+  await page.getByRole('button', { name: 'Nuevo sponsor' }).click();
+  await page.getByLabel('Nombre').fill(`Cervecería E2E ${n}`);
+  await page.getByLabel('Rubro').selectOption('ALCOHOL');
+  await page.getByRole('button', { name: 'Guardar sponsor' }).click();
+  await expect(lista).toContainText(`Cervecería E2E ${n}`);
+  await page.getByTestId('espacios').getByRole('button', { name: 'Ofrecer' }).click();
+  const dialogo = page.getByRole('dialog', { name: 'Vender un espacio' });
+  await dialogo
+    .locator('select')
+    .nth(0)
+    .selectOption({ label: `Cervecería E2E ${n}` });
+  await dialogo.locator('select').nth(1).selectOption({ label: 'Apertura 2026 · con menores' });
+  await dialogo.getByLabel(/Monto acordado/).fill('50000');
+  await expect(dialogo).toContainText('no se aceptan sponsors de apuestas, alcohol ni tabaco');
+  await dialogo.getByRole('button', { name: 'Vender espacio' }).click();
+  await expect(dialogo.getByRole('alert')).toContainText('menores');
+  await foto(page, '32-sponsors-menores');
+  await dialogo.getByRole('button', { name: 'Cerrar' }).click();
+
+  // Reporte imprimible y descargable.
+  await page.getByTestId('generar-reporte').click();
+  await expect(page.getByTestId('reporte-sponsor')).toContainText('Reporte de alcance');
+  await expect(page.getByTestId('reporte-impresiones')).not.toHaveText('0');
+  await expect(page.getByRole('cell', { name: 'Banner del sitio' })).toBeVisible();
+  await foto(page, '33-reporte-sponsor');
+  const csv = await page.request.get((await page.getByTestId('descargar-csv').getAttribute('href'))!);
+  expect(csv.headers()['content-type']).toMatch(/text\/csv/);
+  expect(await csv.text()).toMatch(/Impresiones;\d+/);
+
+  // En el celular.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/panel/sponsors');
+  await expect(page.getByRole('heading', { name: 'Sponsors', level: 1 })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await foto(page, '34-sponsors-celular');
+});
+
+test('usuarios con rol, invitación y panel del capitán (E04-09, E19)', async ({ page, browser }) => {
+  // El organizador ve a los miembros, la invitación pendiente e invita a un capitán: el link queda para compartir.
+  await page.goto('/ingresar');
+  await page.getByLabel('Email').fill('demo@potrero.app');
+  await page.getByLabel('Contraseña').fill('potrero-demo-2026');
+  await page.getByRole('button', { name: 'Ingresar' }).click();
+  await expect(page.getByRole('heading', { name: 'Hoy en tu liga' })).toBeVisible();
+  await page.getByRole('link', { name: 'Usuarios', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Usuarios' })).toBeVisible();
+  await expect(page.getByTestId('miembros')).toContainText('Matías Gómez');
+  await expect(page.getByTestId('miembros')).toContainText('Tesorero');
+  await expect(page.getByTestId('invitacion').filter({ hasText: 'Marcos Costa' })).toBeVisible();
+  await foto(page, '40-usuarios');
+  const email = `capitan-${Date.now() % 1_000_000}@ejemplo.com.ar`;
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Rol').selectOption('CAPITAN');
+  await page.getByLabel('Equipo').selectOption({ label: 'Real Barrio' });
+  await page.getByRole('button', { name: 'Crear invitación' }).click();
+  const link = await page.getByLabel('Link de la invitación').inputValue();
+  expect(link).toContain('/invitacion/');
+  await expect(page.getByRole('link', { name: 'Mandar por WhatsApp' })).toBeVisible();
+  await foto(page, '41-usuarios-link');
+
+  // El invitado abre el link, crea su cuenta y entra directo a su equipo.
+  const invitado = await (await browser.newContext()).newPage();
+  await invitado.goto(new URL(link).pathname);
+  await expect(invitado.getByRole('heading', { name: /capitán de Real Barrio/ })).toBeVisible();
+  await foto(invitado, '42-invitacion');
+  await invitado.getByLabel('Tu nombre y apellido').fill('Capitán Invitado');
+  await invitado.getByLabel('Elegí una contraseña').fill('clave-de-prueba-1');
+  await invitado.getByRole('button', { name: 'Crear cuenta y aceptar' }).click();
+  await expect(invitado).toHaveURL(/\/capitan/);
+  await expect(invitado.getByRole('heading', { level: 1 })).toHaveText('Real Barrio');
+  // Al panel del organizador no entra.
+  await invitado.goto('/panel/caja');
+  await expect(invitado).toHaveURL(/\/capitan/);
+  await invitado.context().close();
+
+  // El capitán de demo: próximo partido, convocatoria, documentación, sanciones, descargo y plantel.
+  const cap = await (await browser.newContext()).newPage();
+  await cap.goto('/ingresar');
+  await cap.getByLabel('Email').fill('capitan@potrero.app');
+  await cap.getByLabel('Contraseña').fill('potrero-demo-2026');
+  await cap.getByRole('button', { name: 'Ingresar' }).click();
+  await expect(cap).toHaveURL(/\/capitan/);
+  await expect(cap.getByText('Capitán · Matías Gómez')).toBeVisible();
+  await expect(cap.getByTestId('proximo')).toContainText('confirmaron');
+  await expect(cap.getByTestId('documentacion')).toContainText('Apto físico');
+  await expect(cap.getByTestId('sanciones')).toContainText('Roja directa');
+  await expect(cap.getByTestId('tabla').locator('tbody tr')).toHaveCount(8);
+  await foto(cap, '43-capitan');
+
+  const convocatoria = cap.getByTestId('convocatoria');
+  await convocatoria.getByRole('button', { name: 'Pendientes' }).click();
+  const primero = convocatoria.getByTestId('convocado').first();
+  const nombre = (await primero.locator('b').first().textContent())!;
+  await primero.getByRole('button', { name: `${nombre} va` }).click();
+  await convocatoria.getByRole('button', { name: 'Todos' }).click();
+  await expect(convocatoria.getByTestId('convocado').filter({ hasText: nombre })).toContainText('Va');
+
+  const expediente = cap.getByTestId('expediente-capitan').filter({ hasText: 'Roja directa' });
+  const editar = expediente.getByRole('button', { name: 'Editar descargo' });
+  if (await editar.isVisible()) await editar.click();
+  await expediente.getByLabel('Tu descargo para el tribunal').fill('Fue una pelota dividida, no hubo intención.');
+  await expediente.getByRole('button', { name: 'Enviar descargo' }).click();
+  await expect(expediente).toContainText('Descargo enviado');
+
+  const nuevo = `Prueba${Date.now() % 100000}`;
+  await cap.getByRole('button', { name: 'Sumar jugador' }).click();
+  await cap.getByLabel('Nombre', { exact: true }).fill(nuevo);
+  await cap.getByLabel('Apellido').fill('Capitán');
+  await cap.getByRole('button', { name: 'Sumar', exact: true }).click();
+  const fila = cap.getByTestId('jugador-plantel').filter({ hasText: nuevo });
+  await expect(fila).toBeVisible();
+  await foto(cap, '44-capitan-plantel');
+  cap.once('dialog', (d) => d.accept());
+  await fila.getByRole('button', { name: `Dar de baja a ${nuevo} Capitán` }).click();
+  await expect(fila).toHaveCount(0);
+  await cap.context().close();
+});
+
+test('sitio público: página del partido y perfil del jugador (E20, E21)', async ({ page, request }) => {
+  // Del sitio del torneo a un resultado: marcador, crónica, línea de tiempo y tarjeta para compartir.
+  await page.goto('/t/liga-barrial-sur/apertura-2026');
+  const ultimos = page.locator('section', { hasText: 'Últimos resultados' });
+  await ultimos.getByRole('link').first().click();
+  await expect(page).toHaveURL(/\/partido\//);
+  await expect(page.getByTestId('marcador')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Crónica' })).toBeVisible();
+  await expect(page.getByText('Generada automáticamente')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Planteles' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Enviar por WhatsApp' })).toHaveAttribute('href', /wa\.me/);
+  // Open Graph: la vista previa de WhatsApp usa la tarjeta de resultado.
+  const og = await page.locator('meta[property="og:image"]').getAttribute('content');
+  expect(og).toMatch(/\/tarjeta$/);
+  const imagen = await request.get(new URL(og!).pathname + '?formato=historia');
+  expect(imagen.headers()['content-type']).toBe('image/png');
+  await foto(page, '30-partido-publico');
+
+  // Del goleador del torneo a su perfil: estadísticas, trayectoria en varios torneos y sin datos personales.
+  await page.goto('/t/liga-barrial-sur/apertura-2026');
+  const goleadores = page.locator('section', { hasText: 'Goleadores' });
+  await goleadores.getByRole('link').first().click();
+  await expect(page).toHaveURL(/\/jugador\//);
+  await expect(page.getByRole('heading', { name: 'Trayectoria' })).toBeVisible();
+  await expect(page.getByTestId('trayectoria').locator('.ev')).not.toHaveCount(1);
+  await expect(page.getByTestId('dato-Goles')).toBeVisible();
+  await expect(page.locator('body')).not.toContainText(/DNI|@ejemplo\.com|3564/);
+  await foto(page, '31-perfil-jugador');
+
+  // El jugador destacado de la demo jugó el Verano 2025 en otro equipo (Fénix FC).
+  await expect(page.getByTestId('trayectoria')).toContainText('Verano 2025');
+  await expect(page.getByTestId('trayectoria')).toContainText('Fénix FC');
+
+  // Desde un partido del perfil se vuelve a la página del partido.
+  await page
+    .getByRole('heading', { name: 'Últimos partidos' })
+    .locator('..')
+    .getByRole('link')
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/partido\//);
+
+  // Un partido por jugar muestra horario y cancha.
+  await page.goto('/t/liga-barrial-sur/apertura-2026');
+  await page.locator('section', { hasText: 'Próxima fecha' }).getByRole('link').first().click();
+  await expect(page.getByRole('heading', { name: 'Cuándo y dónde' })).toBeVisible();
+  await foto(page, '32-partido-por-jugar');
+});
+
+test('panel del organizador: en vivo, alertas, sugerencias, cuenta y organización activa', async ({
+  page,
+}) => {
+  await page.goto('/ingresar');
+  await page.getByLabel('Email').fill('demo@potrero.app');
+  await page.getByLabel('Contraseña').fill('potrero-demo-2026');
+  await page.getByRole('button', { name: 'Ingresar' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText(
+    /(Buen día|Buenas tardes|Buenas noches), Carla\./,
+  );
+
+  // Partido en vivo con marcador y acceso directo al acta.
+  await expect(page.getByTestId('en-vivo')).toContainText('En vivo');
+  await expect(page.getByLabel('Marcador')).toHaveText('2:1');
+
+  // Alertas accionables, cada una con su botón.
+  const atencion = page.getByRole('region', { name: 'Requiere atención' });
+  for (const titulo of ['Jugó un suspendido', 'Acta sin cargar', 'Partido sin árbitro'])
+    await expect(atencion).toContainText(titulo);
+  await expect(page.getByTestId('sugerencia')).toContainText('Designá árbitros');
+  await foto(page, '30-panel');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await foto(page, '31-panel-celular');
+  await page.setViewportSize({ width: 1280, height: 800 });
+
+  await page.getByRole('link', { name: 'Abrir acta' }).click();
+  await expect(page).toHaveURL(/\/panel\/partidos\//);
+  await page.goto('/panel');
+
+  // Conciliar: abrir la caja asienta el pago y la alerta se va (la semilla recién cargada trae uno).
+  const pago = atencion.locator('[data-alerta="PAGO_SIN_CONCILIAR"]');
+  if (await pago.count()) {
+    await expect(pago).toContainText('1 pago sin conciliar');
+    await pago.getByRole('link', { name: 'Conciliar' }).click();
+    await expect(page).toHaveURL(/\/panel\/caja/);
+    await page.goto('/panel');
+  }
+  await expect(atencion.locator('[data-alerta="PAGO_SIN_CONCILIAR"]')).toHaveCount(0);
+
+  // Selector de organización: la demo tiene una segunda liga.
+  await page.getByTestId('menu-cuenta').click();
+  await foto(page, '32-menu-cuenta');
+  await page.getByRole('menuitemradio', { name: /Veteranos del Oeste/ }).click();
+  await expect(page.getByText('Senior +40 · F11')).toBeVisible();
+  await expect(page.getByTestId('en-vivo')).toHaveCount(0);
+
+  // Mi cuenta: organizaciones, verificación del email (simulada) y vuelta a la liga principal.
+  await page.goto('/panel/cuenta');
+  await expect(page.getByRole('heading', { name: 'Mi cuenta' })).toBeVisible();
+  await foto(page, '33-mi-cuenta');
+  const sinVerificar = page.getByTestId('email-sin-verificar');
+  if (await sinVerificar.count()) {
+    await sinVerificar.getByRole('button', { name: 'Mandarme el link de verificación' }).click();
+    await sinVerificar.getByTestId('link-dev').click();
+    await expect(page.getByRole('heading', { name: 'Email verificado' })).toBeVisible();
+    await page.getByRole('link', { name: 'Ir a mi cuenta' }).click();
+  }
+  await expect(page.getByText('Email verificado')).toBeVisible();
+  await page
+    .locator('li', { hasText: 'Liga Barrial Sur' })
+    .getByRole('button', { name: 'Cambiar a esta' })
+    .click();
+  await expect(page.getByLabel('Marcador')).toBeVisible();
+});
+
+test('recuperar la contraseña con el link de un solo uso (email simulado)', async ({ page }) => {
+  await page.goto('/ingresar');
+  await page.getByRole('link', { name: '¿Te olvidaste la contraseña?' }).click();
+  await expect(page).toHaveURL(/recuperar/);
+  await page.waitForLoadState('networkidle');
+  await page.getByLabel('Email').fill('demo@potrero.app');
+  await page.getByRole('button', { name: 'Mandarme el link' }).click();
+  await expect(page.getByTestId('recuperar-enviado')).toBeVisible();
+  await foto(page, '34-recuperar');
+  const link = await page.getByTestId('link-dev').getAttribute('href');
+  await page.goto(link!);
+  await page.waitForLoadState('networkidle');
+  // Se vuelve a poner la misma contraseña para no romper la demo.
+  await page.getByLabel('Contraseña nueva').fill('potrero-demo-2026');
+  await page.getByLabel('Repetila').fill('potrero-demo-2026');
+  await foto(page, '35-restablecer');
+  await page.getByRole('button', { name: 'Guardar e ingresar' }).click();
+  await expect(page.getByRole('heading', { name: 'Hoy en tu liga' })).toBeAttached();
+  // El link ya no sirve una segunda vez.
+  await page.goto(link!);
+  await expect(page.getByRole('heading', { name: 'El link no sirve' })).toBeVisible();
+});
+
+test('armá el formato: simulador por fases con copa estímulo y validación', async ({ page }) => {
+  await page.goto('/ingresar');
+  await page.getByLabel('Email').fill('demo@potrero.app');
+  await page.getByLabel('Contraseña').fill('potrero-demo-2026');
+  await page.getByRole('button', { name: 'Ingresar' }).click();
+  await page.waitForURL((u) => u.pathname.startsWith('/panel'));
+  await page.goto('/panel/torneos');
+  await page.getByRole('link', { name: 'Armá el formato' }).click();
+  await expect(page.getByRole('heading', { name: 'Armá el formato' })).toBeVisible();
+  await expect(page.getByRole('note')).toContainText('Simulador: así quedaría tu torneo.');
+
+  await page.getByLabel('Equipos', { exact: true }).fill('20');
+  await page.getByRole('button', { name: /Grupos \+ playoffs \+ copa estímulo/ }).click();
+  // 2 grupos de 10 (9 sábados), playoffs ida y vuelta con final única y copa estímulo en paralelo.
+  await expect(page.getByTestId('total-sabados')).toHaveText('16');
+  await expect(page.getByTestId('total-partidos')).toHaveText('140');
+  await expect(page.getByTestId('nodo-f2')).toContainText('Los 8 primeros de cada grupo de Fase 1');
+  await expect(page.getByTestId('nodo-f3')).toContainText('Los perdedores de Octavos de final de Playoffs');
+  await expect(page.getByTestId('cronograma').locator('li')).toHaveCount(16);
+  await expect(page.getByRole('region', { name: 'Revisá el formato' }).getByRole('alert')).toHaveCount(0);
+  await foto(page, '40-arma-el-formato');
+
+  // Error de validación: pedir hasta el 12º de grupos de 10.
+  await page.getByTestId('fase-f2').getByLabel('Hasta el puesto').fill('12');
+  await expect(
+    page.getByRole('region', { name: 'Revisá el formato' }).getByRole('alert').first(),
+  ).toContainText('no hay puesto 12');
+  await expect(page.getByText('Personalizado')).toBeVisible();
+});
+
+// Fallas visibles (F1, F4, F6, F9, F18, F19): sanciones del torneo, avisos por rol, menú según el rol y checkout por
+// concepto.
+test('fallas: sanciones del torneo, menú y avisos por rol, checkout de una multa e inscripción cerrada', async ({
+  page,
+  browser,
+}) => {
+  const ingresar = async (p: Page, email: string) => {
+    await p.goto('/ingresar');
+    await p.getByLabel('Email').fill(email);
+    await p.getByLabel('Contraseña').fill('potrero-demo-2026');
+    await p.getByRole('button', { name: 'Ingresar' }).click();
+    await expect(p.getByRole('heading', { name: 'Hoy en tu liga' })).toBeVisible();
+  };
+  await ingresar(page, 'demo@potrero.app');
+  const api = async <T>(metodo: 'GET' | 'POST', ruta: string, data?: unknown): Promise<T> => {
+    const r = await page.request.fetch(`/api${ruta}`, { method: metodo, data });
+    expect(r.ok(), `${metodo} ${ruta}: ${await r.text()}`).toBe(true);
+    return (await r.json()) as T;
+  };
+
+  // F19: la liga principal tiene Mercado Pago conectado y el dueño ve todo el menú.
+  const lateral = page.locator('aside');
+  await expect(lateral).toContainText('Mercado Pago conectado');
+  await expect(lateral.getByRole('link', { name: 'Usuarios' })).toBeVisible();
+
+  // F1: la pestaña Sanciones no muestra "undefined" ni "próximamente", y lleva a los expedientes.
+  const torneos = await api<{ id: string; nombre: string }[]>('GET', '/torneos');
+  const apertura = torneos.find((t) => t.nombre === 'Apertura 2026')!;
+  await page.goto(`/panel/torneos/${apertura.id}?tab=sanciones`);
+  await expect(page.getByText('Roja directa').first()).toBeVisible();
+  await expect(page.locator('main')).not.toContainText('undefined');
+  await expect(page.locator('main')).not.toContainText('próximamente');
+  await foto(page, '90-torneo-sanciones');
+  await page.locator('main').getByRole('link', { name: 'Sanciones', exact: true }).last().click();
+  await expect(page).toHaveURL(`/panel/sanciones?torneoId=${apertura.id}`);
+
+  // F9: el checkout de una multa dice "Pago acreditado", no que se confirmó la inscripción.
+  const inscripciones = await api<{ equipo: { id: string } }[]>('GET', `/torneos/${apertura.id}/inscripciones`);
+  const exp = await api<{ id: string }>('POST', '/expedientes', {
+    tipo: 'OTRO',
+    torneoId: apertura.id,
+    equipoId: inscripciones[0]!.equipo.id,
+    motivo: 'Incidente de prueba E2E',
+  });
+  const resuelto = await api<{ cargoId: string }>('POST', `/expedientes/${exp.id}/resolver`, {
+    partidos: 0,
+    multa: 1000,
+    resolucion: 'Multa de prueba.',
+  });
+  const { urlPago } = await api<{ urlPago: string }>('POST', `/cargos/${resuelto.cargoId}/link`, {});
+  await page.goto(new URL(urlPago).pathname);
+  await expect(page.getByRole('heading', { name: /Multa/ })).toBeVisible();
+  await page.getByRole('button', { name: 'Pagar (aprobar)' }).click();
+  await expect(page.getByText('Pago acreditado')).toBeVisible();
+  await expect(page.getByText('Tu inscripción quedó confirmada')).toHaveCount(0);
+  await foto(page, '91-checkout-multa');
+
+  // F6: la inscripción pública de un torneo en curso avisa que está cerrada, sin formulario.
+  await page.goto('/t/liga-barrial-sur/apertura-2026/inscripcion');
+  await expect(page.getByRole('heading', { name: 'La inscripción está cerrada' })).toBeVisible();
+  await expect(page.getByLabel('Nombre del equipo')).toHaveCount(0);
+  await foto(page, '92-inscripcion-cerrada');
+
+  // F18: tesorería ve solo lo suyo en el menú y una sección sin permiso muestra un aviso, no un error.
+  const tes = await (await browser.newContext()).newPage();
+  await ingresar(tes, 'tesoreria@potrero.app');
+  const menuTes = tes.locator('aside');
+  await expect(menuTes.getByRole('link', { name: 'Caja' })).toBeVisible();
+  for (const oculto of ['Sanciones', 'Usuarios', 'Documentación', 'Canchas', 'Configuración'])
+    await expect(menuTes.getByRole('link', { name: oculto, exact: true })).toHaveCount(0);
+  await tes.goto('/panel/documentacion');
+  await expect(tes.getByText('Tu rol no tiene acceso a esta sección')).toBeVisible();
+  await foto(tes, '93-sin-permiso-tesoreria');
+  await tes.getByRole('link', { name: 'Volver al panel' }).click();
+  await expect(tes.getByRole('heading', { name: 'Hoy en tu liga' })).toBeVisible();
+
+  // Tribunal: ve Sanciones pero no Caja; entrar a Caja muestra el aviso.
+  const tri = await (await browser.newContext()).newPage();
+  await ingresar(tri, 'tribunal@potrero.app');
+  await expect(tri.locator('aside').getByRole('link', { name: 'Sanciones' })).toBeVisible();
+  await expect(tri.locator('aside').getByRole('link', { name: 'Caja' })).toHaveCount(0);
+  await tri.goto('/panel/caja');
+  await expect(tri.getByText('Tu rol no tiene acceso a esta sección')).toBeVisible();
+});
+
+test('cobros: pago parcial por transferencia, completar, anular, editar y finalizar un torneo', async ({
+  page,
+}) => {
+  await page.goto('/ingresar');
+  await page.getByLabel('Email').fill('demo@potrero.app');
+  await page.getByLabel('Contraseña').fill('potrero-demo-2026');
+  await page.getByRole('button', { name: 'Ingresar' }).click();
+  await expect(page.getByRole('heading', { name: 'Hoy en tu liga' })).toBeVisible();
+
+  // Un torneo propio para no tocar los de la demo (copa: no cuenta en la retención de las métricas), con un equipo
+  // de la liga inscripto ($ 60.000).
+  const n = Date.now() % 100000;
+  const torneo = await (
+    await page.request.post('/api/torneos', {
+      data: { nombre: `Prueba Pagos ${n}`, modalidad: 'F5', formato: 'COPA', cupo: 6, inscripcion: 60000 },
+    })
+  ).json();
+  const equipos = (await (await page.request.get('/api/equipos')).json()) as { id: string; nombre: string }[];
+  const fenix = equipos.find((e) => e.nombre === 'Fénix FC')!;
+  await page.request.post(`/api/torneos/${torneo.id}/inscripciones`, { data: { equipoId: fenix.id } });
+  await page.goto(`/panel/torneos/${torneo.id}?tab=inscripciones`);
+  const fila = page.getByRole('row').filter({ hasText: 'Fénix FC' });
+
+  // Pago parcial por transferencia.
+  await fila.getByRole('button', { name: 'Registrar pago' }).click();
+  const dialogo = page.getByRole('dialog');
+  await expect(dialogo.getByLabel('Monto ($)')).toHaveValue('60000');
+  await dialogo.getByLabel('Monto ($)').fill('20000');
+  await expect(dialogo.getByText(/queda debiendo \$\s*40\.000/)).toBeVisible();
+  await dialogo.getByLabel('Medio').selectOption('TRANSFERENCIA');
+  await dialogo.getByLabel('Comprobante (opcional)').fill('Op. 4455');
+  await foto(page, '36-registrar-pago');
+  await dialogo.getByRole('button', { name: /Registrar pago parcial de/ }).click();
+  await expect(dialogo).toBeHidden();
+  await expect(fila).toContainText(/20\.000\s*\/\s*\$\s*60\.000/);
+  await expect(fila).toContainText('Transferencia');
+  await expect(fila).toContainText('Pendiente');
+
+  // El resto en efectivo: el saldo viene por defecto y el equipo queda al día.
+  await fila.getByRole('button', { name: 'Registrar pago' }).click();
+  await expect(dialogo.getByLabel('Monto ($)')).toHaveValue('40000');
+  await dialogo.getByRole('button', { name: /Registrar pago de/ }).click();
+  await expect(fila).toContainText('Confirmada');
+  await expect(fila).toContainText('Al día');
+
+  // Anular el efectivo (mal cargado) y volver a cobrarlo con el atajo.
+  await fila.getByRole('button', { name: 'Ver pagos (2)' }).click();
+  await dialogo
+    .getByRole('listitem')
+    .filter({ hasText: 'Efectivo' })
+    .getByRole('button', { name: 'Anular' })
+    .click();
+  await dialogo.getByRole('button', { name: 'Sí, anular' }).click();
+  await expect(dialogo.getByText('Anulado')).toBeVisible();
+  await foto(page, '37-pagos-anular');
+  await dialogo.getByRole('button', { name: 'Cerrar' }).click();
+  await expect(fila).toContainText(/20\.000\s*\/\s*\$\s*60\.000/);
+  await fila.getByRole('button', { name: /Cobré \$\s*40\.000 en efectivo/ }).click();
+  await expect(fila).toContainText('Al día');
+
+  // Un pago rechazado en el checkout ofrece intentar de nuevo con un link nuevo.
+  const oeste = equipos.find((e) => e.nombre === 'Defensores del Oeste')!;
+  const ins = await (
+    await page.request.post(`/api/torneos/${torneo.id}/inscripciones`, { data: { equipoId: oeste.id } })
+  ).json();
+  const link = await (await page.request.post(`/api/cargos/${ins.cargo.id}/link`)).json();
+  await page.goto(new URL(link.urlPago).pathname);
+  await page.getByRole('button', { name: 'Simular pago rechazado' }).click();
+  await expect(page.getByText('El pago fue rechazado.')).toBeVisible();
+  await page.getByRole('button', { name: 'Intentar de nuevo' }).click();
+  await expect(page).not.toHaveURL(new RegExp(link.preferenciaId));
+  await expect(page.getByRole('button', { name: 'Pagar (aprobar)' })).toBeVisible();
+  await page.goto(`/panel/torneos/${torneo.id}?tab=inscripciones`);
+
+  // Editar el torneo: el cupo no baja de los inscriptos.
+  await page.getByRole('button', { name: 'Editar' }).click();
+  await dialogo.getByLabel('Nombre').fill(`Prueba Pagos ${n} (editado)`);
+  await dialogo.getByLabel('Cupo de equipos').fill('8');
+  await dialogo.getByLabel('Inscripción por equipo ($)').fill('70000');
+  await expect(dialogo.getByText(/conservan el monto/)).toBeVisible();
+  await dialogo.getByLabel('Puntos por ganar').fill('2');
+  await foto(page, '38-editar-torneo');
+  await dialogo.getByRole('button', { name: 'Guardar cambios' }).click();
+  // Defensores del Oeste tiene un link de pago en curso: conserva el monto anterior.
+  await expect(dialogo.getByText(/1 con pagos conservan el monto anterior/)).toBeVisible();
+  await dialogo.getByRole('button', { name: 'Listo' }).click();
+  await expect(page.getByRole('heading', { name: `Prueba Pagos ${n} (editado)` })).toBeVisible();
+  await expect(page.getByText('2/8')).toBeVisible();
+
+  // Cerrar la inscripción, reabrirla y finalizar.
+  await page.getByRole('button', { name: 'Cerrar inscripción' }).click();
+  await dialogo.getByRole('button', { name: 'Cerrar inscripción' }).click();
+  await expect(page.getByText('En curso', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Reabrir inscripción' }).click();
+  await dialogo.getByRole('button', { name: 'Reabrir inscripción' }).click();
+  await expect(page.getByText('Inscripción abierta', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Finalizar torneo' }).click();
+  await dialogo.getByRole('button', { name: 'Finalizar torneo' }).click();
+  await expect(page.getByText('Finalizado', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Reabrir torneo' })).toBeVisible();
+  await foto(page, '39-torneo-finalizado');
+
+  // En la liga en curso, finalizar avisa cuántos partidos quedan sin jugar (sin confirmar).
+  await page.goto('/panel/torneos');
+  await page.getByRole('link', { name: /Apertura 2026/ }).click();
+  await page.getByRole('button', { name: 'Finalizar torneo' }).click();
+  await expect(dialogo.getByRole('alert')).toContainText(/Quedan \d+ partidos sin jugar/);
+  await dialogo.getByRole('button', { name: 'Cancelar' }).click();
+});
+
+test('acta: equipo ausente con tolerancia y resultado, línea de tiempo por minuto y cierre sin firmas (F11-F14)', async ({
+  page,
+}) => {
+  await page.goto('/ingresar');
+  await page.getByLabel('Email').fill('demo@potrero.app');
+  await page.getByLabel('Contraseña').fill('potrero-demo-2026');
+  await page.getByRole('button', { name: 'Ingresar' }).click();
+  await expect(page.getByRole('heading', { name: 'Hoy en tu liga' })).toBeVisible();
+
+  const api = async <T>(metodo: 'GET' | 'POST', ruta: string, data?: unknown): Promise<T> => {
+    const r = await page.request.fetch(`/api${ruta}`, { method: metodo, data });
+    expect(r.ok(), `${metodo} ${ruta}: ${await r.text()}`).toBe(true);
+    return (await r.json()) as T;
+  };
+  // Liga de dos equipos, ida y vuelta: la ida es hoy a las 00:00 (ya pasó la tolerancia) y la vuelta, más adelante.
+  const n = Date.now() % 100000;
+  const sedes = await api<{ canchas: { id: string; bloqueada: boolean }[] }[]>('GET', '/canchas');
+  const cancha = sedes.flatMap((s) => s.canchas).find((c) => !c.bloqueada)!.id;
+  const torneo = await api<{ id: string; slug: string }>('POST', '/torneos', {
+    nombre: `Torneo E2E ausente ${n}`,
+    modalidad: 'F5',
+    formato: 'LIGA',
+    idaYVuelta: true,
+    cupo: 2,
+    inscripcion: 0,
+  });
+  const nombres = [`Rayo ${n}`, `Trueno ${n}`];
+  for (const nombre of nombres) {
+    const e = await api<{ id: string }>('POST', '/equipos', { nombre });
+    await api('POST', `/equipos/${e.id}/jugadores`, { nombre: 'Juan', apellido: nombre, numero: 10 });
+    await api('POST', `/torneos/${torneo.id}/inscripciones`, { equipoId: e.id });
+  }
+  const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(
+    new Date(),
+  );
+  await api('POST', `/torneos/${torneo.id}/fixture`, {
+    primerDia: hoy,
+    horarios: ['00:00'],
+    canchaIds: [cancha],
+  });
+  const partidos = await api<{ id: string; fecha: number; local: string; visitante: string }[]>(
+    'GET',
+    `/torneos/${torneo.id}/partidos`,
+  );
+  const ida = partidos.find((p) => p.fecha === 1)!;
+  const vuelta = partidos.find((p) => p.fecha === 2)!;
+
+  // Antes de la tolerancia: los botones de equipo ausente están bloqueados y la API también lo rechaza.
+  await page.goto(`/panel/partidos/${vuelta.id}`);
+  await expect(page.getByTestId('estado-sync')).toContainText('En línea');
+  await expect(page.getByRole('button', { name: `${vuelta.local} no se presentó` })).toBeDisabled();
+  await expect(page.getByTestId('ausente-bloqueado')).toContainText('15 minutos');
+  const temprano = await page.request.post(`/api/partidos/${vuelta.id}/wo`, { data: { ganadorId: 'x' } });
+  expect(temprano.status()).toBe(422);
+  // Abrir el acta no la toma (F13).
+  expect((await api<{ dueno: unknown }>('GET', `/partidos/${vuelta.id}`)).dueno).toBeNull();
+
+  // Pasada la tolerancia: se marca y el acta muestra el resultado del reglamento.
+  await page.goto(`/panel/partidos/${ida.id}`);
+  await expect(page.getByTestId('cuenta-wo')).toContainText('Pasó la tolerancia de 15 minutos');
+  await page.getByRole('button', { name: `${ida.visitante} no se presentó` }).click();
+  await expect(page.getByTestId('marcador')).toHaveText('3-0');
+  await expect(page.getByTestId('resultado-ausente')).toHaveText(
+    `Ganó ${ida.local}: ${ida.visitante} no se presentó`,
+  );
+  await foto(page, '40-acta-equipo-ausente');
+  // El sitio público muestra lo mismo.
+  await page.goto(`/t/liga-barrial-sur/${torneo.slug}/partido/${ida.id}`);
+  await expect(page.getByTestId('marcador')).toContainText('3');
+  await expect(page.getByTestId('resultado-ausente')).toHaveText(
+    `Ganó ${ida.local}: ${ida.visitante} no se presentó`,
+  );
+
+  // Línea de tiempo por minuto: se carga 30', 5' y uno sin minuto; se ve 5', 30' y el sin minuto al final.
+  await page.goto(`/panel/partidos/${vuelta.id}`);
+  await page.getByRole('button', { name: 'Iniciar partido' }).click();
+  const minuto = page.getByRole('textbox').first();
+  const fila = page.locator('li', { hasText: `Juan ${vuelta.local}` }).first();
+  await minuto.fill('30');
+  await fila.getByRole('button', { name: 'Gol', exact: true }).click();
+  await minuto.fill('5');
+  await fila.getByRole('button', { name: 'Amarilla' }).click();
+  await minuto.fill('');
+  await fila.getByRole('button', { name: 'Gol', exact: true }).click();
+  const linea = page.getByTestId('linea-de-tiempo').locator('li');
+  await expect(linea).toHaveCount(3);
+  await expect(linea.nth(0)).toContainText("5'");
+  await expect(linea.nth(0)).toContainText('Amarilla');
+  await expect(linea.nth(1)).toContainText("30'");
+  await expect(linea.nth(2)).not.toContainText("'");
+  await expect(page.getByTestId('estado-sync')).toContainText('todo sincronizado', { timeout: 20_000 });
+  await foto(page, '41-acta-linea-de-tiempo');
+
+  // Cierre sin firmas ni justificación: avisa en el momento y el acta sigue abierta.
+  await page.getByRole('button', { name: 'Cerrar acta' }).click();
+  await page.getByRole('button', { name: 'Confirmar cierre' }).click();
+  await expect(page.getByTestId('error-cierre')).toContainText('firmas de los dos capitanes');
+  await expect(page.getByRole('button', { name: 'Confirmar cierre' })).toBeVisible();
+  await page.getByLabel(`Firma del capitán de ${vuelta.local}`).check();
+  await page.getByLabel(`Firma del capitán de ${vuelta.visitante}`).check();
+  await page.getByRole('button', { name: 'Confirmar cierre' }).click();
+  await expect(page.getByText(/Acta cerrada/).first()).toBeVisible();
+  await expect
+    .poll(async () => (await api<{ estado: string }>('GET', `/partidos/${vuelta.id}`)).estado)
+    .toBe('FINALIZADO');
+});

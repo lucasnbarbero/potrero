@@ -7,6 +7,8 @@ import {
   type EventoInput,
   eventosVigentes,
   marcador,
+  puedeMarcarAusente,
+  resultadoPorAusencia,
   sancionesDelPartido,
   tomarActaSchema,
   type TomarActaInput,
@@ -55,6 +57,25 @@ function verificarDueno(p: { actaDispositivo: string | null }, dispositivoId?: s
     );
 }
 
+/**
+ * Abrir el acta no la toma (F13): el dispositivo pasa a ser dueño con su primera carga (iniciar, evento, anulación,
+ * cierre o equipo ausente). Devuelve los datos para guardar en el partido, o nada si ya tiene dueño.
+ */
+function duenoSiLibre(p: { actaDispositivo: string | null }, c: Contexto, dispositivoId?: string) {
+  return dispositivoId && !p.actaDispositivo
+    ? { actaDispositivo: dispositivoId, actaUsuarioId: c.usuarioId, actaTomadaEn: new Date() }
+    : {};
+}
+
+/** Hora de Buenos Aires para los mensajes ("22:15"). */
+const horaArgentina = (d: Date) =>
+  new Intl.DateTimeFormat('es-AR', {
+    timeZone: 'America/Argentina/Buenos_Aires',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(d);
+
 @Injectable()
 export class PartidosService {
   constructor(
@@ -71,7 +92,7 @@ export class PartidosService {
         include: {
           eventos: { orderBy: { creadoEn: 'asc' } },
           cancha: { include: { sede: true } },
-          torneo: true,
+          torneo: { include: { reglamento: true } },
         },
       });
       if (!p) throw noEncontrado('el partido');
@@ -137,7 +158,15 @@ export class PartidosService {
         cancha: p.cancha ? `${p.cancha.sede.nombre} · ${p.cancha.nombre}` : null,
         local: equipo(p.localId),
         visitante: equipo(p.visitanteId),
-        marcador: marcador(p.eventos, p.localId, p.visitanteId),
+        // Con un equipo ausente el resultado lo define el reglamento (se guarda al marcarlo), no los eventos.
+        marcador:
+          p.estado === 'WO' && p.ganadorWOId
+            ? p.golesLocal != null && p.golesVisitante != null
+              ? { local: p.golesLocal, visitante: p.golesVisitante }
+              : resultadoPorAusencia(p.ganadorWOId, p.localId, p.torneo.reglamento.golesWO)
+            : marcador(p.eventos, p.localId, p.visitanteId),
+        ganadorWOId: p.ganadorWOId,
+        toleranciaWOMinutos: p.torneo.reglamento.toleranciaWOMinutos,
         eventos: vigentes.map((e) => ({
           id: e.id,
           clientUuid: e.clientUuid,
@@ -159,11 +188,10 @@ export class PartidosService {
       verificarDueno(p, d.dispositivoId);
       await auditar(tx, c, 'partido.iniciar', 'partido', id);
       // Quien inicia el partido y todavía no tiene dueño, se queda con el acta.
-      const dueno =
-        d.dispositivoId && !p.actaDispositivo
-          ? { actaDispositivo: d.dispositivoId, actaUsuarioId: c.usuarioId, actaTomadaEn: new Date() }
-          : {};
-      return tx.partido.update({ where: { id }, data: { estado: 'EN_JUEGO', ...dueno } });
+      return tx.partido.update({
+        where: { id },
+        data: { estado: 'EN_JUEGO', ...duenoSiLibre(p, c, d.dispositivoId) },
+      });
     });
   }
 
@@ -214,13 +242,26 @@ export class PartidosService {
           cargadoPorId: c.usuarioId,
         },
       });
+      await this.tomarSiLibre(tx, c, p, d.dispositivoId);
       return { evento, repetido: false, advertencia };
     });
   }
 
+  /** El primer dispositivo que escribe en un acta sin dueño se queda con ella (ver `duenoSiLibre`). */
+  private async tomarSiLibre(
+    tx: Tx,
+    c: Contexto,
+    p: { id: string; actaDispositivo: string | null },
+    disp?: string,
+  ) {
+    const dueno = duenoSiLibre(p, c, disp);
+    if ('actaDispositivo' in dueno) await tx.partido.update({ where: { id: p.id }, data: dueno });
+  }
+
   /**
-   * Un solo dueño del acta por partido: el primer dispositivo que la abre se la queda. Otro dispositivo recibe el aviso
-   * de quién la tiene y puede tomarla a propósito (`forzar`), por ejemplo si al delegado se le rompió el celular.
+   * Un solo dueño del acta por partido: el primer dispositivo que carga algo se la queda (abrirla no la toma). Otro
+   * dispositivo recibe el aviso de quién la tiene y puede tomarla a propósito (`forzar`), por ejemplo si al delegado se
+   * le rompió el celular. Sin `forzar`, toma el acta solo si está libre.
    */
   tomarActa(c: Contexto, id: string, d: TomarActaInput) {
     return this.db.enOrg(c.organizacionId, async (tx) => {
@@ -272,6 +313,7 @@ export class PartidosService {
       verificarDueno(p, dispositivoId);
       if (p.estado !== 'EN_JUEGO')
         throw new ErrorNegocio('Solo se puede corregir un acta abierta.', HttpStatus.CONFLICT);
+      await this.tomarSiLibre(tx, c, p, dispositivoId);
       return tx.eventoPartido.create({
         data: {
           organizacionId: c.organizacionId,
@@ -344,6 +386,7 @@ export class PartidosService {
           penalesLocal: empateEnLlave ? d.penalesLocal : null,
           penalesVisitante: empateEnLlave ? d.penalesVisitante : null,
           cerradoEn: new Date(),
+          ...duenoSiLibre(p, c, d.dispositivoId),
         },
       });
       await auditar(tx, c, 'partido.cerrar', 'partido', id, {
@@ -357,19 +400,48 @@ export class PartidosService {
     });
   }
 
-  /** W.O.: el reglamento define el resultado; no suma estadísticas individuales. */
-  walkover(c: Contexto, id: string, ganadorId: string) {
+  /**
+   * Equipo ausente (estado WO): se puede marcar recién cuando venció la tolerancia del reglamento del torneo. El resultado
+   * lo define el reglamento y se guarda como el de cualquier partido; no suma estadísticas individuales.
+   */
+  walkover(c: Contexto, id: string, ganadorId: string, dispositivoId?: string) {
     return this.db.enOrg(c.organizacionId, async (tx) => {
-      const p = await tx.partido.findUnique({ where: { id } });
+      const p = await tx.partido.findUnique({
+        where: { id },
+        include: { torneo: { include: { reglamento: true } } },
+      });
       if (!p) throw noEncontrado('el partido');
+      verificarDueno(p, dispositivoId);
       if (p.estado === 'FINALIZADO' || p.estado === 'WO')
         throw new ErrorNegocio('El partido ya está cerrado.', HttpStatus.CONFLICT);
+      if (p.estado !== 'PROGRAMADO')
+        throw new ErrorNegocio(
+          'El partido ya empezó: un equipo ausente se marca antes de iniciarlo.',
+          HttpStatus.CONFLICT,
+        );
       if (ganadorId !== p.localId && ganadorId !== p.visitanteId)
         throw new ErrorNegocio('Ese equipo no juega este partido.');
-      await auditar(tx, c, 'partido.wo', 'partido', id, { despues: { ganadorId } });
+      const r = p.torneo.reglamento;
+      const tolerancia = r.toleranciaWOMinutos;
+      const permitido = puedeMarcarAusente(p.inicio, tolerancia);
+      if (!permitido.puede)
+        throw new ErrorNegocio(
+          permitido.motivo === 'SIN_HORARIO'
+            ? 'El partido no tiene horario: programalo antes de marcar un equipo ausente.'
+            : `Todavía no pasó la tolerancia de ${tolerancia} minutos: el equipo puede llegar hasta las ${horaArgentina(permitido.desde!)}.`,
+        );
+      const resultado = resultadoPorAusencia(ganadorId, p.localId, r.golesWO);
+      await auditar(tx, c, 'partido.wo', 'partido', id, { despues: { ganadorId, resultado } });
       const cerrado = await tx.partido.update({
         where: { id },
-        data: { estado: 'WO', ganadorWOId: ganadorId, cerradoEn: new Date() },
+        data: {
+          estado: 'WO',
+          ganadorWOId: ganadorId,
+          golesLocal: resultado.local,
+          golesVisitante: resultado.visitante,
+          cerradoEn: new Date(),
+          ...duenoSiLibre(p, c, dispositivoId),
+        },
       });
       if (p.fase === 'LLAVE') await avanzarLlave(tx, c, p.torneoId);
       // Cuota por fecha (E06-20): el W.O. se cobra o no según la configuración del torneo.
@@ -390,7 +462,10 @@ const cierreSchema = z.object({
 });
 type CierreInput = z.infer<typeof cierreSchema>;
 const anularSchema = z.object({ clientUuid: z.uuid(), dispositivoId: z.string().min(8).max(64).optional() });
-const woSchema = z.object({ ganadorId: z.string().min(1) });
+const woSchema = z.object({
+  ganadorId: z.string().min(1),
+  dispositivoId: z.string().min(8).max(64).optional(),
+});
 
 @Controller('partidos')
 export class PartidosController {
@@ -444,7 +519,7 @@ export class PartidosController {
   @Post(':id/wo')
   @Permiso('partido.acta')
   wo(@Ctx() c: Contexto, @Param('id') id: string, @Body(new Zod(woSchema)) d: z.infer<typeof woSchema>) {
-    return this.s.walkover(c, id, d.ganadorId);
+    return this.s.walkover(c, id, d.ganadorId, d.dispositivoId);
   }
 }
 

@@ -34,3 +34,24 @@ export function tienePermiso(rol: string, permiso: string): boolean {
   const permisos = PERMISOS_POR_ROL[rol] ?? [];
   return permisos.includes('*') || permisos.includes(permiso);
 }
+
+// ── Usuarios e invitaciones (E04-09) y capitán (E19) ──
+// El administrador invita y quita accesos de los roles operativos (ver rolesQuePuedeInvitar en @potrero/shared).
+PERMISOS_POR_ROL.ADMINISTRADOR = [...PERMISOS_POR_ROL.ADMINISTRADOR!, 'usuario.gestionar'];
+// El capitán solo opera su equipo (Membresia.equipoId): no tiene ningún permiso del panel del organizador.
+PERMISOS_POR_ROL.CAPITAN = ['capitan.equipo'];
+
+/**
+ * Rutas con sesión pero sin @Permiso: un rol acotado (el capitán) solo entra a las de su cuenta. Así una ruta nueva del
+ * organizador que se olvide del @Permiso no le muestra datos de toda la liga.
+ */
+const ROLES_ACOTADOS = new Set(['CAPITAN']);
+export function permitidaSinPermiso(rol: string, ruta: string): boolean {
+  return !ROLES_ACOTADOS.has(rol) || ruta.startsWith('/api/auth/');
+}
+
+// ── Acta y tribunal (F17) ──
+// El informe del árbitro en un expediente lo carga el árbitro, el administrador o el tribunal, sin darle al tribunal el acta.
+PERMISOS_POR_ROL.ADMINISTRADOR = [...PERMISOS_POR_ROL.ADMINISTRADOR!, 'expediente.informe'];
+PERMISOS_POR_ROL.ARBITRO = [...PERMISOS_POR_ROL.ARBITRO!, 'expediente.informe'];
+PERMISOS_POR_ROL.TRIBUNAL = [...PERMISOS_POR_ROL.TRIBUNAL!, 'expediente.informe'];

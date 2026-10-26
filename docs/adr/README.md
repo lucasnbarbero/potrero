@@ -28,3 +28,4 @@ Formato de la plantilla GT-D2 de Gregal Tech. Una decisión por archivo. Para un
 | [ADR-022](022-mensajeria-con-canales-intercambiables-y-envios-simulados.md) | Mensajería con canales intercambiables y envíos simulados | Aceptada |
 | [ADR-023](023-libro-de-caja-de-partida-doble-inmutable.md) | Libro de caja de partida doble, inmutable y con asientos automáticos | Aceptada |
 | [ADR-025](025-documentacion-con-cifrado-de-campos-revision-humana-y-links-firmados.md) | Documentación con cifrado de campos, revisión humana y links firmados | Aceptada |
+| [ADR-026](026-torneos-con-formato-flexible-por-fases.md) | Torneos con formato flexible por fases | Propuesta (abierta) |

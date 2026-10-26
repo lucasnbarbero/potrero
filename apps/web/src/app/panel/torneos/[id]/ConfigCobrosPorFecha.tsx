@@ -7,7 +7,7 @@ import { Campo, MensajeError, useEnvio } from '@/componentes/formulario';
 import { api } from '@/lib/cliente';
 
 const OPCIONES: [keyof Config, string, string][] = [
-  ['cobrarWO', 'Cobrar el W.O.', 'El partido perdido por W.O. se cobra igual.'],
+  ['cobrarWO', 'Cobrar si un equipo no se presenta', 'El partido que se pierde por no presentarse se cobra igual.'],
   ['cobrarFechaLibre', 'Cobrar la fecha libre', 'El equipo que descansa paga la cuota de esa fecha.'],
   ['cobrarPartidoSuspendido', 'Cobrar el partido suspendido', 'Si no, la cuota pendiente se anula sola.'],
   [

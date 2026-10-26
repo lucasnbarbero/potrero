@@ -605,7 +605,7 @@ export class TribunalController {
   }
 
   @Post('expedientes/:id/informe')
-  @Permiso('partido.acta')
+  @Permiso('expediente.informe')
   informe(
     @Ctx() c: Contexto,
     @Param('id') id: string,

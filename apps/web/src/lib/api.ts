@@ -1,6 +1,6 @@
 // Acceso a la API desde el servidor (componentes de servidor). Reenvía las cookies de sesión.
 import { cookies } from 'next/headers';
-import { notFound, redirect } from 'next/navigation';
+import { forbidden, notFound, redirect } from 'next/navigation';
 
 const API = process.env.API_URL ?? 'http://localhost:4000';
 
@@ -16,6 +16,8 @@ export class ErrorApi extends Error {
 async function leer<T>(r: Response): Promise<T> {
   if (r.status === 401) redirect('/ingresar');
   if (r.status === 404) notFound();
+  // Sin permiso: el panel muestra un aviso amable (app/panel/forbidden.tsx) en vez del error de Next.
+  if (r.status === 403) forbidden();
   const datos = await r.json().catch(() => null);
   if (!r.ok) throw new ErrorApi(r.status, datos?.mensaje ?? 'Error de la API');
   return datos as T;

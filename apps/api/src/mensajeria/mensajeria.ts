@@ -47,7 +47,7 @@ import { type Contexto, Ctx, ErrorNegocio, noEncontrado, Permiso, Publico, Zod }
 import { cuandoDe, hoyEnArgentina } from '../comun/formato.js';
 import { CobrosModule, CobrosService, firmar } from '../cobros/cobros.js';
 import { config } from '../config.js';
-import { DbService, type Tx } from '../db/db.service.js';
+import { DbService, enSerie, type Tx } from '../db/db.service.js';
 import type { Equipo, Mensaje } from '../generated/prisma/client.js';
 import { crearCanales } from './canales.js';
 
@@ -214,7 +214,11 @@ export class MensajeriaService implements OnModuleInit, OnModuleDestroy {
       include: {
         equipo: true,
         torneo: true,
-        cargos: { where: { estado: 'PENDIENTE' }, orderBy: { creadoEn: 'asc' } },
+        cargos: {
+          where: { estado: 'PENDIENTE' },
+          orderBy: { creadoEn: 'asc' },
+          include: { pagos: { where: { estado: 'APROBADO' } } },
+        },
       },
       orderBy: { equipo: { nombre: 'asc' } },
     });
@@ -224,7 +228,8 @@ export class MensajeriaService implements OnModuleInit, OnModuleDestroy {
         ...this.receptorDe(i.equipo, org, {
           torneo: i.torneo.nombre,
           link_torneo: this.linkTorneo(org, i.torneo.slug),
-          monto: formatoPesos(i.cargos.reduce((s, c) => s + c.monto, 0)),
+          // Lo que falta pagar: un pago parcial ya aprobado no se vuelve a reclamar (F10).
+          monto: formatoPesos(i.cargos.reduce((s, c) => s + saldoDelCargo(c), 0)),
         }),
         cargoId: i.cargos[0]!.id,
       })),
@@ -519,9 +524,9 @@ export class MensajeriaService implements OnModuleInit, OnModuleDestroy {
         };
       });
       const ahora = new Date();
-      const [usados, automaticos] = await Promise.all([
-        this.usadosWhatsapp(tx, ahora),
-        tx.mensaje.count({ where: { difusionId: null, creadoEn: { gte: inicioDeMes(ahora) } } }),
+      const [usados, automaticos] = await enSerie([
+        () => this.usadosWhatsapp(tx, ahora),
+        () => tx.mensaje.count({ where: { difusionId: null, creadoEn: { gte: inicioDeMes(ahora) } } }),
       ]);
       return {
         envios,
@@ -660,7 +665,10 @@ export class MensajeriaService implements OnModuleInit, OnModuleDestroy {
     const hoy = hoyEnArgentina(ahora);
     const cargos = await tx.cargo.findMany({
       where: { estado: 'PENDIENTE', vence: { not: null } },
-      include: { inscripcion: { include: { equipo: true, torneo: true } } },
+      include: {
+        inscripcion: { include: { equipo: true, torneo: true } },
+        pagos: { where: { estado: 'APROBADO' } },
+      },
     });
     let n = 0;
     for (const cargo of cargos) {
@@ -675,7 +683,7 @@ export class MensajeriaService implements OnModuleInit, OnModuleDestroy {
         canal,
         this.receptorDe(equipo, org, {
           torneo: torneo.nombre,
-          monto: formatoPesos(cargo.monto),
+          monto: formatoPesos(saldoDelCargo(cargo)),
           link_torneo: this.linkTorneo(org, torneo.slug),
         }),
         `cobro:${cargo.id}:${etapa}`,
@@ -897,3 +905,8 @@ export class ConfirmacionesController {
   exports: [MensajeriaService],
 })
 export class MensajeriaModule {}
+
+/** Saldo pendiente de un cargo: su monto menos los pagos aprobados. */
+function saldoDelCargo(cargo: { monto: number; pagos: readonly { monto: number }[] }) {
+  return Math.max(0, cargo.monto - cargo.pagos.reduce((s, p) => s + p.monto, 0));
+}

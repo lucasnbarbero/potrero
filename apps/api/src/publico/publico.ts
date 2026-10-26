@@ -11,6 +11,7 @@ import { CobrosModule, CobrosService, inscribirEquipo } from '../cobros/cobros.j
 import { DbService, enSerie } from '../db/db.service.js';
 import { llaveDelTorneo } from '../torneos/llaves.js';
 import { estadisticasDelTorneo, partidosDelTorneo } from '../torneos/torneos.js';
+import { jugadoresPublicos, PaginasPublicasController, PaginasPublicasService } from './paginas.js';
 
 /**
  * Sitio público del torneo. Principio de mínimo dato: nunca expone DNI, teléfonos, emails ni datos de pago.
@@ -52,6 +53,12 @@ export class PublicoService {
         () => llaveDelTorneo(tx, t.id),
         () => tx.inscripcion.count({ where: { torneoId: t.id, estado: { not: 'BAJA' } } }),
       ]);
+      const activas = est.sanciones.filter((s) => s.activa);
+      // Nombres según la privacidad de cada jugador (E20-04); el id solo va si tiene perfil público.
+      const publicos = await jugadoresPublicos(tx, [
+        ...est.goleadores.map((g) => g.jugadorId),
+        ...activas.map((s) => s.jugadorId),
+      ]);
       return {
         organizacion: { nombre: org.nombre, slug: org.slug, colorMarca: org.colorMarca },
         torneo: {
@@ -68,10 +75,16 @@ export class PublicoService {
         tabla: est.tabla,
         grupos: est.grupos,
         llave,
-        goleadores: est.goleadores,
-        suspendidos: est.sanciones
-          .filter((s) => s.activa)
-          .map((s) => ({ jugador: s.jugador, equipo: s.equipo, restantes: s.restantes })),
+        goleadores: est.goleadores.map((g) => ({
+          ...g,
+          jugadorId: publicos.get(g.jugadorId)?.perfil ? g.jugadorId : null,
+          jugador: publicos.get(g.jugadorId)?.nombre ?? '—',
+        })),
+        suspendidos: activas.map((s) => ({
+          jugador: publicos.get(s.jugadorId)?.nombre ?? '—',
+          equipo: s.equipo,
+          restantes: s.restantes,
+        })),
       };
     });
   }
@@ -284,7 +297,7 @@ export class PanelController {
 
 @Module({
   imports: [CobrosModule],
-  controllers: [PublicoController, PanelController],
-  providers: [PublicoService],
+  controllers: [PublicoController, PanelController, PaginasPublicasController],
+  providers: [PublicoService, PaginasPublicasService],
 })
 export class PublicoModule {}

@@ -16,4 +16,5 @@ export const REGLAMENTO_POR_DEFECTO: Reglamento = {
   levantarSancionTipos: [...DATOS.reglamentoPorDefecto.levantarSancionTipos],
   // Sin monto no hay nada que cobrar: el organizador lo fija al encender la opción en el torneo.
   levantarSancionMonto: DATOS.reglamentoPorDefecto.levantarSancionMonto,
+  toleranciaWOMinutos: DATOS.reglamentoPorDefecto.toleranciaWOMinutos,
 };

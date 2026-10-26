@@ -69,7 +69,7 @@ function Cruce({ c, enlazarActa }: { c: CruceLlave; enlazarActa: boolean }) {
       {(c.inicio || wo || c.partidoId) && (
         <div className="mt-1 flex items-center justify-between gap-2 border-t border-black/5 px-1 pt-1.5 text-[11px] text-mute">
           <span className="min-w-0 truncate">
-            {wo ? 'W.O.' : c.inicio ? `${fechaCorta(c.inicio)} · ${hora(c.inicio)}` : ''}
+            {wo ? 'Equipo ausente' : c.inicio ? `${fechaCorta(c.inicio)} · ${hora(c.inicio)}` : ''}
             {c.cancha && !jugado ? ` · ${c.cancha}` : ''}
           </span>
           {enlazarActa && c.partidoId && (

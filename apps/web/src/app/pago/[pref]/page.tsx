@@ -74,9 +74,27 @@ export default function PagoSimulado() {
                 className={`rounded-2xl p-4 text-center font-semibold ${c.estado === 'APROBADO' ? 'bg-volt' : 'bg-red-100 text-red-800'}`}
               >
                 {c.estado === 'APROBADO'
-                  ? '¡Pago aprobado! Tu inscripción quedó confirmada.'
+                  ? // Solo la inscripción se confirma con el pago; multas, levantamientos y cuotas solo se acreditan.
+                    c.concepto.startsWith('Inscripción')
+                    ? '¡Pago aprobado! Tu inscripción quedó confirmada.'
+                    : '¡Listo! Pago acreditado.'
                   : 'El pago fue rechazado.'}
               </div>
+            )}
+            {c.estado === 'RECHAZADO' && (
+              // Falla conocida 7: un rechazo no deja al equipo sin salida; pide un link nuevo para el mismo cargo.
+              <button
+                className="btn-volt btn-lg w-full"
+                disabled={enviando}
+                onClick={() =>
+                  enviar(async () => {
+                    const r = await api<{ urlPago: string }>('POST', `/pagos/simulado/${pref}/reintentar`);
+                    window.location.assign(r.urlPago);
+                  })
+                }
+              >
+                Intentar de nuevo
+              </button>
             )}
             <MensajeError error={error} />
             <a href={c.volverA} className="block text-center text-sm font-semibold underline">

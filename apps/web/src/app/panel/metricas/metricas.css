@@ -1,0 +1,65 @@
+/* Gráficos de la pantalla de métricas (mock 19): columnas de inscriptos y mapa de calor de horarios. */
+.metricas-cols {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+  height: 200px;
+}
+.metricas-cols > div {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.4rem;
+  height: 100%;
+  font-size: 11px;
+  color: var(--color-mute);
+  text-align: center;
+}
+.metricas-cols i {
+  display: block;
+  width: 100%;
+  border-radius: 0.9rem 0.9rem 0.3rem 0.3rem;
+  background: var(--color-ink);
+  opacity: 0.12;
+  transform-origin: bottom;
+  animation: metricas-up 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.metricas-cols .dk i {
+  opacity: 1;
+}
+.metricas-cols .hi i {
+  background: var(--color-volt);
+  opacity: 1;
+}
+.metricas-cols .ab i {
+  background: repeating-linear-gradient(-45deg, rgb(0 0 0 / 0.12) 0 6px, rgb(0 0 0 / 0.05) 6px 12px);
+  opacity: 1;
+}
+@keyframes metricas-up {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: none;
+  }
+}
+.metricas-heat {
+  display: grid;
+  grid-template-columns: 74px repeat(7, 1fr);
+  gap: 4px;
+  font-size: 11px;
+}
+.metricas-heat > span {
+  height: 28px;
+  border-radius: 8px;
+}
+@media print {
+  aside,
+  header,
+  .no-imprimir {
+    display: none !important;
+  }
+}

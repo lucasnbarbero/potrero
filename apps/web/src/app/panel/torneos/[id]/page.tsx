@@ -14,13 +14,10 @@ import type {
   ProgramacionTorneo,
   Sede,
 } from '@/lib/tipos';
-import {
-  AccionesCobro,
-  GenerarFixture,
-  GenerarLlaves,
-  InscribirEquipo,
-  VencimientoInscripcion,
-} from './acciones';
+import type { ConteosTorneo, InscripcionConPagos } from '@/lib/tipos';
+import { AccionesTorneo } from './AccionesTorneo';
+import { CobroEquipo } from './CobroEquipo';
+import { GenerarFixture, GenerarLlaves, InscribirEquipo, VencimientoInscripcion } from './acciones';
 import { CobrosPorFecha } from './CobrosPorFecha';
 import { GrillaFixture } from './GrillaFixture';
 
@@ -40,7 +37,7 @@ export default async function DetalleTorneoPagina({
   searchParams,
 }: PageProps<'/panel/torneos/[id]'>) {
   const { id } = await params;
-  const t = await apiServidor<DetalleTorneo>(`/torneos/${id}`);
+  const t = await apiServidor<DetalleTorneo & ConteosTorneo>(`/torneos/${id}`);
   const sp = await searchParams;
   const tab =
     (typeof sp.tab === 'string' ? sp.tab : null) ??
@@ -64,6 +61,7 @@ export default async function DetalleTorneoPagina({
             Link de inscripción
           </Link>
         )}
+        <AccionesTorneo torneo={t} />
       </Encabezado>
 
       <nav className="tabs rise w-fit max-w-full">
@@ -85,7 +83,7 @@ export default async function DetalleTorneoPagina({
 
 async function PestanaInscripciones({ torneo }: { torneo: DetalleTorneo }) {
   const [inscripciones, equipos] = [
-    await apiServidor<Inscripcion[]>(`/torneos/${torneo.id}/inscripciones`),
+    await apiServidor<InscripcionConPagos[]>(`/torneos/${torneo.id}/inscripciones`),
     await apiServidor<Equipo[]>('/equipos'),
   ];
   const inscriptos = new Set(inscripciones.map((i) => i.equipo.id));
@@ -126,8 +124,6 @@ async function PestanaInscripciones({ torneo }: { torneo: DetalleTorneo }) {
             </thead>
             <tbody className="[&>tr]:border-t [&>tr]:border-black/5">
               {inscripciones.map((i) => {
-                // El próximo cargo a cobrar (los cargos vienen ordenados por vencimiento), con lo que falta de ese cargo.
-                const cargo = i.cargos.find((c) => c.estado === 'PENDIENTE');
                 return (
                   <tr key={i.id}>
                     <td className="td">
@@ -166,16 +162,7 @@ async function PestanaInscripciones({ torneo }: { torneo: DetalleTorneo }) {
                       )}
                     </td>
                     <td className="td">
-                      {cargo ? (
-                        <div className="space-y-1">
-                          {i.cargos.filter((c) => c.estado === 'PENDIENTE').length > 1 && (
-                            <span className="block text-right text-xs text-mute">{cargo.concepto}</span>
-                          )}
-                          <AccionesCobro cargoId={cargo.id} debe={Math.max(0, cargo.monto - cargo.pagado)} />
-                        </div>
-                      ) : (
-                        <span className="block text-right text-mute">Al día</span>
-                      )}
+                      <CobroEquipo inscripcion={i} />
                     </td>
                   </tr>
                 );
@@ -329,6 +316,7 @@ async function PestanaSanciones({ id }: { id: string }) {
     ROJA_DIRECTA: 'Roja directa',
     DOBLE_AMARILLA: 'Doble amarilla',
     ACUMULACION: 'Acumulación de amarillas',
+    TRIBUNAL: 'Resolución del tribunal',
   };
   return (
     <div className="tile !p-0">
@@ -343,7 +331,7 @@ async function PestanaSanciones({ id }: { id: string }) {
             <span className="min-w-0 flex-1">
               <b className="block">{s.jugador}</b>
               <span className="text-xs text-mute">
-                {s.equipo} · {causa[s.causa]} · {s.partidos} partido(s)
+                {s.equipo} · {causa[s.causa] ?? 'Sanción'} · {s.partidos} partido(s)
               </span>
             </span>
             {s.activa ? (
@@ -355,7 +343,11 @@ async function PestanaSanciones({ id }: { id: string }) {
         ))}
       </ul>
       <p className="px-5 pb-4 text-xs text-mute">
-        Generadas automáticamente al cerrar cada acta. Expedientes y descargos: próximamente (E14).
+        Las tarjetas se convierten en sanciones al cerrar cada acta. Los expedientes y descargos están en{' '}
+        <Link href={`/panel/sanciones?torneoId=${id}`} className="font-semibold text-ink underline">
+          Sanciones
+        </Link>
+        .
       </p>
     </div>
   );

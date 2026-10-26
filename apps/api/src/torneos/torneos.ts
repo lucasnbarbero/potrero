@@ -18,6 +18,7 @@ import {
   goleadores,
   programar,
   REGLAMENTO_POR_DEFECTO,
+  equiposDeLaTabla,
   repartirEnGrupos,
   sortear,
   tablaDePosiciones,
@@ -26,8 +27,14 @@ import {
   type CausaSancion,
   type Desempate,
   type Reglamento,
+  cambiosPorMontoDeInscripcion,
+  editarTorneoSchema,
+  type EditarTorneoInput,
+  estadoTorneoSchema,
+  type EstadoTorneoInput,
+  transicionDeTorneo,
+  validarCupo,
 } from '@potrero/shared';
-import { z } from 'zod';
 import { auditar } from '../comun/auditoria.js';
 import { type Contexto, Ctx, ErrorNegocio, noEncontrado, Permiso, Zod } from '../comun/http.js';
 import { slugUnico } from '../comun/slug.js';
@@ -118,8 +125,12 @@ export async function estadisticasDelTorneo(tx: Tx, torneoId: string) {
       })),
       reglamento,
     );
+  // Solo los equipos del fixture (F8): uno confirmado tarde, sin partidos, no aparece con 0 PJ.
   const tabla = calcular(
-    equipos.map((e) => e.id),
+    equiposDeLaTabla(
+      equipos.map((e) => e.id),
+      partidos.filter((p) => p.fase !== 'LLAVE'),
+    ),
     deTabla,
   );
   const gruposDelTorneo = (torneo.grupos as { grupo: string; equipoIds: string[] }[] | null) ?? [];
@@ -158,6 +169,15 @@ export async function estadisticasDelTorneo(tx: Tx, torneoId: string) {
       ...cumplimiento(s, partidos, acreditados),
     })),
   };
+}
+
+/** Partidos creados del torneo y cuántos faltan jugar (programados, en juego o suspendidos). */
+async function contarPartidos(tx: Tx, torneoId: string) {
+  const [total, sinJugar] = await enSerie([
+    () => tx.partido.count({ where: { torneoId } }),
+    () => tx.partido.count({ where: { torneoId, estado: { in: ['PROGRAMADO', 'EN_JUEGO', 'SUSPENDIDO'] } } }),
+  ]);
+  return { total, sinJugar };
 }
 
 /** Las canchas elegidas tienen que existir y no estar bloqueadas (mantenimiento, clima). */
@@ -228,13 +248,16 @@ export class TorneosService {
     return this.db.enOrg(c.organizacionId, async (tx) => {
       const torneo = await tx.torneo.findUnique({ where: { id }, include: { reglamento: true } });
       if (!torneo) throw noEncontrado('el torneo');
-      const organizacion = await tx.organizacion.findUniqueOrThrow({
-        where: { id: c.organizacionId },
-        select: { slug: true },
-      });
+      const [organizacion, inscriptos, partidos] = await enSerie([
+        () => tx.organizacion.findUniqueOrThrow({ where: { id: c.organizacionId }, select: { slug: true } }),
+        () => tx.inscripcion.count({ where: { torneoId: id, estado: { not: 'BAJA' } } }),
+        () => contarPartidos(tx, id),
+      ]);
       return {
         ...torneo,
         organizacionSlug: organizacion.slug,
+        inscriptos,
+        partidos,
         partidosEstimados: cantidadDePartidos(torneo.cupo, torneo.formato, torneo.idaYVuelta),
       };
     });
@@ -255,16 +278,127 @@ export class TorneosService {
     });
   }
 
-  cambiarEstado(c: Contexto, id: string, estado: 'INSCRIPCION' | 'EN_CURSO' | 'FINALIZADO') {
+  /**
+   * Cambio de estado a mano (cerrar o reabrir la inscripción, finalizar). Las transiciones válidas están en
+   * transicionDeTorneo; finalizar con partidos sin jugar exige confirmarlo.
+   */
+  cambiarEstado(c: Contexto, id: string, { estado, confirmar }: EstadoTorneoInput) {
     return this.db.enOrg(c.organizacionId, async (tx) => {
       const antes = await tx.torneo.findUnique({ where: { id } });
       if (!antes) throw noEncontrado('el torneo');
+      const t = transicionDeTorneo(antes.estado, estado, await contarPartidos(tx, id));
+      if (!t.ok) throw new ErrorNegocio(t.motivo!, HttpStatus.CONFLICT);
+      if (t.requiereConfirmacion && !confirmar) throw new ErrorNegocio(t.aviso!, HttpStatus.CONFLICT);
       const despues = await tx.torneo.update({ where: { id }, data: { estado } });
       await auditar(tx, c, 'torneo.estado', 'torneo', id, {
         antes: { estado: antes.estado },
-        despues: { estado },
+        despues: { estado, ...(t.aviso ? { aviso: t.aviso } : {}) },
       });
       return despues;
+    });
+  }
+
+  /**
+   * Edita nombre, cupo, monto y vencimiento de la inscripción y el reglamento básico. El monto nuevo solo cambia los
+   * cargos de inscripción sin pagos; el reglamento es versionado: un cambio crea una versión nueva.
+   */
+  editar(c: Contexto, id: string, d: EditarTorneoInput) {
+    return this.db.enOrg(c.organizacionId, async (tx) => {
+      const antes = await tx.torneo.findUnique({ where: { id }, include: { reglamento: true } });
+      if (!antes) throw noEncontrado('el torneo');
+      if (antes.estado === 'FINALIZADO' && Object.keys(d).some((k) => k !== 'nombre'))
+        throw new ErrorNegocio(
+          'El torneo está finalizado: solo se puede cambiar el nombre.',
+          HttpStatus.CONFLICT,
+        );
+      if (d.cupo !== undefined) {
+        const inscriptos = await tx.inscripcion.count({ where: { torneoId: id, estado: { not: 'BAJA' } } });
+        const error = validarCupo(d.cupo, inscriptos);
+        if (error) throw new ErrorNegocio(error);
+      }
+      const datos: Prisma.TorneoUpdateInput = {};
+      if (d.nombre !== undefined) datos.nombre = d.nombre;
+      if (d.cupo !== undefined) datos.cupo = d.cupo;
+      if (d.inscripcion !== undefined) datos.inscripcion = d.inscripcion;
+      let vence: Date | null | undefined;
+      if (d.venceInscripcion !== undefined) {
+        vence = d.venceInscripcion ? new Date(`${d.venceInscripcion}T00:00:00Z`) : null;
+        datos.venceInscripcion = vence;
+      }
+      // Reglamento básico: solo si cambia algo, una versión nueva (la tabla se recalcula con los puntos nuevos).
+      const r = antes.reglamento;
+      const reglamento = {
+        puntosVictoria: d.puntosVictoria ?? r.puntosVictoria,
+        puntosEmpate: d.puntosEmpate ?? r.puntosEmpate,
+        umbralAmarillas: d.umbralAmarillas ?? r.umbralAmarillas,
+      };
+      if (
+        reglamento.puntosVictoria !== r.puntosVictoria ||
+        reglamento.puntosEmpate !== r.puntosEmpate ||
+        reglamento.umbralAmarillas !== r.umbralAmarillas
+      ) {
+        const { id: _id, creadoEn: _creadoEn, version, ...actual } = r;
+        const nuevo = await tx.reglamento.create({
+          data: { ...actual, ...reglamento, version: version + 1 },
+        });
+        datos.reglamento = { connect: { id: nuevo.id } };
+      }
+      const despues = await tx.torneo.update({ where: { id }, data: datos });
+      // Cargos de inscripción: el monto nuevo va a los que no tienen pagos; con 0, se anulan y el equipo queda confirmado.
+      let cargos = { actualizados: 0, anulados: 0, conservan: 0 };
+      if (d.inscripcion !== undefined && d.inscripcion !== antes.inscripcion) {
+        const lista = await tx.cargo.findMany({
+          where: { inscripcion: { torneoId: id } },
+          include: {
+            _count: { select: { pagos: { where: { estado: { in: ['APROBADO', 'PENDIENTE'] } } } } },
+          },
+        });
+        const cambios = cambiosPorMontoDeInscripcion(
+          lista.map((x) => ({ ...x, pagos: x._count.pagos })),
+          d.inscripcion,
+        );
+        if (cambios.actualizar.length)
+          await tx.cargo.updateMany({
+            where: { id: { in: cambios.actualizar } },
+            data: { monto: d.inscripcion },
+          });
+        if (cambios.anular.length) {
+          await tx.cargo.updateMany({ where: { id: { in: cambios.anular } }, data: { estado: 'ANULADO' } });
+          const ids = lista.filter((x) => cambios.anular.includes(x.id)).map((x) => x.inscripcionId);
+          await tx.inscripcion.updateMany({
+            where: { id: { in: ids }, estado: 'PENDIENTE' },
+            data: { estado: 'CONFIRMADA' },
+          });
+        }
+        cargos = {
+          actualizados: cambios.actualizar.length,
+          anulados: cambios.anular.length,
+          conservan: cambios.conservan,
+        };
+      }
+      if (vence !== undefined)
+        await tx.cargo.updateMany({
+          where: {
+            estado: 'PENDIENTE',
+            fecha: null,
+            categoria: 'INSCRIPCIONES',
+            inscripcion: { torneoId: id },
+          },
+          data: { vence },
+        });
+      await auditar(tx, c, 'torneo.editar', 'torneo', id, {
+        antes: {
+          nombre: antes.nombre,
+          cupo: antes.cupo,
+          inscripcion: antes.inscripcion,
+          venceInscripcion: antes.venceInscripcion,
+          puntosVictoria: r.puntosVictoria,
+          puntosEmpate: r.puntosEmpate,
+          umbralAmarillas: r.umbralAmarillas,
+        },
+        despues: { ...d, cargos },
+      });
+      return { ...despues, cargos };
     });
   }
 
@@ -447,8 +581,6 @@ export class TorneosService {
   }
 }
 
-const estadoSchema = z.object({ estado: z.enum(['INSCRIPCION', 'EN_CURSO', 'FINALIZADO']) });
-
 @Controller('torneos')
 export class TorneosController {
   constructor(private readonly s: TorneosService) {}
@@ -476,9 +608,19 @@ export class TorneosController {
   estado(
     @Ctx() c: Contexto,
     @Param('id') id: string,
-    @Body(new Zod(estadoSchema)) d: z.infer<typeof estadoSchema>,
+    @Body(new Zod(estadoTorneoSchema)) d: EstadoTorneoInput,
   ) {
-    return this.s.cambiarEstado(c, id, d.estado);
+    return this.s.cambiarEstado(c, id, d);
+  }
+
+  @Patch(':id')
+  @Permiso('torneo.escribir')
+  editar(
+    @Ctx() c: Contexto,
+    @Param('id') id: string,
+    @Body(new Zod(editarTorneoSchema)) d: EditarTorneoInput,
+  ) {
+    return this.s.editar(c, id, d);
   }
 
   @Patch(':id/vencimiento')

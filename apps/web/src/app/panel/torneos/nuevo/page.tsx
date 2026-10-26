@@ -16,8 +16,8 @@ const MODALIDADES: [Modalidad, string][] = [
 const FORMATOS: [Formato, string, string][] = [
   ['LIGA', 'Liga', 'Todos contra todos. Gana el que más puntos suma.'],
   ['LIGA_PLAYOFFS', 'Liga + playoffs', 'Fase de liga y después llaves con los mejores.'],
-  ['GRUPOS_PLAYOFFS', 'Grupos + playoffs', 'Zonas y cruces eliminatorios. (Llaves: próximamente)'],
-  ['COPA', 'Copa', 'Eliminación directa. (Llaves: próximamente)'],
+  ['GRUPOS_PLAYOFFS', 'Grupos + playoffs', 'Zonas y después cruces eliminatorios con los mejores de cada una.'],
+  ['COPA', 'Copa', 'Eliminación directa: el que pierde, queda afuera.'],
 ];
 
 export default function NuevoTorneo() {
@@ -82,7 +82,12 @@ export default function NuevoTorneo() {
         </section>
 
         <section className="tile space-y-3">
-          <b className="text-lg">2 · Formato</b>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <b className="text-lg">2 · Formato</b>
+            <a href="/panel/torneos/formato" className="btn-glass btn-sm">
+              Armá el formato
+            </a>
+          </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {FORMATOS.map(([f, t, d]) => (
               <button
@@ -146,7 +151,7 @@ export default function NuevoTorneo() {
             ayuda="Por cada jugador del plantel, juegue o no. Cargo aparte, rubro Seguros."
           />
           <p className="text-xs text-mute sm:col-span-2">
-            Por defecto no se cobra la fecha libre ni el partido suspendido, y el W.O. sí. Lo cambiás después
+            Por defecto no se cobra la fecha libre ni el partido suspendido, y el partido que se pierde por no presentarse sí. Lo cambiás después
             en Inscripciones y pagos.
           </p>
         </section>

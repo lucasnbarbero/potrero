@@ -1,6 +1,8 @@
 'use client';
 import { Icono } from '@potrero/ui';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { Campo, MensajeError, useEnvio } from '@/componentes/formulario';
 import { MarcoPublico } from '@/componentes/MarcoPublico';
 import { api } from '@/lib/cliente';
@@ -9,6 +11,47 @@ import { api } from '@/lib/cliente';
 export default function Inscripcion() {
   const { org, torneo } = useParams<{ org: string; torneo: string }>();
   const { enviando, error, campos, enviar } = useEnvio();
+  // Con la inscripción cerrada o el cupo lleno no se muestra el formulario (F6): el aviso aparece antes de cargar nada.
+  const [estado, setEstado] = useState<{ nombre: string; cerrada: boolean; completo: boolean } | null>(null);
+  useEffect(() => {
+    api<{ torneo: { nombre: string; estado: string; cupo: number; inscriptos: number } }>(
+      'GET',
+      `/publico/${org}/${torneo}`,
+    ).then(
+      ({ torneo: t }) =>
+        setEstado({
+          nombre: t.nombre,
+          cerrada: t.estado !== 'INSCRIPCION',
+          completo: t.inscriptos >= t.cupo,
+        }),
+      () => setEstado({ nombre: '', cerrada: false, completo: false }),
+    );
+  }, [org, torneo]);
+  if (!estado)
+    return (
+      <MarcoPublico liga={{ nombre: 'Inscripción', slug: org }}>
+        <p className="tile mx-auto max-w-lg !p-7 text-sm text-mute">Cargando…</p>
+      </MarcoPublico>
+    );
+  if (estado.cerrada || estado.completo)
+    return (
+      <MarcoPublico liga={{ nombre: 'Inscripción', slug: org }}>
+        <div className="tile mx-auto max-w-lg space-y-4 !p-7 text-center">
+          <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-volt text-xl">
+            <Icono nombre="trophy" />
+          </span>
+          <h1 className="text-3xl font-bold tracking-tighter">
+            {estado.cerrada ? 'La inscripción está cerrada' : 'El torneo completó su cupo'}
+          </h1>
+          <p className="text-sm text-mute">
+            {estado.nombre} ya no recibe equipos. Si querés jugar, escribile al organizador de la liga.
+          </p>
+          <Link href={`/t/${org}/${torneo}`} className="btn-glass w-full">
+            Ver el torneo
+          </Link>
+        </div>
+      </MarcoPublico>
+    );
   return (
     <MarcoPublico liga={{ nombre: 'Inscripción', slug: org }}>
       <form

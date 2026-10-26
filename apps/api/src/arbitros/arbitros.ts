@@ -30,7 +30,7 @@ import {
 } from '@potrero/shared';
 import { auditar } from '../comun/auditoria.js';
 import { type Contexto, Ctx, ErrorNegocio, noEncontrado, Permiso, Zod } from '../comun/http.js';
-import { DbService, type Tx } from '../db/db.service.js';
+import { DbService, enSerie, type Tx } from '../db/db.service.js';
 import type { Arbitro } from '../generated/prisma/client.js';
 
 const disponibilidadDe = (a: Pick<Arbitro, 'disponibilidad'>) =>
@@ -51,19 +51,21 @@ export class ArbitrosService {
 
   listar(c: Contexto) {
     return this.db.enOrg(c.organizacionId, async (tx) => {
-      const [arbitros, partidos, pagos] = await Promise.all([
-        tx.arbitro.findMany({ orderBy: [{ apellido: 'asc' }, { nombre: 'asc' }] }),
-        tx.partido.groupBy({
-          by: ['arbitroId', 'estado'],
-          where: { arbitroId: { not: null } },
-          _count: { _all: true },
-        }),
+      const [arbitros, partidos, pagos] = await enSerie([
+        () => tx.arbitro.findMany({ orderBy: [{ apellido: 'asc' }, { nombre: 'asc' }] }),
+        () =>
+          tx.partido.groupBy({
+            by: ['arbitroId', 'estado'],
+            where: { arbitroId: { not: null } },
+            _count: { _all: true },
+          }),
         // Lo pagado sale del libro: egresos a árbitros, ya descontadas las anulaciones.
-        tx.lineaAsiento.groupBy({
-          by: ['asientoId'],
-          where: { cuenta: 'EGRESOS:ARBITROS', asiento: { arbitroId: { not: null } } },
-          _sum: { debe: true, haber: true },
-        }),
+        () =>
+          tx.lineaAsiento.groupBy({
+            by: ['asientoId'],
+            where: { cuenta: 'EGRESOS:ARBITROS', asiento: { arbitroId: { not: null } } },
+            _sum: { debe: true, haber: true },
+          }),
       ]);
       const asientos = await tx.asiento.findMany({
         where: { id: { in: pagos.map((p) => p.asientoId) } },
@@ -138,17 +140,19 @@ export class ArbitrosService {
   /** Los partidos de un día con su árbitro y cancha, los árbitros que podrían dirigir cada uno y la ocupación de las canchas. */
   designaciones(c: Contexto, dia: string) {
     return this.db.enOrg(c.organizacionId, async (tx) => {
-      const [partidos, arbitros, sedes] = await Promise.all([
-        tx.partido.findMany({
-          where: { inicio: rangoDelDia(dia) },
-          orderBy: [{ inicio: 'asc' }, { id: 'asc' }],
-          include: { torneo: true, cancha: { include: { sede: true } } },
-        }),
-        tx.arbitro.findMany({ where: { activo: true }, orderBy: [{ apellido: 'asc' }] }),
-        tx.sede.findMany({
-          include: { canchas: { orderBy: { nombre: 'asc' } } },
-          orderBy: { nombre: 'asc' },
-        }),
+      const [partidos, arbitros, sedes] = await enSerie([
+        () =>
+          tx.partido.findMany({
+            where: { inicio: rangoDelDia(dia) },
+            orderBy: [{ inicio: 'asc' }, { id: 'asc' }],
+            include: { torneo: true, cancha: { include: { sede: true } } },
+          }),
+        () => tx.arbitro.findMany({ where: { activo: true }, orderBy: [{ apellido: 'asc' }] }),
+        () =>
+          tx.sede.findMany({
+            include: { canchas: { orderBy: { nombre: 'asc' } } },
+            orderBy: { nombre: 'asc' },
+          }),
       ]);
       const equipos = await tx.equipo.findMany({
         where: { id: { in: partidos.flatMap((p) => [p.localId, p.visitanteId]) } },

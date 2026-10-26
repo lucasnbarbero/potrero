@@ -15,7 +15,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { registrarPago } from '../caja/libro.js';
+import { crearAsiento, registrarPago } from '../caja/libro.js';
 import {
   cobrosPorFechaSchema,
   type CobrosPorFechaInput,
@@ -27,6 +27,16 @@ import {
   pagoManualSchema,
   type PagoManualInput,
   type Plan,
+  anularPagoSchema,
+  type AnularPagoInput,
+  imputarPago,
+  invertir,
+  motivoParaNoAnular,
+  registrarPagoSchema,
+  type RegistrarPagoInput,
+  saldoDelCargo,
+  validarFechaDePago,
+  formatoPesos,
 } from '@potrero/shared';
 import { z } from 'zod';
 import { auditar } from '../comun/auditoria.js';
@@ -106,8 +116,30 @@ async function actualizarCargo(tx: Tx, cargoId: string) {
     ]);
     if (inscripcion.estado === 'PENDIENTE' && inscripcionConfirmada(cargos))
       await tx.inscripcion.update({ where: { id: cargo.inscripcionId }, data: { estado: 'CONFIRMADA' } });
+  } else if (cargo.estado === 'PAGADO' && estado === 'PENDIENTE') {
+    // Se anuló un pago y el cargo volvió a deber. Si era la inscripción y el torneo sigue en inscripción, el equipo vuelve
+    // a pendiente; con el torneo empezado no se lo saca del fixture: queda la deuda.
+    const inscripcion = await tx.inscripcion.findUniqueOrThrow({
+      where: { id: cargo.inscripcionId },
+      include: { torneo: { select: { estado: true } } },
+    });
+    if (
+      inscripcion.estado === 'CONFIRMADA' &&
+      inscripcion.torneo.estado === 'INSCRIPCION' &&
+      cargo.categoria === 'INSCRIPCIONES' &&
+      cargo.fecha === null
+    )
+      await tx.inscripcion.update({ where: { id: cargo.inscripcionId }, data: { estado: 'PENDIENTE' } });
   }
 }
+
+/** Lo que cubren los pagos aprobados de un cargo. */
+const pagadoDe = (pagos: { estado: string; monto: number }[]) =>
+  pagos.filter((p) => p.estado === 'APROBADO').reduce((s, p) => s + p.monto, 0);
+
+/** Fecha de acreditación de un pago manual: hoy es "ahora"; otro día, el mediodía de ese día en Argentina. */
+const acreditadoEl = (fecha: string | undefined, hoy: string) =>
+  !fecha || fecha === hoy ? new Date() : new Date(`${fecha}T15:00:00Z`);
 
 /** Crea la inscripción y su cargo de inscripción. Controla cupo y que el torneo esté en inscripción. */
 export async function inscribirEquipo(tx: Tx, organizacionId: string, torneoId: string, equipoId: string) {
@@ -195,6 +227,9 @@ export class CobrosService implements OnModuleInit, OnModuleDestroy {
           cargos,
           pagos: pagos.map((p) => ({
             id: p.id,
+            cargoId: p.cargoId,
+            concepto: vigentes.find((x) => x.id === p.cargoId)?.concepto ?? '',
+            comprobante: p.comprobante,
             metodo: p.metodo,
             monto: p.monto,
             estado: p.estado,
@@ -405,8 +440,12 @@ export class CobrosService implements OnModuleInit, OnModuleDestroy {
   /** Pago en efectivo o transferencia registrado por el organizador. No paga comisión. */
   pagoManual(c: Contexto, cargoId: string, d: PagoManualInput) {
     return this.db.enOrg(c.organizacionId, async (tx) => {
-      const cargo = await tx.cargo.findUnique({ where: { id: cargoId } });
+      const cargo = await tx.cargo.findUnique({ where: { id: cargoId }, include: { pagos: true } });
       if (!cargo) throw noEncontrado('el cargo');
+      const saldo = saldoDelCargo({ ...cargo, pagado: pagadoDe(cargo.pagos) });
+      if (saldo === 0) throw new ErrorNegocio('Este cargo ya está pagado.');
+      if (d.monto > saldo)
+        throw new ErrorNegocio(`El monto supera lo que se debe de este cargo (${formatoPesos(saldo)}).`);
       const pago = await tx.pago.create({
         data: {
           organizacionId: c.organizacionId,
@@ -425,6 +464,116 @@ export class CobrosService implements OnModuleInit, OnModuleDestroy {
       await auditar(tx, c, 'pago.manual', 'pago', pago.id, { despues: pago });
       return pago;
     });
+  }
+
+  /**
+   * Pago en efectivo o transferencia de un equipo, completo o parcial (sin comisión). Se imputa al cargo elegido o, si no
+   * se elige, a los pendientes por vencimiento: un pago que cubre dos cargos se guarda como un pago por cargo. Cada uno
+   * entra a la caja en efectivo o en el banco según el medio.
+   */
+  registrarPagoManual(c: Contexto, inscripcionId: string, d: RegistrarPagoInput) {
+    return this.db.enOrg(c.organizacionId, async (tx) => {
+      const inscripcion = await tx.inscripcion.findUnique({
+        where: { id: inscripcionId },
+        include: {
+          cargos: { include: { pagos: true }, orderBy: [{ vence: 'asc' }, { creadoEn: 'asc' }] },
+        },
+      });
+      if (!inscripcion) throw noEncontrado('la inscripción');
+      const hoy = hoyEnArgentina();
+      const errorFecha = d.fecha ? validarFechaDePago(d.fecha, hoy) : null;
+      if (errorFecha) throw new ErrorNegocio(errorFecha);
+      let imputaciones;
+      try {
+        imputaciones = imputarPago(
+          inscripcion.cargos.map((x) => ({ ...x, pagado: pagadoDe(x.pagos) })),
+          d.monto,
+          d.cargoId,
+        );
+      } catch (e) {
+        throw new ErrorNegocio((e as Error).message);
+      }
+      const acreditadoEn = acreditadoEl(d.fecha, hoy);
+      const pagos = [];
+      for (const imp of imputaciones) {
+        const pago = await tx.pago.create({
+          data: {
+            organizacionId: c.organizacionId,
+            cargoId: imp.cargoId,
+            metodo: d.metodo,
+            monto: imp.monto,
+            comisionPlataforma: 0,
+            estado: 'APROBADO',
+            comprobante: d.comprobante || null,
+            registradoPorId: c.usuarioId,
+            acreditadoEn,
+          },
+        });
+        await actualizarCargo(tx, imp.cargoId);
+        await registrarPago(tx, c.organizacionId, pago.id);
+        await auditar(tx, c, 'pago.manual', 'pago', pago.id, {
+          despues: { ...pago, parcial: !imp.cancela },
+        });
+        pagos.push({ id: pago.id, cargoId: imp.cargoId, monto: imp.monto, cancela: imp.cancela });
+      }
+      return { pagos };
+    });
+  }
+
+  /**
+   * Anula un pago manual mal cargado: el pago queda ANULADO, su cobro se revierte en la caja con otro asiento (los
+   * asientos no se borran) y el cargo vuelve a deber lo que corresponda.
+   */
+  anularPagoManual(c: Contexto, pagoId: string, d: AnularPagoInput) {
+    return this.db.enOrg(c.organizacionId, async (tx) => {
+      const pago = await tx.pago.findUnique({ where: { id: pagoId } });
+      if (!pago) throw noEncontrado('el pago');
+      const motivo = motivoParaNoAnular(pago);
+      if (motivo) throw new ErrorNegocio(motivo, HttpStatus.UNPROCESSABLE_ENTITY);
+      await tx.pago.update({ where: { id: pagoId }, data: { estado: 'ANULADO' } });
+      // El cobro se asienta con clave por pago. Si por algún motivo no estaba asentado, no hay nada que revertir.
+      // No se controla que la cuenta quede en negativo: la plata nunca entró, el saldo anterior era el que estaba mal.
+      const cobro = await tx.asiento.findFirst({
+        where: { clave: `pago:${pagoId}` },
+        include: { lineas: true },
+      });
+      let reversaId: string | null = null;
+      if (cobro && !(await tx.asiento.findFirst({ where: { revierteAId: cobro.id } }))) {
+        const r = await crearAsiento(tx, c.organizacionId, {
+          tipo: 'REVERSA',
+          descripcion: `Anulación: ${cobro.descripcion}${d.motivo ? ` (${d.motivo})` : ''}`,
+          torneoId: cobro.torneoId,
+          referenciaTipo: 'PAGO',
+          referenciaId: pagoId,
+          revierteAId: cobro.id,
+          creadoPorId: c.usuarioId,
+          lineas: invertir(cobro.lineas),
+        });
+        reversaId = r?.id ?? null;
+      }
+      await actualizarCargo(tx, pago.cargoId);
+      await auditar(tx, c, 'pago.anular', 'pago', pagoId, {
+        antes: { estado: pago.estado, monto: pago.monto, metodo: pago.metodo },
+        despues: { estado: 'ANULADO', reversa: reversaId, motivo: d.motivo },
+      });
+      return { id: pagoId, estado: 'ANULADO', reversa: reversaId };
+    });
+  }
+
+  /**
+   * Link nuevo para el cargo de un pago rechazado. Lo pide quien tiene el link anterior (el equipo), así que no hace falta
+   * sesión: se busca la organización con el rol de sistema y el link se genera con RLS, igual que desde el panel.
+   */
+  async reintentar(preferenciaId: string) {
+    const pago = await this.db.sistema.pago.findUnique({
+      where: { preferenciaId },
+      select: { organizacionId: true, cargoId: true, estado: true },
+    });
+    if (!pago) throw noEncontrado('el pago');
+    if (pago.estado !== 'RECHAZADO')
+      throw new ErrorNegocio('Solo se puede reintentar un pago rechazado.', HttpStatus.CONFLICT);
+    const pref = await this.linkDePago(pago.organizacionId, pago.cargoId);
+    return { urlPago: pref.urlPago, preferenciaId: pref.preferenciaId };
   }
 
   /** Datos públicos del checkout simulado. */
@@ -549,6 +698,26 @@ export class CobrosController {
     return this.s.pagoManual(c, id, d);
   }
 
+  @Post('inscripciones/:id/pagos')
+  @Permiso('cobro.registrar')
+  registrarPagoManual(
+    @Ctx() c: Contexto,
+    @Param('id') id: string,
+    @Body(new Zod(registrarPagoSchema)) d: RegistrarPagoInput,
+  ) {
+    return this.s.registrarPagoManual(c, id, d);
+  }
+
+  @Post('pagos/:id/anular')
+  @Permiso('cobro.registrar')
+  anularPagoManual(
+    @Ctx() c: Contexto,
+    @Param('id') id: string,
+    @Body(new Zod(anularPagoSchema)) d: AnularPagoInput,
+  ) {
+    return this.s.anularPagoManual(c, id, d);
+  }
+
   /** Webhook de la pasarela: valida la firma antes de procesar. */
   @Publico()
   @Post('webhooks/pagos')
@@ -569,6 +738,15 @@ export class CobrosController {
   checkout(@Param('pref') pref: string) {
     if (config.PASARELA_PAGOS !== 'simulada') throw noEncontrado('el pago');
     return this.s.checkout(pref);
+  }
+
+  /** Después de un pago rechazado, el equipo pide un link nuevo para el mismo cargo (falla conocida 7). */
+  @Publico()
+  @Post('pagos/simulado/:pref/reintentar')
+  @HttpCode(200)
+  reintentar(@Param('pref') pref: string) {
+    if (config.PASARELA_PAGOS !== 'simulada') throw noEncontrado('el pago');
+    return this.s.reintentar(pref);
   }
 
   /** Checkout simulado: genera la misma notificación que mandaría la pasarela real y la procesa por el mismo camino. */

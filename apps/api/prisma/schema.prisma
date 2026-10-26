@@ -23,6 +23,9 @@ model Usuario {
   creadoEn     DateTime        @default(now()) @map("creado_en")
   membresias   Membresia[]
   sesiones     SesionRefresh[]
+  // Cuenta (E04-02): email verificado y links de un solo uso (recuperación y verificación).
+  emailVerificadoEn DateTime?    @map("email_verificado_en")
+  linksCuenta       LinkCuenta[]
 
   @@map("usuario")
 }
@@ -45,6 +48,11 @@ model Organizacion {
   /// Solo en el entorno de demo (ADR-019): las sandboxes de visitantes vencen y un job las elimina. Nulo en una liga real.
   demoExpiraEn DateTime?   @map("demo_expira_en")
   membresias   Membresia[]
+  /// Configuración inicial (E25): logo (data URL), localidad, provincia y los pasos confirmados del asistente.
+  logo                 String?
+  localidad            String?
+  provincia            String?
+  configuracionInicial Json?   @map("configuracion_inicial")
 
   @@index([demoExpiraEn])
   @@map("organizacion")
@@ -56,6 +64,8 @@ enum Rol {
   TESORERO
   ARBITRO
   TRIBUNAL
+  /// Capitán de un equipo (E19): solo ve y opera su equipo (`Membresia.equipoId`).
+  CAPITAN
 }
 
 model Membresia {
@@ -64,6 +74,8 @@ model Membresia {
   organizacionId String       @map("organizacion_id")
   rol            Rol
   creadoEn       DateTime     @default(now()) @map("creado_en")
+  /// Alcance del rol CAPITAN: el equipo que maneja. Nulo en los demás roles.
+  equipoId       String?      @map("equipo_id")
   usuario        Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   organizacion   Organizacion @relation(fields: [organizacionId], references: [id], onDelete: Cascade)
 
@@ -81,6 +93,8 @@ model SesionRefresh {
   revocadoEn DateTime? @map("revocado_en")
   creadoEn   DateTime  @default(now()) @map("creado_en")
   usuario    Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  /// Organización activa de la sesión (E04-10): la renovación la mantiene. Nula = la primera membresía.
+  organizacionActivaId String? @map("organizacion_activa_id")
 
   @@index([familia])
   @@map("sesion_refresh")
@@ -100,6 +114,43 @@ model Auditoria {
 
   @@index([organizacionId, creadoEn])
   @@map("auditoria")
+}
+
+// ── Cuenta del usuario (E04-02, E04-05) ──
+
+enum TipoLinkCuenta {
+  RECUPERAR
+  VERIFICAR_EMAIL
+}
+
+/// Link de un solo uso que se manda por email (recuperar la contraseña, verificar el email). Se guarda solo el hash.
+model LinkCuenta {
+  id        String         @id @default(cuid())
+  usuarioId String         @map("usuario_id")
+  tipo      TipoLinkCuenta
+  tokenHash String         @unique @map("token_hash")
+  /// Email al que se mandó: verificar un email viejo no marca como verificado el nuevo.
+  email     String
+  venceEn   DateTime       @map("vence_en")
+  usadoEn   DateTime?      @map("usado_en")
+  creadoEn  DateTime       @default(now()) @map("creado_en")
+  usuario   Usuario        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, tipo])
+  @@map("link_cuenta")
+}
+
+/// Intento de ingreso (E04-05): limita la fuerza bruta por cuenta y por IP.
+model IntentoIngreso {
+  id       String   @id @default(cuid())
+  email    String
+  ip       String
+  exitoso  Boolean
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  @@index([email, creadoEn])
+  @@index([ip, creadoEn])
+  @@map("intento_ingreso")
 }
 
 // ───────────── Torneos (por organización, con RLS) ─────────────
@@ -144,6 +195,8 @@ model Reglamento {
   levantarSancionPagando  Boolean  @default(false) @map("levantar_sancion_pagando")
   levantarSancionTipos    String[] @default(["ACUMULACION", "DOBLE_AMARILLA"]) @map("levantar_sancion_tipos")
   levantarSancionMonto    Int      @default(0) @map("levantar_sancion_monto")
+  /// Equipo ausente (F11): minutos de tolerancia desde la hora del partido antes de poder marcarlo.
+  toleranciaWOMinutos     Int      @default(15) @map("tolerancia_wo_minutos")
   creadoEn                DateTime @default(now()) @map("creado_en")
   torneos                 Torneo[]
 
@@ -217,7 +270,10 @@ model Jugador {
   dniCifrado          String?            @map("dni_cifrado")
   dniHash             String?            @map("dni_hash")
   datosMedicosCifrado String?            @map("datos_medicos_cifrado")
-  plantel             PlantelJugador[]
+  /// Sitio público (E20-04): apodo y cómo se lo nombra (INICIALES, APODO o COMPLETO; ver jugadorPublico en @potrero/shared).
+  apodo               String?
+  nombrePublico       String             @default("INICIALES") @map("nombre_publico")
+  plantel            PlantelJugador[]
   documentos          DocumentoJugador[]
   consentimientos     Consentimiento[]
 
@@ -302,6 +358,8 @@ enum EstadoPago {
   PENDIENTE
   APROBADO
   RECHAZADO
+  /// Pago manual mal cargado y anulado: su cobro en la caja se revierte con otro asiento.
+  ANULADO
 }
 
 model Pago {
@@ -806,4 +864,106 @@ model SolicitudConsentimiento {
 
   @@index([organizacionId, jugadorId])
   @@map("solicitud_consentimiento")
+}
+
+// ───────────── Sponsors (E23) ─────────────
+
+/// Auspiciante de la organización. Lo vende el organizador (documento 2, sección 6).
+model Sponsor {
+  id             String      @id @default(cuid())
+  organizacionId String      @map("organizacion_id")
+  nombre         String
+  /// CATEGORIAS_SPONSOR de @potrero/shared.
+  categoria      String
+  descripcion    String?
+  link           String?
+  logoUrl        String?     @map("logo_url")
+  creadoEn       DateTime    @default(now()) @map("creado_en")
+  placements     Placement[]
+
+  @@unique([organizacionId, nombre])
+  @@map("sponsor")
+}
+
+/// Espacio vendido a un sponsor en el sitio de un torneo, por un período y un monto acordado.
+/// Sus cobros son asientos INGRESO de la caja con referenciaTipo "SPONSOR" y referenciaId = sponsor.
+model Placement {
+  id             String             @id @default(cuid())
+  organizacionId String             @map("organizacion_id")
+  sponsorId      String             @map("sponsor_id")
+  torneoId       String             @map("torneo_id")
+  /// ESPACIOS_SPONSOR de @potrero/shared.
+  espacio        String
+  desde          DateTime           @db.Date
+  hasta          DateTime           @db.Date
+  /// Monto acordado por todo el período, en pesos.
+  monto          Int
+  activo         Boolean            @default(true)
+  creadoEn       DateTime           @default(now()) @map("creado_en")
+  sponsor        Sponsor            @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
+  metricas       MetricaPlacement[]
+
+  @@index([organizacionId, torneoId])
+  @@map("placement")
+}
+
+/// Impresiones y clics de un espacio por día. Solo contadores: ni cookies ni datos del visitante.
+model MetricaPlacement {
+  id             String    @id @default(cuid())
+  organizacionId String    @map("organizacion_id")
+  placementId    String    @map("placement_id")
+  dia            DateTime  @db.Date
+  impresiones    Int       @default(0)
+  clics          Int       @default(0)
+  placement      Placement @relation(fields: [placementId], references: [id], onDelete: Cascade)
+
+  @@unique([placementId, dia])
+  @@map("metrica_placement")
+}
+
+/// Rubros que la organización no acepta como sponsors, además de los prohibidos con menores.
+model PreferenciasSponsors {
+  organizacionId       String   @id @map("organizacion_id")
+  categoriasRechazadas String[] @default([]) @map("categorias_rechazadas")
+
+  @@map("preferencias_sponsors")
+}
+
+// ───────────── Usuarios de la organización y panel del capitán (E04-09, E19) ─────────────
+
+/// Invitación a sumarse a la organización con un rol. El link lleva un token de un solo uso (se guarda solo su hash).
+model Invitacion {
+  id             String    @id @default(cuid())
+  organizacionId String    @map("organizacion_id")
+  email          String
+  nombre         String?
+  rol            Rol
+  /// Solo para CAPITAN: el equipo que va a manejar.
+  equipoId       String?   @map("equipo_id")
+  tokenHash      String    @unique @map("token_hash")
+  venceEn        DateTime  @map("vence_en")
+  aceptadaEn     DateTime? @map("aceptada_en")
+  rechazadaEn    DateTime? @map("rechazada_en")
+  anuladaEn      DateTime? @map("anulada_en")
+  invitadoPorId  String?   @map("invitado_por_id")
+  creadoEn       DateTime  @default(now()) @map("creado_en")
+
+  @@index([organizacionId, email])
+  @@map("invitacion")
+}
+
+/// Convocatoria a un partido (E19-02): la respuesta de cada jugador del plantel, que carga el capitán. Sin fila = pendiente.
+model Convocatoria {
+  id             String   @id @default(cuid())
+  organizacionId String   @map("organizacion_id")
+  partidoId      String   @map("partido_id")
+  equipoId       String   @map("equipo_id")
+  jugadorId      String   @map("jugador_id")
+  /// VA o NO_VA.
+  respuesta      String
+  respondidoEn   DateTime @default(now()) @map("respondido_en")
+
+  @@unique([partidoId, jugadorId])
+  @@index([organizacionId, partidoId])
+  @@map("convocatoria")
 }

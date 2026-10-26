@@ -7,7 +7,7 @@ Sistema para organizar ligas y torneos de fútbol amateur en Argentina: cobros c
 - Claude implementa todo (frontend y backend). Guía: `docs/backlog.md` (E00–E37, en orden). Al terminar una tarea, marcala `[x]` con su ID.
 - Fuente de verdad: documentos 1–6 en `docs/src/*.html` (los PDF se generan). Si algo contradice esos documentos, se corrige lo otro o se actualiza el documento a propósito.
 - Cifras (precios, comisiones, metas, reglamento por defecto): solo en `docs/datos.json`. Después de cambiarlo: `pnpm datos` y `pnpm check:alineacion`.
-- Decisiones técnicas: `docs/adr/` (formato GT-D2). Nueva decisión → skill `adr`. Abiertas: 011–016.
+- Decisiones técnicas: `docs/adr/` (formato GT-D2). Nueva decisión → skill `adr`. Abiertas: 011–016 y 026.
 - Repo solo local por ahora (sin remoto). No commitear sin pedido explícito.
 - Para contexto de negocio NO leer los HTML/PDF completos: usar `docs/contexto/` (reglas, glosario, estado actual). Modelo de datos: `apps/api/prisma/schema.prisma`.
 

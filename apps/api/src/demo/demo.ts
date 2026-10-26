@@ -62,6 +62,14 @@ export const TABLAS_DE_ORGANIZACION = [
   'torneo',
   'reglamento',
   'auditoria',
+  // Sponsors (E23): las métricas y los espacios antes que el sponsor.
+  'metrica_placement',
+  'placement',
+  'sponsor',
+  'preferencias_sponsors',
+  // Usuarios e invitaciones (E04-09) y convocatoria del capitán (E19-02).
+  'invitacion',
+  'convocatoria',
 ] as const;
 
 @Injectable()

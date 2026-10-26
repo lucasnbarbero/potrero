@@ -11,7 +11,7 @@
     "test": "tsc -p tsconfig.build.json && node scripts/test-db.mjs && vitest run",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:reset": "prisma migrate reset --force && pnpm db:seed",
+    "db:reset": "prisma migrate reset --force && node --env-file-if-exists=.env scripts/permisos-app.mjs && pnpm db:seed",
     "db:seed": "tsc -p tsconfig.build.json && node dist/seed/seed.js"
   },
   "dependencies": {

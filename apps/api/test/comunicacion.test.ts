@@ -435,4 +435,35 @@ describe('comunicación', () => {
   it('exige sesión y permiso', async () => {
     expect((await cliente()('GET', '/comunicacion/historial')).status).toBe(401);
   });
+
+  it('el recordatorio a morosos reclama el saldo, no el monto del cargo (F10)', async () => {
+    const e = await api('POST', '/equipos', {
+      nombre: 'Equipo E',
+      capitanNombre: 'Eli',
+      capitanEmail: 'eli@x.com',
+    });
+    // Un torneo aparte, todavía en inscripción (el de arriba ya tiene fixture).
+    const otroTorneo = (
+      await api('POST', '/torneos', {
+        nombre: 'Copa Saldo',
+        modalidad: 'F5',
+        formato: 'LIGA',
+        cupo: 8,
+        inscripcion: 1000,
+      })
+    ).body.id;
+    const ins = await api('POST', `/torneos/${otroTorneo}/inscripciones`, { equipoId: e.body.id });
+    await api('POST', `/cargos/${ins.body.cargo.id}/pagos`, { metodo: 'EFECTIVO', monto: 400 });
+    const r = await api('POST', '/comunicacion/enviar', {
+      plantilla: 'RECORDATORIO_PAGO',
+      canal: 'EMAIL',
+      segmento: { tipo: 'MOROSOS', torneoId: otroTorneo },
+    });
+    expect(r.status).toBe(201);
+    const [m] = await consulta(
+      "SELECT cuerpo FROM mensaje WHERE plantilla = 'RECORDATORIO_PAGO' AND destino = 'eli@x.com'",
+    );
+    expect(m.cuerpo).toContain('600');
+    expect(m.cuerpo).not.toContain('1.000');
+  });
 });

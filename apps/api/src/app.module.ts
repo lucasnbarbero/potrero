@@ -17,6 +17,14 @@ import { EquiposModule } from './equipos/equipos.js';
 import { PartidosModule } from './partidos/partidos.js';
 import { PublicoModule } from './publico/publico.js';
 import { TorneosModule } from './torneos/torneos.js';
+import { MetricasModule } from './metricas/metricas.js';
+import { ConfiguracionModule } from './configuracion/configuracion.js';
+import { SponsorsModule } from './sponsors/sponsors.js';
+import { CapitanModule } from './capitan/capitan.js';
+import { UsuariosModule } from './usuarios/usuarios.js';
+// Panel del organizador y cuenta del usuario (E18, E04-02/05/10/14).
+import { CuentaModule } from './auth/cuenta.js';
+import { PanelModule } from './panel/panel.js';
 
 @Module({
   imports: [
@@ -34,6 +42,14 @@ import { TorneosModule } from './torneos/torneos.js';
     DocumentacionModule,
     TribunalModule,
     FixtureModule,
+    MetricasModule,
+    ConfiguracionModule,
+    SponsorsModule,
+    // Usuarios e invitaciones (E04-09) y panel del capitán (E19).
+    UsuariosModule,
+    CapitanModule,
+    PanelModule,
+    CuentaModule,
     // Sandboxes de la demo pública (ADR-019): fuera del entorno de demo estas rutas no existen.
     ...(config.DEMO_MODE ? [DemoModule] : []),
   ],

@@ -332,7 +332,8 @@ export function Reprogramador({
       {resultado && (
         <section role="status" className="tile-volt" data-testid="resultado-reprogramacion">
           <b className="text-xl">
-            Listo: movimos {resultado.movidos} partidos y avisamos a {resultado.avisados} capitanes.
+            Listo: movimos {resultado.movidos} {resultado.movidos === 1 ? 'partido' : 'partidos'} y avisamos a{' '}
+            {resultado.avisados} {resultado.avisados === 1 ? 'capitán' : 'capitanes'}.
           </b>
           <p className="mt-1 text-sm text-ink/70">
             A medida que confirmen vas a verlo acá.{' '}

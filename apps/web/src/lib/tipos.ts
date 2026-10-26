@@ -141,6 +141,9 @@ export interface Acta {
   }[];
   /** Dispositivo que lleva el acta (un solo dueño por partido). */
   dueno: { dispositivoId: string; usuario: string; desde: string | null } | null;
+  /** Equipo ausente (F11): el que se presentó y la tolerancia del reglamento del torneo. */
+  ganadorWOId?: string | null;
+  toleranciaWOMinutos?: number;
 }
 
 export interface CruceLlave {
@@ -587,4 +590,49 @@ export interface PropuestaCambioFixture {
     costoArs: number;
     tope: { restantes: number; excedente: number };
   };
+}
+
+// ───────────── Configuración inicial e importación (E25) ─────────────
+
+import type { Plan, ProgresoConfiguracion, Reglamento, ResultadoImportacion } from '@potrero/shared';
+
+export interface EstadoConfiguracion {
+  organizacion: {
+    nombre: string;
+    slug: string;
+    plan: Plan;
+    colorMarca: string | null;
+    logo: string | null;
+    localidad: string | null;
+    provincia: string | null;
+    mpConectado: boolean;
+  };
+  progreso: ProgresoConfiguracion;
+  conteos: { equipos: number; jugadores: number; canchas: number; torneos: number };
+  reglamento: Reglamento;
+}
+
+export type VistaPreviaImportacion = Pick<
+  ResultadoImportacion,
+  'valido' | 'errores' | 'avisos' | 'hojas' | 'resumen'
+>;
+
+// ── Pagos manuales, edición y estado del torneo ──
+export interface PagoDeInscripcion {
+  id: string;
+  cargoId: string;
+  concepto: string;
+  comprobante: string | null;
+  metodo: string;
+  monto: number;
+  /** PENDIENTE, APROBADO, RECHAZADO o ANULADO. */
+  estado: string;
+  comision: number;
+  fecha: string;
+}
+export type InscripcionConPagos = Omit<Inscripcion, 'pagos'> & { pagos: PagoDeInscripcion[] };
+/** Lo que el detalle del torneo agrega para editarlo y cambiarle el estado. */
+export interface ConteosTorneo {
+  inscriptos: number;
+  partidos: { total: number; sinJugar: number };
 }

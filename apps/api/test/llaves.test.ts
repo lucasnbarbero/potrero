@@ -226,6 +226,11 @@ describe('copa con cabezas de serie', () => {
     const semis = (await deLlave(e)).filter((p) => p.clave?.startsWith('2-'));
     expect(semis).toHaveLength(2);
     const [s1, s2] = semis;
+    // Un equipo ausente se marca recién pasada la tolerancia (F11): el partido tiene que haber empezado.
+    const db = new pg.Client({ connectionString: process.env.DATABASE_URL_ADMIN });
+    await db.connect();
+    await db.query(`UPDATE partido SET inicio = now() - interval '1 hour' WHERE id = $1`, [s1!.id]);
+    await db.end();
     expect((await e.api('POST', `/partidos/${s1!.id}/wo`, { ganadorId: s1!.localId })).status).toBe(201);
     expect((await jugar(e.api, s2!.id, 0, 1)).status).toBe(201);
     const final = (await deLlave(e)).find((p) => p.clave === '3-1')!;

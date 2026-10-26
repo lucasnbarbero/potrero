@@ -189,9 +189,11 @@ test('un solo dueño del acta: el segundo dispositivo recibe el aviso y puede to
   const partidos = await (await page.request.get(`/api/torneos/${apertura.id}/partidos`)).json();
   const p = partidos.find((x: { estado: string }) => x.estado === 'PROGRAMADO');
 
-  // El primer dispositivo abre el acta y se queda con ella.
+  // Abrir el acta no la toma (F13): el primer dispositivo se queda con ella al iniciar el partido.
   await page.goto(`/panel/partidos/${p.id}`);
   await expect(page.getByTestId('estado-sync')).toContainText('En línea');
+  expect((await (await page.request.get(`/api/partidos/${p.id}`)).json()).dueno).toBeNull();
+  await page.getByRole('button', { name: 'Iniciar partido' }).click();
   await expect
     .poll(async () => (await (await page.request.get(`/api/partidos/${p.id}`)).json()).dueno?.dispositivoId)
     .toBeTruthy();
@@ -203,15 +205,15 @@ test('un solo dueño del acta: el segundo dispositivo recibe el aviso y puede to
   const celular = await segundo.newPage();
   await celular.goto(`/panel/partidos/${p.id}`);
   await expect(celular.getByTestId('otro-dueno')).toContainText('Otro dispositivo tiene esta acta');
-  await expect(celular.getByRole('button', { name: 'Iniciar partido' })).toBeDisabled();
+  await expect(celular.getByRole('button', { name: 'Gol', exact: true }).first()).toBeDisabled();
 
   // Lo toma a propósito: ahora el aviso lo ve el primero y su botón queda bloqueado.
   await celular.getByRole('button', { name: 'Tomar el acta en este dispositivo' }).click();
   await expect(celular.getByTestId('otro-dueno')).toHaveCount(0);
-  await expect(celular.getByRole('button', { name: 'Iniciar partido' })).toBeEnabled();
+  await expect(celular.getByRole('button', { name: 'Gol', exact: true }).first()).toBeEnabled();
   await page.reload();
   await expect(page.getByTestId('otro-dueno')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Iniciar partido' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Gol', exact: true }).first()).toBeDisabled();
   await segundo.close();
 });
 

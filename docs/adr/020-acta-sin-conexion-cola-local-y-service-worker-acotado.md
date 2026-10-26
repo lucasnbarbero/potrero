@@ -20,7 +20,7 @@ Cola local de operaciones (iniciar, evento, anular, cerrar) en IndexedDB, con la
 
 El service worker (`apps/web/public/sw.js`) guarda solo la pantalla del acta y los archivos de la app (`/_next/static/**`), con red primero. **Nunca guarda respuestas de la API**: una lectura vieja devuelta por el worker haría creer que hay conexión. Al cerrar sesión se borra lo guardado.
 
-Un solo dueño del acta por partido (E11-05): el primer dispositivo que la abre se la queda; otro dispositivo ve quién la tiene y puede tomarla a propósito. El servidor rechaza las escrituras de un dispositivo que no es el dueño (cuando el pedido informa su dispositivo).
+Un solo dueño del acta por partido (E11-05): el primer dispositivo que carga algo en ella se la queda (desde el 26/10/2026; antes era el primero que la abría); otro dispositivo ve quién la tiene y puede tomarla a propósito. El servidor rechaza las escrituras de un dispositivo que no es el dueño (cuando el pedido informa su dispositivo).
 
 ## Consecuencias
 - Un evento cargado sin señal se puede anular con su `clientUuid`, sin conocer su id del servidor.

@@ -29,9 +29,10 @@ import {
   Publico,
   Zod,
 } from '../comun/http.js';
-import { tienePermiso } from '../comun/permisos.js';
+import { PERMISOS_POR_ROL, permitidaSinPermiso, tienePermiso } from '../comun/permisos.js';
 import { slugUnico } from '../comun/slug.js';
 import { DbService } from '../db/db.service.js';
+import { controlarIntentos, crearLink, registrarIntento } from './links.js';
 
 const SECRETO = new TextEncoder().encode(config.JWT_SECRET);
 const DURACION_ACCESO_SEG = 15 * 60;
@@ -85,11 +86,15 @@ export class AuthService {
       },
       include: { membresias: true },
     });
+    // Verificación del email (E04-02): el envío se simula y el link queda en el log.
+    await crearLink(this.db, usuario.id, 'VERIFICAR_EMAIL', usuario.email);
     const m = usuario.membresias[0]!;
     return this.emitirSesion({ usuarioId: usuario.id, organizacionId: m.organizacionId, rol: m.rol });
   }
 
-  async ingresar(d: LoginInput) {
+  async ingresar(d: LoginInput, ip = 'desconocida') {
+    // Límite de intentos por cuenta y por IP (E04-05), antes de mirar la contraseña.
+    await controlarIntentos(this.db, d.email, ip);
     const usuario = await this.db.app.usuario.findUnique({
       where: { email: d.email },
       include: { membresias: { orderBy: { creadoEn: 'asc' } } },
@@ -98,6 +103,7 @@ export class AuthService {
     const ok = usuario
       ? await argon2.verify(usuario.passwordHash, d.password)
       : (await argon2.hash(d.password), false);
+    await registrarIntento(this.db, d.email, ip, !!usuario && ok);
     if (!usuario || !ok) throw new ErrorNegocio('Email o contraseña incorrectos.', HttpStatus.UNAUTHORIZED);
     const m = usuario.membresias[0];
     if (!m) throw new ErrorNegocio('Tu usuario no pertenece a ninguna organización.', HttpStatus.FORBIDDEN);
@@ -121,10 +127,21 @@ export class AuthService {
       );
     }
     await this.db.app.sesionRefresh.update({ where: { id: sesion.id }, data: { revocadoEn: new Date() } });
-    const m = await this.db.app.membresia.findFirst({
-      where: { usuarioId: sesion.usuarioId },
-      orderBy: { creadoEn: 'asc' },
-    });
+    // La sesión conserva la organización activa (E04-10); si ya no es miembro, vuelve a la primera.
+    const m =
+      (sesion.organizacionActivaId &&
+        (await this.db.app.membresia.findUnique({
+          where: {
+            usuarioId_organizacionId: {
+              usuarioId: sesion.usuarioId,
+              organizacionId: sesion.organizacionActivaId,
+            },
+          },
+        }))) ||
+      (await this.db.app.membresia.findFirst({
+        where: { usuarioId: sesion.usuarioId },
+        orderBy: { creadoEn: 'asc' },
+      }));
     if (!m) throw new ErrorNegocio('Tu usuario no pertenece a ninguna organización.', HttpStatus.FORBIDDEN);
     return this.emitirSesion(
       { usuarioId: sesion.usuarioId, organizacionId: m.organizacionId, rol: m.rol },
@@ -150,18 +167,26 @@ export class AuthService {
       }),
       this.db.app.organizacion.findUniqueOrThrow({
         where: { id: c.organizacionId },
-        select: { id: true, nombre: true, slug: true, plan: true },
+        select: { id: true, nombre: true, slug: true, plan: true, mpCuentaId: true },
       }),
     ]);
-    return { usuario, organizacion, rol: c.rol };
+    const { mpCuentaId, ...org } = organizacion;
+    // La web arma el menú con los permisos del rol y avisa si falta conectar Mercado Pago.
+    return {
+      usuario,
+      organizacion: { ...org, mpConectado: !!mpCuentaId },
+      rol: c.rol,
+      permisos: PERMISOS_POR_ROL[c.rol] ?? [],
+    };
   }
 
-  private async emitirSesion(c: Contexto, familia: string = randomBytes(16).toString('hex')) {
+  async emitirSesion(c: Contexto, familia: string = randomBytes(16).toString('hex')) {
     const refresh = randomBytes(32).toString('base64url');
     await this.db.app.sesionRefresh.create({
       data: {
         usuarioId: c.usuarioId,
         familia,
+        organizacionActivaId: c.organizacionId,
         tokenHash: hash(refresh),
         expiraEn: new Date(Date.now() + DURACION_REFRESH_DIAS * 86_400_000),
       },
@@ -201,8 +226,12 @@ export class AuthController {
   @Publico()
   @Post('ingresar')
   @HttpCode(200)
-  async ingresar(@Body(new Zod(loginSchema)) d: LoginInput, @Res({ passthrough: true }) res: Response) {
-    ponerCookies(res, await this.auth.ingresar(d));
+  async ingresar(
+    @Body(new Zod(loginSchema)) d: LoginInput,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    ponerCookies(res, await this.auth.ingresar(d, req.ip ?? 'desconocida'));
     return { ok: true };
   }
 
@@ -248,7 +277,7 @@ export class GuardSesion implements CanActivate {
     if (this.reflector.getAllAndOverride<boolean>(PUBLICO, objetivos)) return true;
     if (!req.ctx) throw new ErrorNegocio('Iniciá sesión para continuar.', HttpStatus.UNAUTHORIZED);
     const permiso = this.reflector.getAllAndOverride<string>(PERMISO, objetivos);
-    if (permiso && !tienePermiso(req.ctx.rol, permiso))
+    if (permiso ? !tienePermiso(req.ctx.rol, permiso) : !permitidaSinPermiso(req.ctx.rol, req.path))
       throw new ErrorNegocio('Tu rol no tiene permiso para esta acción.', HttpStatus.FORBIDDEN);
     return true;
   }

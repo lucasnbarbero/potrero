@@ -12,7 +12,8 @@ Fuente: documento 1 (secciones 5–8) y documento 2. Cifras: `docs/datos.json`. 
 - La comisión se cobra solo sobre pagos con Mercado Pago (split 1:1, `application_fee`). Efectivo y transferencia: sin comisión.
 - Mercado Pago cobra aparte su costo; el organizador elige absorberlo o mostrarlo como "cargo por servicio" (default: ADR-013 abierto).
 - Una inscripción genera cargos; el cargo queda PAGADO cuando los pagos aprobados cubren el monto; sin cargos pendientes, la inscripción pasa a CONFIRMADA.
-- Cuota por fecha (E06-20): monto fijo por equipo y por fecha, con o sin inscripción. Un cargo por equipo y fecha, vence el día del partido. Por defecto: no se cobra la fecha libre ni el partido suspendido; el W.O. sí. La deuda alerta y recuerda; bloquear al deudor es opcional. Activada con el torneo empezado, se cobra desde la próxima fecha (la siguiente a la última con partidos jugados), nunca las ya jugadas; cuota y seguro guardan cada uno su inicio (`cuotaDesdeFecha`, `seguroDesdeFecha`). Valores en `datos.json` (`cobrosPorFechaPorDefecto`).
+- Pagos manuales (efectivo o transferencia): completos o parciales, con fecha y comprobante; sin comisión. Un pago puede cubrir varios cargos (del más viejo al más nuevo) y se guarda uno por cargo. Un pago manual se anula con un asiento que revierte; uno de Mercado Pago se devuelve con un reembolso (pendiente). Registran el dueño y el tesorero (`cobro.registrar`).
+- Cuota por fecha (E06-20): monto fijo por equipo y por fecha, con o sin inscripción. Un cargo por equipo y fecha, vence el día del partido. Por defecto: no se cobra la fecha libre ni el partido suspendido; el partido con equipo ausente sí. La deuda alerta y recuerda; bloquear al deudor es opcional. Activada con el torneo empezado, se cobra desde la próxima fecha (la siguiente a la última con partidos jugados), nunca las ya jugadas; cuota y seguro guardan cada uno su inicio (`cuotaDesdeFecha`, `seguroDesdeFecha`). Valores en `datos.json` (`cobrosPorFechaPorDefecto`).
 - Seguro por jugador (E06-21): monto × jugadores del plantel en cada fecha que el equipo juega (juegue o no cada jugador). Cargo aparte al equipo, rubro Seguros en la caja.
 - Cuotas y seguros se generan 7 días antes del partido (`anticipacionDias`), uno por equipo, tipo y fecha (clave única: idempotente). Siguen al partido si se mueve; si se suspende, el cargo pendiente sin pagos se anula; un cargo con pagos no se toca. El monto queda fijo al generarse, salvo que el organizador cambie la configuración (se recalculan los pendientes sin pagos). La cuota entra en Inscripciones de la caja.
 - La inscripción se confirma solo con los cargos de inscripción y seña: cuotas por fecha, seguros y multas no la traban.
@@ -20,7 +21,8 @@ Fuente: documento 1 (secciones 5–8) y documento 2. Cifras: `docs/datos.json`. 
 
 ## Tabla
 - Puntos por defecto 3/1/0. Desempates en orden: diferencia de gol, goles a favor, resultado entre sí, juego limpio (amarilla 1, roja 3; menos es mejor), sorteo.
-- W.O.: gana el presente por 3-0 (configurable); no suma estadísticas individuales.
+- Equipo ausente (no se presentó): se puede marcar recién al vencer la tolerancia del reglamento del torneo (15 min por defecto); gana el presente por 3-0 (configurable), el resultado queda guardado en el partido y no suma estadísticas individuales.
+- La tabla incluye solo a los equipos del fixture (o, sin fixture, a los confirmados).
 - La tabla es derivada de los partidos cerrados; nunca se edita.
 
 ## Fixture
@@ -32,11 +34,12 @@ Fuente: documento 1 (secciones 5–8) y documento 2. Cifras: `docs/datos.json`. 
 - Eliminación directa. Si los equipos no son potencia de dos, las mejores semillas pasan la primera ronda libres. Siembra estándar: la 1ª y la 2ª solo se cruzan en la final (1-8, 4-5, 2-7, 3-6).
 - Copa: sorteo con cabezas de serie (ocupan las primeras semillas; el resto se mezcla con un número de sorteo reproducible).
 - Liga + playoffs: clasifican los primeros de la tabla (por defecto, la mayor potencia de dos hasta 8). Grupos + playoffs: grupos en serpentina (mínimo 3 equipos por grupo); avanzan 1 o 2 por grupo y el 1º de un grupo se cruza con el 2º del vecino.
-- Los cruces no suman puntos a la tabla (sí goles a goleadores). Un empate se define por penales, que el acta exige; un W.O. define al ganador. Cada cruce se crea cuando se conocen sus dos equipos; al definirse la final, el torneo pasa a finalizado.
+- Los cruces no suman puntos a la tabla (sí goles a goleadores). Un empate se define por penales, que el acta exige; un equipo ausente pierde el cruce. Cada cruce se crea cuando se conocen sus dos equipos; al definirse la final, el torneo pasa a finalizado.
 - Pendiente: ida y vuelta en llaves.
+- Formato flexible (ADR-026, propuesta): un torneo es una secuencia de fases (todos contra todos, grupos, eliminación) que el organizador encadena: cada fase toma a los inscriptos o lo que deja otra (puestos, mejores N, ganadores o perdedores de una ronda, no clasificados), puede jugarse en paralelo con otra (copa estímulo) y define ida y vuelta por ronda. Los formatos actuales son plantillas. Hoy solo existe el simulador; la creación de torneos por fases es E10-07.
 
 ## Acta
-- Eventos solo de agregado con `clientUuid`; correcciones = anulación (por id o por `clientUuid`). Un dueño del acta por partido: el primer dispositivo que la abre; otro puede tomarla a propósito y el dueño anterior queda afuera.
+- Eventos solo de agregado con `clientUuid`; correcciones = anulación (por id o por `clientUuid`). Un dueño del acta por partido: el primer dispositivo que carga algo (iniciar, evento, anulación, cierre o equipo ausente); abrirla no la toma; otro puede tomarla a propósito y el dueño anterior queda afuera.
 - Sin conexión, el dispositivo guarda las operaciones en una cola y las envía en orden al volver la señal; el servidor las reconoce por `clientUuid` y nunca duplica. Lo que el servidor rechaza se le informa al delegado.
 - Cierre: firma de ambos capitanes o justificación del árbitro. Al cerrar: resultado, sanciones; tabla/goleadores se derivan.
 - Planilla con habilitación visible antes de empezar. Cargar a un suspendido: se registra con advertencia y (E14) abre expediente.
@@ -70,11 +73,11 @@ Fuente: documento 1 (secciones 5–8) y documento 2. Cifras: `docs/datos.json`. 
 ## Contingencias
 - Se calcula una propuesta antes de aplicar: mover días (un día después, una semana) o pasar a otras canchas en el mismo horario, los que entren. Advierte conflictos de cancha y de equipos con dos partidos el mismo día; no bloquea, pero hay que confirmar que se vieron.
 - Al aplicar se mueven los partidos, se registra la contingencia y se avisa a los capitanes con "Confirmo" / "No puedo" (link sin sesión). Un "No puedo" queda como alerta en el panel.
-- Alerta de clima con proveedor simulado (a elegir). Pendiente: resolución automática del W.O. por tolerancia.
+- Alerta de clima con proveedor simulado (a elegir). Pendiente: resolución automática del equipo ausente por tolerancia.
 
 ## Sanciones
 - Roja directa 1 partido · doble amarilla 1 (sus amarillas no acumulan) · acumulación: cada 5 amarillas, 1 partido.
-- Se cumplen con partidos oficiales del equipo jugados después; W.O. y suspendidos no descuentan. El tribunal puede modificar (E14).
+- Se cumplen con partidos oficiales del equipo jugados después; los partidos con equipo ausente y los suspendidos no descuentan. El tribunal puede modificar (E14).
 - Levantar pagando (E14-08, opcional, apagado por defecto): el reglamento elige qué tipos se levantan (por defecto ACUMULACION y DOBLE_AMARILLA; nunca roja directa, sanción del tribunal ni sanción con expediente) y el monto por partido (0 = no disponible). Cada pedido es un `LevantamientoSancion` con su cargo al equipo (rubro Multas).
 - Se acredita cuando el cargo queda PAGADO y levanta el primer partido oficial del equipo jugado después; ese partido no cuenta como cumplido. Permisos: editar el reglamento `torneo.escribir`; pedir o anular `sancion.resolver`.
 

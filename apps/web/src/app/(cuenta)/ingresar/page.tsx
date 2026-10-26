@@ -30,6 +30,11 @@ function Formulario() {
         required
         error={campos.password}
       />
+      <p className="-mt-2 text-right text-sm">
+        <Link href="/recuperar" className="font-semibold text-mute underline hover:text-ink">
+          ¿Te olvidaste la contraseña?
+        </Link>
+      </p>
       <MensajeError error={error} />
       <button className="btn-volt btn-lg w-full" disabled={enviando}>
         {enviando ? 'Ingresando…' : 'Ingresar'}

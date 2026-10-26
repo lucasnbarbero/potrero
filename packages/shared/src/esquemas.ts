@@ -2,6 +2,7 @@
 import { z } from 'zod';
 import { CUENTAS_DE_PLATA, RUBROS_EGRESO } from './dominio/caja.js';
 import { CANALES } from './dominio/mensajeria.js';
+import { CATEGORIAS_SPONSOR, ESPACIOS_SPONSOR } from './dominio/sponsors.js';
 import { FORMATOS, METODOS_PAGO, MODALIDADES, TIPOS_EVENTO } from './dominio/tipos.js';
 
 const texto = (max = 120) => z.string().trim().min(1, 'Completá este campo.').max(max);
@@ -430,3 +431,107 @@ export const consentimientoPublicoSchema = z.object({
   imagen: z.boolean().default(false),
 });
 export type ConsentimientoPublicoInput = z.infer<typeof consentimientoPublicoSchema>;
+
+// ───────────── Configuración inicial e importación (E25) ─────────────
+
+export const datosOrganizacionSchema = z.object({
+  nombre: texto(80),
+  localidad: z.string().trim().max(80).optional(),
+  provincia: z.string().trim().max(80).optional(),
+});
+export type DatosOrganizacionInput = z.infer<typeof datosOrganizacionSchema>;
+
+export const marcaSchema = z.object({
+  slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Usá minúsculas, números y guiones.')
+    .min(3, 'Al menos 3 caracteres.')
+    .max(40),
+  colorMarca: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Elegí un color.'),
+  /** Logo como data URL (PNG, JPG o WEBP, hasta 300 KB). null lo quita; sin el campo, no se toca. */
+  logo: z
+    .string()
+    .regex(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/, 'El logo tiene que ser PNG, JPG o WEBP.')
+    .max(410_000, 'El logo pesa más de 300 KB.')
+    .nullable()
+    .optional(),
+});
+export type MarcaInput = z.infer<typeof marcaSchema>;
+
+export const confirmarPasoSchema = z.object({
+  paso: z.enum(['organizacion', 'mercadoPago', 'marca', 'reglamento', 'importacion']),
+});
+export type ConfirmarPasoInput = z.infer<typeof confirmarPasoSchema>;
+
+export const importacionSchema = z.object({
+  tablas: z
+    .array(
+      z.object({
+        nombre: z.string().max(120),
+        filas: z.array(z.array(z.string().max(300)).max(40)).max(3100),
+      }),
+    )
+    .min(1, 'Subí un archivo.')
+    .max(6),
+});
+export type ImportacionInput = z.infer<typeof importacionSchema>;
+
+// ───────────── Sponsors (E23) ─────────────
+
+const linkSponsor = z
+  .string()
+  .trim()
+  .max(300)
+  .regex(/^https?:\/\/\S+$/i, 'Usá un link que empiece con http:// o https://.');
+
+export const sponsorSchema = z.object({
+  nombre: texto(80),
+  categoria: z.enum(CATEGORIAS_SPONSOR),
+  /** Lo que se lee debajo del nombre: "Sponsor oficial · hidratación". */
+  descripcion: z.string().trim().max(120).optional(),
+  link: linkSponsor.optional(),
+  logoUrl: linkSponsor.optional(),
+});
+export type SponsorInput = z.infer<typeof sponsorSchema>;
+
+export const placementSchema = z
+  .object({
+    torneoId: z.string().min(1, 'Elegí el torneo.'),
+    espacio: z.enum(ESPACIOS_SPONSOR),
+    desde: dia,
+    hasta: dia,
+    /** Monto acordado por todo el período, en pesos. */
+    monto: z.number().int('Usá pesos enteros.').min(0, 'No puede ser negativo.').max(100_000_000),
+  })
+  .refine((p) => p.desde <= p.hasta, { message: 'El período termina antes de empezar.', path: ['hasta'] });
+export type PlacementInput = z.infer<typeof placementSchema>;
+
+export const estadoPlacementSchema = z.object({ activo: z.boolean() });
+export type EstadoPlacementInput = z.infer<typeof estadoPlacementSchema>;
+
+/** Un cobro al sponsor: entra a la caja como ingreso de la categoría Sponsors, enlazado al sponsor. */
+export const cobroSponsorSchema = z.object({
+  monto: pesos,
+  cobradoEn: z.enum(CUENTAS_DE_PLATA),
+  fecha: dia.optional(),
+  comprobante: z.string().trim().max(200).optional(),
+  torneoId: z.string().min(1).optional(),
+});
+export type CobroSponsorInput = z.infer<typeof cobroSponsorSchema>;
+
+export const preferenciasSponsorsSchema = z.object({
+  categoriasRechazadas: z.array(z.enum(CATEGORIAS_SPONSOR)).max(CATEGORIAS_SPONSOR.length),
+});
+export type PreferenciasSponsorsInput = z.infer<typeof preferenciasSponsorsSchema>;
+
+/** Impresiones que informa el sitio público: solo ids de espacios, sin nada del visitante. */
+export const impresionesSponsorSchema = z.object({ ids: z.array(z.string().min(1).max(40)).min(1).max(10) });
+export type ImpresionesSponsorInput = z.infer<typeof impresionesSponsorSchema>;
+// ── Sitio público: cómo se nombra al jugador (E20-04) ──
+export const privacidadJugadorSchema = z.object({
+  apodo: z.string().trim().max(30).nullable().optional(),
+  nombrePublico: z.enum(['INICIALES', 'APODO', 'COMPLETO']),
+});
+export type PrivacidadJugadorInput = z.infer<typeof privacidadJugadorSchema>;

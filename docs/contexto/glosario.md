@@ -22,4 +22,4 @@ El documento 1 nombra las entidades en inglés; el código usa español (ADR-008
 | AuditLog | Auditoria | auditoria | Registro inmutable |
 | client_uuid | clientUuid | client_uuid | Id del evento generado en el dispositivo |
 
-Otros términos: **fecha** = jornada (no día calendario); **W.O.** = walkover, no presentación; **libre** = equipo sin partido en una fecha; **split** = cobro dividido de Mercado Pago entre organizador y plataforma; **liga fundadora** = una de las primeras 15, comisión 2,5 % de por vida; **BSP** = proveedor autorizado de WhatsApp Business.
+Otros términos: **fecha** = jornada (no día calendario); **equipo ausente** = el que no se presentó a jugar y pierde el partido (antes "W.O." o walkover; en el código, estado `WO`); **libre** = equipo sin partido en una fecha; **split** = cobro dividido de Mercado Pago entre organizador y plataforma; **liga fundadora** = una de las primeras 15, comisión 2,5 % de por vida; **BSP** = proveedor autorizado de WhatsApp Business.

@@ -52,3 +52,44 @@ export function goleadores(eventos: readonly EventoPartido[]): FilaGoleador[] {
   }
   return [...porJugador.values()].sort((a, b) => b.goles - a.goles || a.jugadorId.localeCompare(b.jugadorId));
 }
+
+/**
+ * Línea de tiempo del acta: por minuto; si empatan, en el orden en que se cargaron. Los eventos sin minuto van al final,
+ * también en orden de carga. Recibe los eventos en orden de carga.
+ */
+export function ordenarLineaDeTiempo<T extends { minuto: number | null | undefined }>(
+  eventos: readonly T[],
+): T[] {
+  return eventos
+    .map((e, i) => ({ e, i }))
+    .sort((a, b) => {
+      const ma = a.e.minuto ?? Number.POSITIVE_INFINITY;
+      const mb = b.e.minuto ?? Number.POSITIVE_INFINITY;
+      return ma === mb ? a.i - b.i : ma - mb;
+    })
+    .map((x) => x.e);
+}
+
+/** Equipo ausente: desde cuándo se puede marcar (hora del partido más la tolerancia del reglamento). */
+export function vencimientoDeTolerancia(inicio: Date | string, toleranciaMinutos: number): Date {
+  return new Date(new Date(inicio).getTime() + toleranciaMinutos * 60_000);
+}
+
+/**
+ * Si ya se puede marcar un equipo ausente. Sin horario no se puede: no hay desde cuándo contar la tolerancia.
+ * Devuelve el motivo para mostrarle al usuario cuando todavía no se puede.
+ */
+export function puedeMarcarAusente(
+  inicio: Date | string | null,
+  toleranciaMinutos: number,
+  ahora: Date = new Date(),
+): { puede: true } | { puede: false; motivo: 'SIN_HORARIO' | 'TOLERANCIA'; desde?: Date } {
+  if (!inicio) return { puede: false, motivo: 'SIN_HORARIO' };
+  const desde = vencimientoDeTolerancia(inicio, toleranciaMinutos);
+  return ahora.getTime() >= desde.getTime() ? { puede: true } : { puede: false, motivo: 'TOLERANCIA', desde };
+}
+
+/** Resultado de un partido con un equipo ausente: el que se presentó gana por los goles que fija el reglamento. */
+export function resultadoPorAusencia(ganadorId: string, localId: string, golesWO: number) {
+  return ganadorId === localId ? { local: golesWO, visitante: 0 } : { local: 0, visitante: golesWO };
+}

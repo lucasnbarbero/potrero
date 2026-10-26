@@ -62,7 +62,7 @@ const ESTADOS: Record<string, [string, string]> = {
   PROGRAMADO: ['pill', 'Programado'],
   EN_JUEGO: ['pill-live', 'En juego'],
   SUSPENDIDO: ['pill-red', 'Suspendido'],
-  WO: ['pill-red', 'W.O.'],
+  WO: ['pill-red', 'Equipo ausente'],
 };
 
 export function Estado({ estado }: { estado: string }) {

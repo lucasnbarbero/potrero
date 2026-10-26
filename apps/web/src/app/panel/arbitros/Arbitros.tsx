@@ -11,7 +11,16 @@ import type { Arbitro } from '@/lib/tipos';
 const iniciales = (a: Arbitro) => `${a.nombre[0] ?? ''}${a.apellido[0] ?? ''}`.toUpperCase();
 
 /** Un árbitro con su carga, su tarifa y lo que cobró; se puede editar la tarifa y la disponibilidad o darlo de baja. */
-export function FilaArbitro({ a, partidosDelDia }: { a: Arbitro; partidosDelDia: number }) {
+export function FilaArbitro({
+  a,
+  partidosDelDia,
+  cuando = 'hoy',
+}: {
+  a: Arbitro;
+  partidosDelDia: number;
+  /** Día elegido en el selector: "hoy" u "ese día". */
+  cuando?: string;
+}) {
   const router = useRouter();
   const { enviando, error, enviar } = useEnvio();
   const [editando, setEditando] = useState(false);
@@ -29,7 +38,7 @@ export function FilaArbitro({ a, partidosDelDia }: { a: Arbitro; partidosDelDia:
           {!a.activo && <span className="ml-2 text-xs font-normal text-mute">(inactivo)</span>}
         </b>
         <span className="text-xs text-mute">
-          {partidosDelDia} {partidosDelDia === 1 ? 'partido' : 'partidos'} hoy · {pesos(a.tarifa)} c/u
+          {partidosDelDia} {partidosDelDia === 1 ? 'partido' : 'partidos'} {cuando} · {pesos(a.tarifa)} c/u
           {a.disponibilidad.length > 0
             ? ` · ${formatearDisponibilidad(a.disponibilidad)}`
             : ' · disponible siempre'}

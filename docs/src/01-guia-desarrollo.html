@@ -22,7 +22,7 @@
 <tr><td>08</td><td>Perfil de jugador</td><td>Jugador</td><td>Estadísticas, trayectoria entre torneos, valoración de juego limpio.</td></tr>
 <tr><td>09</td><td>Página de partido</td><td>Público</td><td>Crónica automática, línea de tiempo, fotos, tarjeta para compartir.</td></tr>
 <tr><td>10</td><td>Mercado de pases</td><td>Equipos, jugadores</td><td>Jugadores libres y equipos que buscan, filtros por zona, posición y nivel.</td></tr>
-<tr><td>11</td><td>Reprogramaciones</td><td>Organizador</td><td>Contingencia en un clic con vista previa sin conflictos, aviso masivo y confirmación; W.O. con tolerancia y cuenta regresiva.</td></tr>
+<tr><td>11</td><td>Reprogramaciones</td><td>Organizador</td><td>Contingencia en un clic con vista previa sin conflictos, aviso masivo y confirmación; equipo ausente con tolerancia y cuenta regresiva.</td></tr>
 <tr><td>12</td><td>Sanciones</td><td>Organizador</td><td>Suspensión automática desde el acta según reglamento; levantar la suspensión pagando una multa (opcional); expedientes, informe del árbitro, descargos, resolución del tribunal.</td></tr>
 <tr><td>13</td><td>Documentación</td><td>Organizador, capitán</td><td>DNI, apto físico, autorización de menores, alerta de duplicados entre equipos, selfie opcional.</td></tr>
 <tr><td>14</td><td>Caja</td><td>Organizador</td><td>Ingresos, egresos por rubro, cargos automáticos (árbitro, cancha), resultado en vivo, saldo y retiro.</td></tr>
@@ -68,7 +68,7 @@
 <li><b>Idempotencia</b> en webhooks (Mercado Pago, WhatsApp) y en la sincronización del acta.</li>
 <li><b>La tabla de posiciones es derivada</b>: se recalcula desde los partidos cerrados (job), nunca se edita a mano.</li>
 <li><b>Sitio público estático-incremental</b>: se regenera por evento (acta cerrada) para soportar picos de consulta el fin de semana.</li>
-<li>Configuración por reglamento (puntos, desempates, tarjetas, W.O.) en datos, no en código.</li></ul>
+<li>Configuración por reglamento (puntos, desempates, tarjetas, equipo ausente) en datos, no en código.</li></ul>
 
 <h1 class="sec"><p class="eyebrow">4</p>Modelo de datos (entidades principales)</h1>
 <table><tr><th>Entidad</th><th>Campos clave</th><th>Relaciones / notas</th></tr>
@@ -86,7 +86,7 @@
 <tr><td>LedgerEntry / Payout</td><td>account, debit, credit, category, ref</td><td>Caja del torneo; retiros hacia cuenta bancaria.</td></tr>
 <tr><td>Venue / Pitch</td><td>name, address, surfaces, availability, cost</td><td>Disponibilidad por franja.</td></tr>
 <tr><td>Referee</td><td>name, availability, fee, rating</td><td>Asignación manual o automática.</td></tr>
-<tr><td>Match</td><td>stage, round, home, away, pitch, kickoff, status, referee_id, result</td><td>Estados: programado, en juego, finalizado, suspendido, W.O.</td></tr>
+<tr><td>Match</td><td>stage, round, home, away, pitch, kickoff, status, referee_id, result</td><td>Estados: programado, en juego, finalizado, suspendido, equipo ausente</td></tr>
 <tr><td>MatchEvent</td><td>match_id, type (gol, tarjeta, cambio), player_id, minute, client_uuid</td><td>Append-only; <code>client_uuid</code> da idempotencia al sincronizar.</td></tr>
 <tr><td>Sanction / Case</td><td>player_id, cause, matches_suspended, status, descargo, resolution</td><td>Se genera desde el acta; el tribunal puede modificarla.</td></tr>
 <tr><td>Contingency</td><td>cause, affected_matches[], proposal, confirmations</td><td>Registra qué se movió y quién confirmó.</td></tr>
@@ -99,7 +99,7 @@
 <h2>5.1 Tabla de posiciones</h2>
 <ul><li>Puntos configurables (por defecto 3 victoria, 1 empate, 0 derrota).</li>
 <li>Desempates en orden configurable: diferencia de gol, goles a favor, resultado entre sí, menos tarjetas (juego limpio), sorteo.</li>
-<li>W.O.: puntos y goles según reglamento (por defecto 3-0 y sanción económica); se registra como tal y no suma estadísticas individuales.</li></ul>
+<li>Equipo ausente: puntos y goles según reglamento (por defecto 3-0 y sanción económica); se registra como tal y no suma estadísticas individuales.</li></ul>
 <h2>5.2 Motor de fixture</h2>
 <p><b>Entrada:</b> equipos, grupos, canchas con franjas, árbitros disponibles, reglas de descanso, restricciones por equipo (ej. no juega los domingos). <b>Salida:</b> calendario completo.</p>
 <ul><li>Cruces: método de rotación (<i>circle method</i>) para liga y grupos, ida y vuelta opcional; sorteo con cabezas de serie para copa.</li>
@@ -110,23 +110,23 @@
 <h2>5.3 Sanciones automáticas</h2>
 <ul><li>Roja directa: partidos de suspensión según reglamento (por defecto 1, ampliable por el tribunal). Doble amarilla: 1 partido.</li>
 <li>Acumulación de amarillas: umbral configurable (por defecto 5, 1 partido).</li>
-<li>La suspensión se cuenta en <b>partidos oficiales del equipo</b>; si el partido se suspende o es W.O., no descuenta.</li>
+<li>La suspensión se cuenta en <b>partidos oficiales del equipo</b>; si el partido se suspende o tiene un equipo ausente, no descuenta.</li>
 <li>Un jugador suspendido aparece bloqueado en la planilla del acta; si se lo carga igual, el sistema lo marca y abre un expediente por "jugador no habilitado".</li>
 <li>Levantar la suspensión pagando (opcional, apagado por defecto): el reglamento del torneo define qué sanciones se pueden levantar (por defecto acumulación de amarillas y doble amarilla; nunca la roja directa ni lo resuelto por el tribunal) y el monto por partido. Cada pago levanta un partido de suspensión; genera un cargo al equipo (rubro Multas) y el jugador queda habilitado recién cuando el pago está acreditado.</li></ul>
 <h2>5.4 Elegibilidad del jugador</h2>
 <p>Estado = documentación vigente (DNI validado, apto físico no vencido, autorización si es menor) + sin sanción activa + sin duplicado abierto. La planilla del acta muestra el estado en tiempo real. El organizador define qué documentos son obligatorios por torneo.</p>
 <h2>5.5 Cobros</h2>
 <ul><li>El organizador define arancel, seña y cuotas. El equipo (o cada jugador, si el capitán lo habilita) paga por link de Mercado Pago.</li>
-<li>Cuota por fecha: monto fijo que cada equipo paga en cada fecha para jugar, con o sin inscripción. Se genera un cargo por equipo y por fecha que vence el día del partido. Por defecto no se cobra la fecha libre ni el partido suspendido, y sí el W.O. La deuda genera alerta y recordatorio; bloquear al equipo deudor es una opción del reglamento (apagada por defecto). Si se activa con el torneo empezado, se cobra desde la próxima fecha: nunca las ya jugadas (lo mismo para el seguro).</li>
+<li>Cuota por fecha: monto fijo que cada equipo paga en cada fecha para jugar, con o sin inscripción. Se genera un cargo por equipo y por fecha que vence el día del partido. Por defecto no se cobra la fecha libre ni el partido suspendido, y sí el partido con equipo ausente La deuda genera alerta y recordatorio; bloquear al equipo deudor es una opción del reglamento (apagada por defecto). Si se activa con el torneo empezado, se cobra desde la próxima fecha: nunca las ya jugadas (lo mismo para el seguro).</li>
 <li>Seguro por jugador: monto por cada jugador del plantel en cada fecha que el equipo juega, juegue o no ese jugador. Es un cargo aparte de la cuota, al equipo, y entra a la caja en el rubro Seguros para que el organizador vea cuánto le debe a la aseguradora.</li>
 <li>Pagos manuales (efectivo, transferencia) los registra el organizador con comprobante; <b>no generan comisión de plataforma</b>.</li>
 <li>El costo de procesamiento de Mercado Pago se muestra al pagador como "cargo por servicio" o lo absorbe el organizador (configurable). <span class="pill v">DECIDIR</span> valor por defecto.</li>
 <li>Reembolsos: en split 1:1 requieren saldo del vendedor; el flujo debe prever el rechazo y avisar al organizador.</li></ul>
-<h2>5.6 Contingencias y W.O.</h2>
+<h2>5.6 Contingencias y equipos ausentes</h2>
 <ul><li>Alcance: partido, fecha, cancha o torneo. Opciones: mover, suspender, cambiar de cancha.</li>
 <li>La propuesta se calcula antes de aplicar, con lista de conflictos resueltos y los que quedan.</li>
 <li>Aviso con botones "Confirmo / No puedo"; los "No puedo" vuelven al organizador como alerta.</li>
-<li>W.O.: tolerancia configurable (por defecto 15 min), cuenta regresiva visible en el acta, resolución automática al vencer.</li></ul>
+<li>Equipo ausente: tolerancia configurable (por defecto 15 min), cuenta regresiva visible en el acta, resolución automática al vencer.</li></ul>
 
 <h1 class="sec"><p class="eyebrow">6</p>Integraciones</h1>
 <h2>6.1 Mercado Pago (crítico)</h2>
@@ -173,7 +173,7 @@
 <tr><td>H2 · Programación</td><td>Motor de fixture, grilla, conflictos, árbitros y canchas, llaves.</td><td>5–6</td><td>Fixture de 16 y 24 equipos sin choques; mover partidos con validación.</td></tr>
 <tr><td>H3 · Partido</td><td>Acta digital offline, tabla, goleadores, sitio público, PWA, tiempo real.</td><td>5–6</td><td>Torneo simulado completo con actas offline y sincronización.</td></tr>
 <tr><td>H4 · Control</td><td>Sanciones, expedientes, documentación e identidad, consentimientos, duplicados.</td><td>5–6</td><td>Suspensión automática y bloqueo en acta de punta a punta.</td></tr>
-<tr><td>H5 · Comunicación y contingencias</td><td>WhatsApp/email/push, plantillas, automatizaciones, reprogramaciones, W.O.</td><td>4–5</td><td>Lluvia simulada: 9 partidos movidos con aviso y confirmaciones.</td></tr>
+<tr><td>H5 · Comunicación y contingencias</td><td>WhatsApp/email/push, plantillas, automatizaciones, reprogramaciones, equipos ausentes</td><td>4–5</td><td>Lluvia simulada: 9 partidos movidos con aviso y confirmaciones.</td></tr>
 <tr><td>H6 · Negocio y comunidad</td><td>Sponsors, métricas, capitán, perfil de jugador, página de partido, mercado de pases, onboarding e importación desde Excel.</td><td>6–8</td><td>Alta de una liga nueva en menos de 30 minutos.</td></tr>
 <tr><td>H7 · Endurecimiento</td><td>Pruebas de carga, seguridad (pentest), accesibilidad, performance, documentación, runbooks.</td><td>3–4</td><td>Checklist de lanzamiento completo (sección 10).</td></tr>
 <tr><td>Beta cerrada</td><td>Ligas fundadoras usan el producto real con acompañamiento (puede solaparse con H6–H7).</td><td>8–12 (solapadas)</td><td>Un torneo completo cobrado y cerrado en la plataforma.</td></tr></table>

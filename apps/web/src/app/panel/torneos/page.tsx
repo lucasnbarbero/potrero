@@ -19,6 +19,10 @@ export default async function Torneos() {
   return (
     <div className="space-y-6">
       <Encabezado eyebrow="Operación" titulo="Torneos">
+        <Link href="/panel/torneos/formato" className="btn-glass">
+          <Icono nombre="spark" />
+          Armá el formato
+        </Link>
         <Link href="/panel/torneos/nuevo" className="btn-volt">
           <Icono nombre="plus" />
           Nuevo torneo

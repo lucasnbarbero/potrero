@@ -3,7 +3,7 @@
 // Cada toque se guarda primero en el dispositivo (cola en IndexedDB) y se ve al instante; la cola viaja al servidor en
 // orden apenas hay conexión. Cada evento lleva un clientUuid, así un reenvío nunca duplica nada (ADR-004).
 import { Icono } from '@potrero/ui';
-import { DATOS, type OperacionActa, procesarCola, vistaLocal } from '@potrero/shared';
+import { DATOS, type OperacionActa, ordenarLineaDeTiempo, procesarCola, vistaLocal } from '@potrero/shared';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MensajeError, useEnvio } from '@/componentes/formulario';
@@ -41,9 +41,11 @@ export function ActaDigital({ inicial }: { inicial: Acta }) {
   const [minuto, setMinuto] = useState('');
   const [aviso, setAviso] = useState<string | null>(null);
   const [cerrando, setCerrando] = useState(false);
+  const [errorCierre, setErrorCierre] = useState<string | null>(null);
   const [dispositivo, setDispositivo] = useState('');
   const { enviando, error, enviar } = useEnvio();
   const sincronizandoRef = useRef(false);
+  const otraVueltaRef = useRef(false);
   // Reloj para la cuenta regresiva del W.O. Arranca vacío para no desfasar el HTML del servidor con el del navegador.
   const [reloj, setReloj] = useState<number | null>(null);
   useEffect(() => {
@@ -60,8 +62,9 @@ export function ActaDigital({ inicial }: { inicial: Acta }) {
     [...acta.local.jugadores, ...acta.visitante.jugadores].map((j) => [j.id, j.nombre]),
   );
   const abierto = acta.estado === 'EN_JUEGO';
-  // W.O.: pasada la hora del partido corre la tolerancia del reglamento; al vencer, se puede declarar.
-  const toleranciaMs = DATOS.reglamentoPorDefecto.toleranciaWOMinutos * 60_000;
+  // Equipo ausente: pasada la hora del partido corre la tolerancia del reglamento del torneo; al vencer, se puede marcar.
+  const tolerancia = acta.toleranciaWOMinutos ?? DATOS.reglamentoPorDefecto.toleranciaWOMinutos;
+  const toleranciaMs = tolerancia * 60_000;
   const pasadoMs = reloj !== null && acta.inicio ? reloj - Date.parse(acta.inicio) : -1;
   const faltaWoMs = toleranciaMs - pasadoMs;
   const woVencido = acta.estado === 'PROGRAMADO' && pasadoMs >= 0 && faltaWoMs <= 0;
@@ -71,6 +74,16 @@ export function ActaDigital({ inicial }: { inicial: Acta }) {
   const empateEnLlave = acta.fase === 'LLAVE' && acta.marcador.local === acta.marcador.visitante;
   // Un solo dueño por partido: otro dispositivo con el acta bloquea la carga desde este.
   const soyDueno = !dispositivo || !base.dueno || base.dueno.dispositivoId === dispositivo;
+  // Con un equipo ausente, el resultado lo define el reglamento (viene del servidor), no los eventos.
+  const marcadorVisto = base.estado === 'WO' ? base.marcador : acta.marcador;
+  // Línea de tiempo por minuto (los sin minuto, al final), con lo pendiente incluido.
+  const lineaDeTiempo = ordenarLineaDeTiempo(acta.eventos);
+  const ausente =
+    acta.estado === 'WO' && acta.ganadorWOId
+      ? acta.ganadorWOId === acta.local.id
+        ? { ganador: acta.local.nombre, ausente: acta.visitante.nombre }
+        : { ganador: acta.visitante.nombre, ausente: acta.local.nombre }
+      : null;
 
   /** Trae la última versión del servidor y la guarda en el dispositivo. Sin conexión, conserva lo que hay. */
   const refrescar = useCallback(async () => {
@@ -85,8 +98,13 @@ export function ActaDigital({ inicial }: { inicial: Acta }) {
   }, [id]);
 
   /** Envía la cola en orden. Se llama al volver la señal, cada pocos segundos y después de cada toque. */
-  const sincronizar = useCallback(async () => {
-    if (sincronizandoRef.current) return;
+  const sincronizar = useCallback(async (): Promise<void> => {
+    // Si ya hay un envío en curso, se anota otra vuelta: lo cargado mientras tanto sale apenas termina, sin esperar
+    // al reintento periódico.
+    if (sincronizandoRef.current) {
+      otraVueltaRef.current = true;
+      return;
+    }
     sincronizandoRef.current = true;
     setSincronizando(true);
     try {
@@ -114,6 +132,10 @@ export function ActaDigital({ inicial }: { inicial: Acta }) {
       sincronizandoRef.current = false;
       setSincronizando(false);
     }
+    if (otraVueltaRef.current) {
+      otraVueltaRef.current = false;
+      await sincronizar();
+    }
   }, [id, refrescar]);
 
   /** Guarda la operación en el dispositivo (se ve al instante) y la manda si hay conexión. */
@@ -126,7 +148,8 @@ export function ActaDigital({ inicial }: { inicial: Acta }) {
     [id, sincronizar],
   );
 
-  // Al abrir: recupera lo guardado en el dispositivo, toma el acta si nadie la tiene y manda lo pendiente.
+  // Al abrir: recupera lo guardado en el dispositivo y manda lo pendiente. Abrir no toma el acta (F13): el dispositivo
+  // pasa a ser dueño con su primera carga.
   useEffect(() => {
     let vivo = true;
     (async () => {
@@ -150,9 +173,6 @@ export function ActaDigital({ inicial }: { inicial: Acta }) {
         if (snapshot) setBase(snapshot);
       }
       void prepararSinConexion();
-      if (navigator.onLine && (inicial.estado === 'PROGRAMADO' || inicial.estado === 'EN_JUEGO')) {
-        await api('POST', `/partidos/${id}/tomar`, { dispositivoId: miId }).catch(() => undefined);
-      }
       if (navigator.onLine) await sincronizar();
     })();
     return () => {
@@ -183,7 +203,10 @@ export function ActaDigital({ inicial }: { inicial: Acta }) {
     setAviso(
       jugador.habilitado
         ? null
-        : 'Este jugador está suspendido. Quedó registrado y el tribunal lo va a revisar.',
+        : // El motivo de una sanción empieza con "Suspendido"; si no, es la documentación (F15).
+          jugador.motivo?.startsWith('Suspendido') !== false
+          ? 'Este jugador está suspendido. Quedó registrado y el tribunal lo va a revisar.'
+          : `Este jugador no está habilitado: ${jugador.motivo}. Quedó registrado.`,
     );
     void encolar({
       tipo: 'evento',
@@ -316,9 +339,9 @@ export function ActaDigital({ inicial }: { inicial: Acta }) {
               className="num text-6xl font-bold tracking-tighter text-volt sm:text-7xl"
               data-testid="marcador"
             >
-              {acta.marcador.local}
+              {marcadorVisto.local}
               <span className="text-white/30">-</span>
-              {acta.marcador.visitante}
+              {marcadorVisto.visitante}
             </div>
             <div className="grid justify-items-center gap-2">
               <Escudo nombre={acta.visitante.nombre} className="!size-14 !text-sm" />
@@ -328,6 +351,14 @@ export function ActaDigital({ inicial }: { inicial: Acta }) {
           {acta.penalesLocal !== null && acta.penalesVisitante !== null && (
             <p className="mt-3 text-center text-sm font-semibold text-white/70">
               Definido por penales: {acta.penalesLocal}-{acta.penalesVisitante}
+            </p>
+          )}
+          {ausente && (
+            <p
+              className="mt-3 text-center text-sm font-semibold text-white/70"
+              data-testid="resultado-ausente"
+            >
+              Ganó {ausente.ganador}: {ausente.ausente} no se presentó
             </p>
           )}
         </div>
@@ -345,8 +376,8 @@ export function ActaDigital({ inicial }: { inicial: Acta }) {
           className={`rounded-2xl px-4 py-3 text-sm font-semibold ${woVencido ? 'bg-red-50 text-red-800' : 'bg-amber-100 text-amber-900'}`}
         >
           {woVencido
-            ? `Pasó la tolerancia de ${DATOS.reglamentoPorDefecto.toleranciaWOMinutos} minutos. Si un equipo no se presentó, declará el W.O.`
-            : `El partido ya tendría que haber empezado. W.O. posible en ${cuentaWo(faltaWoMs)} (tolerancia de ${DATOS.reglamentoPorDefecto.toleranciaWOMinutos} min).`}
+            ? `Pasó la tolerancia de ${tolerancia} minutos. Si un equipo no se presentó, marcalo como ausente: pierde el partido.`
+            : `El partido ya tendría que haber empezado. Si un equipo no llega, en ${cuentaWo(faltaWoMs)} lo podés marcar como ausente (tolerancia de ${tolerancia} min).`}
         </div>
       )}
 
@@ -368,19 +399,34 @@ export function ActaDigital({ inicial }: { inicial: Acta }) {
                 <button
                   key={e.id}
                   className={`${woVencido ? 'btn-volt' : 'btn-glass'} btn-sm`}
-                  disabled={enviando || !enLinea || !soyDueno}
-                  title={enLinea ? undefined : 'El W.O. necesita conexión'}
+                  disabled={enviando || !enLinea || !soyDueno || !woVencido}
+                  title={
+                    !enLinea
+                      ? 'Marcar un equipo ausente necesita conexión'
+                      : !woVencido
+                        ? `Se puede marcar cuando pase la tolerancia de ${tolerancia} minutos`
+                        : undefined
+                  }
                   onClick={() =>
                     enviar(async () => {
-                      await api('POST', `/partidos/${id}/wo`, { ganadorId: ganador.id });
+                      await api('POST', `/partidos/${id}/wo`, {
+                        ganadorId: ganador.id,
+                        dispositivoId: dispositivo,
+                      });
                       await refrescar();
                     })
                   }
                 >
-                  W.O. de {e.nombre}
+                  {e.nombre} no se presentó
                 </button>
               );
             })}
+            {!woVencido && (
+              <span className="w-full text-xs text-mute" data-testid="ausente-bloqueado">
+                Se habilita cuando pasen {tolerancia} minutos de la hora del partido (tolerancia del
+                reglamento).
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -476,8 +522,8 @@ export function ActaDigital({ inicial }: { inicial: Acta }) {
 
       <section className="tile">
         <span className="eyebrow">Eventos</span>
-        <ol className="timeline mt-3">
-          {acta.eventos.map((e) => (
+        <ol className="timeline mt-3" data-testid="linea-de-tiempo">
+          {lineaDeTiempo.map((e) => (
             <li
               key={e.id}
               className={`ev ${e.tipo === 'AMARILLA' ? 'y' : e.tipo === 'ROJA' ? 'rd' : ''} flex items-center gap-2 text-sm`}
@@ -530,6 +576,15 @@ export function ActaDigital({ inicial }: { inicial: Acta }) {
           onSubmit={(ev) => {
             ev.preventDefault();
             const f = new FormData(ev.currentTarget);
+            // Mismo control que el servidor, antes de encolar: si no, el cierre "pasa" y después vuelve rechazado.
+            const firmas = f.get('firmaLocal') === 'on' && f.get('firmaVisitante') === 'on';
+            if (!firmas && !(f.get('justificacion') as string).trim()) {
+              setErrorCierre(
+                'Para cerrar el acta hacen falta las firmas de los dos capitanes. Si falta alguna, el árbitro tiene que escribir la justificación.',
+              );
+              return;
+            }
+            setErrorCierre(null);
             void encolar({
               tipo: 'cerrar',
               id: crypto.randomUUID(),
@@ -582,8 +637,17 @@ export function ActaDigital({ inicial }: { inicial: Acta }) {
           )}
           <label className="block">
             <span className="field-label">Si falta una firma, justificación del árbitro</span>
-            <input name="justificacion" className="input" />
+            <input name="justificacion" className="input" onChange={() => setErrorCierre(null)} />
           </label>
+          {errorCierre && (
+            <p
+              role="alert"
+              data-testid="error-cierre"
+              className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-800"
+            >
+              {errorCierre}
+            </p>
+          )}
           <button className="btn btn-lg w-full">Confirmar cierre</button>
         </form>
       )}

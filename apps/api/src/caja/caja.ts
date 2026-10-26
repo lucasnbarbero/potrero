@@ -47,7 +47,7 @@ import type { Response } from 'express';
 import { auditar } from '../comun/auditoria.js';
 import { fechaHoraAR } from '../comun/formato.js';
 import { type Contexto, Ctx, ErrorNegocio, noEncontrado, Permiso, Zod } from '../comun/http.js';
-import { DbService, type Tx } from '../db/db.service.js';
+import { DbService, enSerie, type Tx } from '../db/db.service.js';
 import type { Asiento, LineaAsiento } from '../generated/prisma/client.js';
 import { conciliarPagos, crearAsiento } from './libro.js';
 
@@ -95,14 +95,15 @@ export class CajaService {
       await conciliarPagos(tx, c.organizacionId);
       const org = await this.org(tx, c.organizacionId);
       const plan = DATOS.planes[org.plan as Plan];
-      const [todas, delTorneo, cargos, autos] = await Promise.all([
-        this.lineas(tx),
-        torneoId ? this.lineas(tx, torneoId) : null,
-        tx.cargo.findMany({
-          where: { estado: 'PENDIENTE', ...(torneoId ? { inscripcion: { torneoId } } : {}) },
-          include: { pagos: { where: { estado: 'APROBADO' } }, inscripcion: true },
-        }),
-        tx.automatizacion.findMany({ where: { clave: { in: Object.keys(AUTOMATIZACIONES_CAJA) } } }),
+      const [todas, delTorneo, cargos, autos] = await enSerie([
+        () => this.lineas(tx),
+        async () => (torneoId ? this.lineas(tx, torneoId) : null),
+        () =>
+          tx.cargo.findMany({
+            where: { estado: 'PENDIENTE', ...(torneoId ? { inscripcion: { torneoId } } : {}) },
+            include: { pagos: { where: { estado: 'APROBADO' } }, inscripcion: true },
+          }),
+        () => tx.automatizacion.findMany({ where: { clave: { in: Object.keys(AUTOMATIZACIONES_CAJA) } } }),
       ]);
       const sTodo = saldosDe(todas);
       const sVista = saldosDe(delTorneo ?? todas);

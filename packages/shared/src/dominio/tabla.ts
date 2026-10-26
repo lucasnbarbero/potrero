@@ -149,3 +149,16 @@ export function tablaDePosiciones(
   );
   return ordenadas.map((f, i) => ({ ...f, posicion: i + 1 }));
 }
+
+/**
+ * Equipos que van en la tabla de una liga: los que están en el fixture. Un equipo que se confirmó tarde y no tiene
+ * partidos no aparece (con 0 PJ confundiría). Si todavía no hay fixture, van los confirmados.
+ */
+export function equiposDeLaTabla(
+  confirmados: readonly string[],
+  partidos: readonly { localId: string; visitanteId: string }[],
+): string[] {
+  if (partidos.length === 0) return [...confirmados];
+  const enFixture = new Set(partidos.flatMap((p) => [p.localId, p.visitanteId]));
+  return [...enFixture];
+}

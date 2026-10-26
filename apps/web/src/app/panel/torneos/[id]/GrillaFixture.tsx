@@ -20,7 +20,7 @@ type Cambio =
 const lugar = (p: PartidoGrilla) => (p.inicio ? momentoLocal(p.inicio) : null);
 const franjaDe = (dia: string, h: string) => `${dia}|${h}`;
 const marcador = (p: PartidoGrilla) =>
-  p.estado === 'FINALIZADO' ? `${p.golesLocal}-${p.golesVisitante}` : p.estado === 'WO' ? 'W.O.' : null;
+  p.estado === 'FINALIZADO' ? `${p.golesLocal}-${p.golesVisitante}` : p.estado === 'WO' ? `${p.golesLocal}-${p.golesVisitante} · ausente` : null;
 
 export function GrillaFixture({ datos }: { datos: ProgramacionTorneo }) {
   const router = useRouter();

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Encabezado } from '@/componentes/ui';
 import { apiServidor } from '@/lib/api';
 import { fechaCorta, pesos } from '@/lib/formato';
-import type { MovimientoCaja, ResumenCaja, Torneo } from '@/lib/tipos';
+import type { Automatizacion, MovimientoCaja, ResumenCaja, Torneo } from '@/lib/tipos';
 import { AnularMovimiento } from './Anular';
 import { AutomatizacionesCaja } from './AutomatizacionesCaja';
 import { FormularioMovimiento, Retiro } from './Formularios';
@@ -39,6 +39,10 @@ export default async function Caja({ searchParams }: PageProps<'/panel/caja'>) {
     apiServidor<Torneo[]>('/torneos'),
   ]);
   const { resultado: r, disponible } = caja;
+  // El botón de cobro automático solo se ofrece si está apagado (sin acceso a Comunicación, no se muestra).
+  const cobroAutomatico = await apiServidor<Automatizacion[]>('/comunicacion/automatizaciones')
+    .then((a) => a.find((x) => x.clave === 'COBRO_ESCALONADO')?.activa ?? false)
+    .catch(() => null);
   const comisionTexto = `${String(caja.plan.comisionPct).replace('.', ',')}%`;
 
   return (
@@ -122,13 +126,23 @@ export default async function Caja({ searchParams }: PageProps<'/panel/caja'>) {
           <span className="eyebrow">Por cobrar</span>
           <b className="num mt-2 block text-5xl tracking-tighter">{pesos(caja.porCobrar.monto)}</b>
           <p className="mt-2 text-sm text-mute">
-            {caja.porCobrar.equipos} {caja.porCobrar.equipos === 1 ? 'equipo' : 'equipos'} · cobralos con un
-            recordatorio automático.
+            {caja.porCobrar.equipos} {caja.porCobrar.equipos === 1 ? 'equipo' : 'equipos'}
+            {cobroAutomatico
+              ? ' · el cobro automático les recuerda el pago antes y después del vencimiento.'
+              : ' · cobralos con un recordatorio automático.'}
           </p>
-          <Link href="/panel/comunicacion" className="btn-glass btn-sm mt-3">
-            <Icono nombre="bolt" />
-            Activar cobro automático
-          </Link>
+          {cobroAutomatico === false && (
+            <Link href="/panel/comunicacion" className="btn-glass btn-sm mt-3">
+              <Icono nombre="bolt" />
+              Activar cobro automático
+            </Link>
+          )}
+          {cobroAutomatico && (
+            <span className="pill-volt mt-3">
+              <Icono nombre="check" />
+              Cobro automático activo
+            </span>
+          )}
         </section>
       </div>
 

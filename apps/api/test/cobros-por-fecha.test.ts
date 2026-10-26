@@ -220,6 +220,8 @@ describe('cuota por fecha y seguro por jugador', () => {
 
   it('el W.O. se cobra por defecto; si se apaga, se anulan los pendientes de esa fecha', async () => {
     const f1 = partidos.find((p) => p.fecha === 1)!;
+    // Un equipo ausente se marca recién pasada la tolerancia (F11).
+    await consulta(`UPDATE partido SET inicio = now() - interval '1 hour' WHERE id = $1`, [f1.id]);
     expect((await api('POST', `/partidos/${f1.id}/wo`, { ganadorId: f1.localId })).status).toBe(201);
     expect((await cobros()).cargos.filter((x) => x.estado === 'PENDIENTE')).toHaveLength(3);
     const r = await api('PATCH', `/torneos/${torneoId}/cobros-por-fecha`, { ...configBase, cobrarWO: false });
@@ -360,6 +362,8 @@ describe('cuota por fecha y seguro por jugador', () => {
     });
     const lista = (await api('GET', `/torneos/${t}/partidos`)).body as typeof partidos;
     const f1 = lista.find((p) => p.fecha === 1)!;
+    // Un equipo ausente se marca recién pasada la tolerancia (F11).
+    await consulta(`UPDATE partido SET inicio = now() - interval '1 hour' WHERE id = $1`, [f1.id]);
     expect((await api('POST', `/partidos/${f1.id}/wo`, { ganadorId: f1.localId })).status).toBe(201);
 
     const r = await api('PATCH', `/torneos/${t}/cobros-por-fecha`, configBase);

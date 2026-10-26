@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Llave } from '@/componentes/Llave';
 import { MarcoPublico } from '@/componentes/MarcoPublico';
+import { SponsorsDelTorneo } from '@/componentes/SponsorsDelTorneo';
 import { Escudo, Estado } from '@/componentes/ui';
 import { apiPublica } from '@/lib/api';
 import { fechaCorta, hora, pesos } from '@/lib/formato';
@@ -24,7 +25,8 @@ interface SitioTorneo {
   tabla: Estadisticas['tabla'];
   grupos: Estadisticas['grupos'];
   llave: LlaveDatos | null;
-  goleadores: Estadisticas['goleadores'];
+  // Sin perfil público (menor sin consentimiento), el id no viene y no se enlaza.
+  goleadores: (Omit<Estadisticas['goleadores'][number], 'jugadorId'> & { jugadorId: string | null })[];
   suspendidos: { jugador: string; equipo: string; restantes: number }[];
 }
 
@@ -142,6 +144,8 @@ export default async function SitioDelTorneo({ params }: PageProps<'/t/[org]/[to
         </section>
       )}
 
+      <SponsorsDelTorneo org={org} torneo={torneo} espacio="CABECERA" className="mt-6" />
+
       <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_22rem]">
         <div className="min-w-0 space-y-4">
           {s.torneo.formato === 'COPA' && s.llave ? (
@@ -180,7 +184,7 @@ export default async function SitioDelTorneo({ params }: PageProps<'/t/[org]/[to
               <ol className="mt-2">
                 {s.goleadores.slice(0, 5).map((g, i) => (
                   <li
-                    key={g.jugadorId}
+                    key={`${g.jugadorId ?? g.jugador}-${i}`}
                     className="flex items-center gap-3 border-t border-white/10 py-2.5 text-sm first:border-0"
                   >
                     <span
@@ -189,7 +193,16 @@ export default async function SitioDelTorneo({ params }: PageProps<'/t/[org]/[to
                       {i + 1}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <b className="block truncate">{g.jugador}</b>
+                      {g.jugadorId ? (
+                        <Link
+                          href={`/t/${org}/jugador/${g.jugadorId}`}
+                          className="block truncate font-bold hover:underline"
+                        >
+                          {g.jugador}
+                        </Link>
+                      ) : (
+                        <b className="block truncate">{g.jugador}</b>
+                      )}
                       <span className="text-xs text-white/50">{g.equipo}</span>
                     </span>
                     <b className="num text-lg text-volt">{g.goles}</b>
@@ -201,6 +214,7 @@ export default async function SitioDelTorneo({ params }: PageProps<'/t/[org]/[to
               </ol>
             </div>
           </section>
+          <SponsorsDelTorneo org={org} torneo={torneo} espacio="GOLEADORES" />
           {s.suspendidos.length > 0 && (
             <section className="tile">
               <span className="eyebrow">Suspendidos</span>
@@ -220,6 +234,7 @@ export default async function SitioDelTorneo({ params }: PageProps<'/t/[org]/[to
         </div>
       </div>
 
+      <SponsorsDelTorneo org={org} torneo={torneo} espacio="ENTRE_SECCIONES" className="mt-4" />
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         {[
           proxima && (['Próxima fecha', proxima] as const),
@@ -238,17 +253,22 @@ export default async function SitioDelTorneo({ params }: PageProps<'/t/[org]/[to
                 </div>
                 <ul className="mt-2">
                   {ps.map((p) => (
-                    <li key={p.id} className="list-row text-sm">
-                      <span className="w-12 shrink-0 text-mute">{hora(p.inicio)}</span>
-                      <span className="flex-1 truncate text-right font-semibold">{p.local}</span>
-                      <span className="num w-14 shrink-0 rounded-full bg-black/5 py-1 text-center font-bold">
-                        {p.estado === 'FINALIZADO'
-                          ? `${p.golesLocal}-${p.golesVisitante}${p.penalesLocal !== null ? ` (${p.penalesLocal}-${p.penalesVisitante})` : ''}`
-                          : p.estado === 'WO'
-                            ? 'W.O.'
-                            : 'vs'}
-                      </span>
-                      <span className="flex-1 truncate font-semibold">{p.visitante}</span>
+                    <li key={p.id}>
+                      <Link
+                        href={`/t/${org}/${torneo}/partido/${p.id}`}
+                        className="list-row text-sm hover:bg-black/[0.02]"
+                      >
+                        <span className="w-12 shrink-0 text-mute">{hora(p.inicio)}</span>
+                        <span className="flex-1 truncate text-right font-semibold">{p.local}</span>
+                        <span className="num min-w-14 shrink-0 rounded-full bg-black/5 px-2 py-1 text-center font-bold">
+                          {p.estado === 'FINALIZADO'
+                            ? `${p.golesLocal}-${p.golesVisitante}${p.penalesLocal !== null ? ` (${p.penalesLocal}-${p.penalesVisitante})` : ''}`
+                            : p.estado === 'WO'
+                              ? `${p.golesLocal ?? 0}-${p.golesVisitante ?? 0}`
+                              : 'vs'}
+                        </span>
+                        <span className="flex-1 truncate font-semibold">{p.visitante}</span>
+                      </Link>
                     </li>
                   ))}
                 </ul>
@@ -256,6 +276,7 @@ export default async function SitioDelTorneo({ params }: PageProps<'/t/[org]/[to
             );
           })}
       </div>
+      <SponsorsDelTorneo org={org} torneo={torneo} espacio="TARJETA_RESULTADO" className="mt-4" />
     </MarcoPublico>
   );
 }

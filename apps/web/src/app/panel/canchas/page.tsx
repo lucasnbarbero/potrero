@@ -1,4 +1,5 @@
 import { Icono } from '@potrero/ui';
+import Link from 'next/link';
 import { Encabezado, Vacio } from '@/componentes/ui';
 import { apiServidor } from '@/lib/api';
 import type { Sede } from '@/lib/tipos';
@@ -40,7 +41,11 @@ export default async function Canchas() {
         </div>
       )}
       <p className="text-xs text-mute">
-        Disponibilidad por franja, árbitros y ocupación: próximamente (backlog E08).
+        La ocupación de cada cancha por día y la designación de árbitros están en{' '}
+        <Link href="/panel/arbitros" className="font-semibold text-ink underline">
+          Árbitros y canchas
+        </Link>
+        .
       </p>
     </div>
   );

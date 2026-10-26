@@ -37,6 +37,8 @@ export interface Reglamento {
   levantarSancionTipos: CausaSancion[];
   /** Monto por cada partido levantado, en pesos enteros. Con 0 la opción no está disponible aunque esté encendida. */
   levantarSancionMonto: number;
+  /** Minutos de tolerancia antes de poder marcar un equipo ausente. Opcional: sin dato, el de docs/datos.json. */
+  toleranciaWOMinutos?: number;
 }
 
 /** Evento del acta. Los eventos no se editan: una corrección es un evento ANULACION que apunta a otro. */

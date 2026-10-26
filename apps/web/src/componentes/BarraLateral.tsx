@@ -4,9 +4,8 @@ import { Icono, Logo, type NombreIcono, ProductoDeGregal } from '@potrero/ui';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { api } from '@/lib/cliente';
-import { limpiarSinConexion } from '@/lib/sin-conexion';
 import { iniciales } from '@/lib/formato';
+import { MenuCuenta } from './MenuCuenta';
 
 type Item = [href: string, icono: NombreIcono, texto: string];
 const MENU: Item[] = [
@@ -20,19 +19,42 @@ const MENU: Item[] = [
   ['/panel/documentacion', 'id', 'Documentación'],
   ['/panel/reprogramaciones', 'cloud', 'Reprogramar'],
   ['/panel/comunicacion', 'whatsapp', 'Comunicación'],
+  ['/panel/metricas', 'trend', 'Métricas'],
+  ['/panel/configuracion', 'gear', 'Configuración'],
+  ['/panel/sponsors', 'star', 'Sponsors'],
+  // Usuarios e invitaciones (E04-09).
+  ['/panel/usuarios', 'shield', 'Usuarios'],
 ];
-/** Módulos del producto completo que todavía no están en la demo (ver docs/backlog.md). */
-const PROXIMAMENTE: [NombreIcono, string][] = [
-  ['star', 'Sponsors'],
-  ['trend', 'Métricas'],
-];
+
+// Permiso que pide cada sección (ver apps/api/src/comun/permisos.ts): el menú oculta lo que el rol no puede usar.
+const PERMISO_DEL_MENU: Record<string, string> = {
+  '/panel/torneos': 'torneo.leer',
+  '/panel/equipos': 'torneo.leer',
+  '/panel/canchas': 'cancha.escribir',
+  '/panel/arbitros': 'arbitro.escribir',
+  '/panel/caja': 'caja.leer',
+  '/panel/sanciones': 'sancion.resolver',
+  '/panel/documentacion': 'documentacion.leer',
+  '/panel/reprogramaciones': 'fixture.escribir',
+  '/panel/comunicacion': 'comunicacion.leer',
+  '/panel/metricas': 'cobro.leer',
+  '/panel/configuracion': 'torneo.escribir',
+  '/panel/sponsors': 'torneo.escribir',
+  '/panel/usuarios': 'usuario.gestionar',
+};
+const puede = (permisos: readonly string[] | undefined, href: string) => {
+  const p = PERMISO_DEL_MENU[href];
+  return !p || !permisos || permisos.includes('*') || permisos.includes(p);
+};
 
 export function BarraLateral({
   organizacion,
   usuario,
+  permisos,
 }: {
-  organizacion: { nombre: string; slug: string; plan: Plan };
+  organizacion: { nombre: string; slug: string; plan: Plan; mpConectado?: boolean };
   usuario: { nombre: string };
+  permisos?: readonly string[];
 }) {
   const ruta = usePathname();
   const [abierta, setAbierta] = useState(false);
@@ -54,20 +76,7 @@ export function BarraLateral({
             <Icono nombre="globe" />
             Sitio público
           </Link>
-          <button
-            className="flex items-center gap-2 rounded-full bg-white/80 py-1 pl-1 pr-3.5 text-sm font-semibold hover:bg-white"
-            title="Cerrar sesión"
-            onClick={async () => {
-              await api('POST', '/auth/salir');
-              await limpiarSinConexion();
-              window.location.href = '/ingresar';
-            }}
-          >
-            <span className="grid size-8 place-items-center rounded-full bg-ink text-xs font-bold text-volt">
-              {iniciales(usuario.nombre)}
-            </span>
-            <span className="hidden sm:inline">Salir</span>
-          </button>
+          <MenuCuenta usuario={usuario} />
         </div>
       </header>
 
@@ -97,7 +106,7 @@ export function BarraLateral({
           <div className="px-3.5 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-[.14em] text-white/35">
             Operación
           </div>
-          {MENU.map(([href, icono, texto]) => (
+          {MENU.filter(([href]) => puede(permisos, href)).map(([href, icono, texto]) => (
             <Link
               key={href}
               href={href}
@@ -108,26 +117,24 @@ export function BarraLateral({
               {texto}
             </Link>
           ))}
-          <div className="px-3.5 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-[.14em] text-white/35">
-            Próximamente
-          </div>
-          {PROXIMAMENTE.map(([icono, texto]) => (
-            <span
-              key={texto}
-              className="flex cursor-not-allowed items-center gap-3 rounded-xl px-3.5 py-2 text-[13.5px] font-medium text-white/30"
-              title="Está en el backlog del lanzamiento"
-            >
-              <Icono nombre={icono} className="text-[1.05rem]" />
-              {texto}
-            </span>
-          ))}
         </div>
         <div className="relative mt-2 rounded-2xl bg-white/10 p-3.5 text-xs text-white/60">
           <div className="mb-1 flex items-center gap-1.5 font-semibold text-volt">
             <Icono nombre="spark" />
             Comisión {String(plan.comisionPct).replace('.', ',')}%
           </div>
-          Mercado Pago conectado (modo demo). Cobrás directo en tu cuenta.
+          {organizacion.mpConectado ? (
+            'Mercado Pago conectado. Cobrás directo en tu cuenta.'
+          ) : (
+            <>
+              Mercado Pago sin conectar.{' '}
+              {puede(permisos, '/panel/configuracion') && (
+                <Link href="/panel/configuracion" className="font-semibold text-white underline">
+                  Conectalo en Configuración
+                </Link>
+              )}
+            </>
+          )}
         </div>
         <ProductoDeGregal oscuro className="relative mt-3 px-1.5" />
       </aside>

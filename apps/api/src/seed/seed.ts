@@ -7,9 +7,14 @@ import { AuthService, verificarAcceso } from '../auth/auth.js';
 import { CobrosService } from '../cobros/cobros.js';
 import type { Contexto } from '../comun/http.js';
 import { cargarPlantilla } from '../demo/plantilla.js';
+import { cargarHistorialDeMetricas } from '../demo/metricas-demo.js';
+import { cargarSitioPublicoDemo } from '../demo/publico-demo.js';
+import { cargarPanelDemo, cargarSegundaOrganizacion } from '../demo/panel-demo.js';
 import { DbService } from '../db/db.service.js';
 import { EquiposService } from '../equipos/equipos.js';
 import { TorneosService } from '../torneos/torneos.js';
+import { CAPITAN_DEMO, cargarUsuariosDemo } from './usuarios-demo.js';
+import { cargarDuenoDeVeteranos } from './dueno-veteranos.js';
 
 export const DEMO = {
   email: 'demo@potrero.app',
@@ -39,7 +44,20 @@ async function main() {
 
   // ── Organización principal ──
   const c = await sesion(DEMO.email, DEMO.password, 'Carla Organizadora', DEMO.organizacion);
-  await cargarPlantilla(app, c);
+  const { apertura } = await cargarPlantilla(app, c);
+  // Torneos del año pasado ya terminados: le dan historia a las métricas (E24).
+  await cargarHistorialDeMetricas(app, c);
+  // Usuarios con otros roles, una invitación pendiente y el capitán de demo (E04-09, E19).
+  const usuariosDemo = await cargarUsuariosDemo(app, c);
+  console.log(
+    `  Capitán (${usuariosDemo.equipo}): ${CAPITAN_DEMO.email} / ${CAPITAN_DEMO.password}\n  Invitación pendiente: ${usuariosDemo.invitacionPendiente}`,
+  );
+  // Sitio público: torneo pasado, trayectoria y preferencias de nombre (E20, E21).
+  await cargarSitioPublicoDemo(app, c, apertura.id);
+  // Panel (E18) y cuenta (E04-10): partido en vivo, alertas, sugerencias y una segunda organización para el selector.
+  await cargarPanelDemo(app, c, apertura.id);
+  await cargarSegundaOrganizacion(app, c.usuarioId);
+  await cargarDuenoDeVeteranos(app, DEMO.password);
 
   // ── Otra organización: sirve para comprobar el aislamiento entre ligas (RLS) ──
   const otra = await sesion('norte@potrero.app', 'potrero-demo-2026', 'Organizador Norte', 'Complejo Norte');

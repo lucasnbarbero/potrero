@@ -13,6 +13,7 @@ import { slugificar } from '../comun/slug.js';
 import { MensajeriaService } from '../mensajeria/mensajeria.js';
 import { DbService } from '../db/db.service.js';
 import { cargarDocumentacion } from './documentacion-demo.js';
+import { cargarSponsorsDemo } from './sponsors-demo.js';
 import { EquiposService } from '../equipos/equipos.js';
 import { PartidosService } from '../partidos/partidos.js';
 import { TorneosService } from '../torneos/torneos.js';
@@ -441,6 +442,9 @@ export async function cargarPlantilla(app: Resolver, c: Contexto, semilla = SEMI
 
   // ── Documentación: el plantel de Apertura con su DNI y apto, y casos para mostrar la revisión (E15) ──
   await cargarDocumentacion(db, c, apertura.id);
+
+  // ── Sponsors (E23): auspiciantes con espacios vendidos, cobros y 30 días de impresiones y clics ──
+  await cargarSponsorsDemo(app, c, { apertura: apertura.id, clausura: clausura.id });
 
   return { apertura, clausura, copa };
 }
