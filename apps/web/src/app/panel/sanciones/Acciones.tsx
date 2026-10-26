@@ -3,6 +3,7 @@ import { Icono } from '@potrero/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Campo, MensajeError, Selector, useEnvio } from '@/componentes/formulario';
+import { usePermiso } from '@/componentes/Permisos';
 import { api } from '@/lib/cliente';
 import { pesos } from '@/lib/formato';
 import type { ExpedienteVista, ResumenTribunal } from '@/lib/tipos';
@@ -248,6 +249,7 @@ export function LevantarPagando({ s }: { s: Suspendido }) {
   const router = useRouter();
   const { enviando, error, enviar } = useEnvio();
   const [confirmar, setConfirmar] = useState(false);
+  const puedeCobrar = usePermiso('cobro.registrar');
   const accion = (fn: () => Promise<unknown>) =>
     enviar(async () => {
       await fn();
@@ -260,15 +262,19 @@ export function LevantarPagando({ s }: { s: Suspendido }) {
       {s.pendientes.map((p) => (
         <div key={p.id} className="flex flex-wrap items-center gap-2">
           <span className="pill-amber">Pago pendiente · {pesos(p.monto)}</span>
-          <button
-            className="btn btn-sm"
-            disabled={enviando}
-            onClick={() =>
-              accion(() => api('POST', `/cargos/${p.cargoId}/pagos`, { metodo: 'EFECTIVO', monto: p.monto }))
-            }
-          >
-            Registrar pago en efectivo
-          </button>
+          {puedeCobrar && (
+            <button
+              className="btn btn-sm"
+              disabled={enviando}
+              onClick={() =>
+                accion(() =>
+                  api('POST', `/cargos/${p.cargoId}/pagos`, { metodo: 'EFECTIVO', monto: p.monto }),
+                )
+              }
+            >
+              Registrar pago en efectivo
+            </button>
+          )}
           <button
             className="btn-glass btn-sm"
             disabled={enviando}

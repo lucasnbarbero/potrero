@@ -123,6 +123,14 @@ export interface Acta {
   clave: string | null;
   penalesLocal: number | null;
   penalesVisitante: number | null;
+  faseId?: string | null;
+  /** Torneos por fases: serie de ida y vuelta (la vuelta pide penales si empata el global). */
+  serie?: {
+    idaYVuelta: boolean;
+    pierna: number | null;
+    ida: { golesLocal: number; golesVisitante: number } | null;
+    ronda: string | null;
+  } | null;
   inicio: string | null;
   estado: string;
   cancha: string | null;

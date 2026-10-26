@@ -3,7 +3,8 @@
 export const MODALIDADES = ['F5', 'F7', 'F8', 'F11'] as const;
 export type Modalidad = (typeof MODALIDADES)[number];
 
-export const FORMATOS = ['LIGA', 'COPA', 'GRUPOS_PLAYOFFS', 'LIGA_PLAYOFFS'] as const;
+/** FLEXIBLE: torneo por fases armado en "Armá el formato" (ADR-026). */
+export const FORMATOS = ['LIGA', 'COPA', 'GRUPOS_PLAYOFFS', 'LIGA_PLAYOFFS', 'FLEXIBLE'] as const;
 export type Formato = (typeof FORMATOS)[number];
 
 export const DESEMPATES = ['DIFERENCIA_GOL', 'GOLES_FAVOR', 'ENTRE_SI', 'JUEGO_LIMPIO', 'SORTEO'] as const;

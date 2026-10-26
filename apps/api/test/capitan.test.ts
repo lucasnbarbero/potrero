@@ -275,6 +275,11 @@ describe('usuarios, roles y panel del capitán', () => {
       201,
     );
     expect(await st(adm, 'POST', '/caja/retiros', { monto: 1, destino: 'x' })).toBe(403);
+    // Administrador: registra y anula pagos (decisión del dueño); el tribunal no.
+    expect((await adm('GET', '/auth/yo')).body.permisos).toContain('cobro.registrar');
+    expect(await st(adm, 'POST', '/cargos/x/pagos', { metodo: 'EFECTIVO', monto: 1 })).not.toBe(403);
+    expect(await st(adm, 'POST', '/pagos/x/anular', { motivo: 'Mal cargado' })).not.toBe(403);
+    expect(await st(tri, 'POST', '/cargos/x/pagos', { metodo: 'EFECTIVO', monto: 1 })).toBe(403);
     // Capitán: ni el panel del organizador, ni la lista de equipos, ni otros equipos, ni la caja.
     for (const ruta of [
       '/torneos',

@@ -27,5 +27,10 @@ export * from './dominio/panel.js';
 export * from './dominio/cuenta.js';
 export * from './esquemas-cuenta.js';
 export * from './dominio/formato.js';
+export * from './dominio/fases.js';
+export * from './esquemas-fases.js';
 export * from './dominio/cobro-manual.js';
 export * from './esquemas-cobros.js';
+// Backoffice de Gregal (E36).
+export * from './dominio/gregal.js';
+export * from './dominio/jugador.js';

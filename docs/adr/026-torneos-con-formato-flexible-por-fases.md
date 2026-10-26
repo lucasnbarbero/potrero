@@ -2,7 +2,7 @@
 
 | Estado | Fecha | Decide |
 |---|---|---|
-| Propuesta (abierta) | 2026-10-26 | Producto y tech lead |
+| Aceptada | 2026-10-26 | Producto y tech lead |
 
 ## Contexto
 Hoy un torneo tiene un formato fijo: liga, copa, grupos + playoffs o liga + playoffs (ADR-021). Las ligas reales combinan fases a su manera.
@@ -36,9 +36,9 @@ Propuesta: un torneo es una **secuencia de fases**.
 - **Inicio:** cada fase arranca después de la anterior o en paralelo, compartiendo sábados, canchas y horarios.
 - **Plantillas:** los cuatro formatos actuales y "grupos + playoffs + copa estímulo" pasan a ser plantillas editables.
 
-El modelo, la validación (`validarFormato`), la simulación del calendario y de la recaudación (`simularFormato`) y las plantillas ya existen como funciones puras en `packages/shared/src/dominio/formato.ts`, con tests. Hoy los usa el simulador "Armá el formato" (`/panel/torneos/formato`), que todavía no crea torneos.
+El modelo, la validación (`validarFormato`), la simulación del calendario y de la recaudación (`simularFormato`) y las plantillas ya existen como funciones puras en `packages/shared/src/dominio/formato.ts`, con tests. Los usa el simulador "Armá el formato" (`/panel/torneos/formato`), que desde el 26/10/2026 también crea el torneo (formato `FLEXIBLE`).
 
-Para la versión definitiva:
+Implementado el 26/10/2026 (E10-06 a E10-08); lo pendiente está anotado en el backlog:
 1. **Datos:** tabla `Fase`, con RLS, que guarda el formato validado. `Partido` gana `faseId`, `grupo`, `ronda` y `pierna` (1 o 2). Los torneos existentes migran a la fase equivalente de su plantilla.
 2. **Fixture por fase:**
    - La fase 1 se arma al cerrar la inscripción.

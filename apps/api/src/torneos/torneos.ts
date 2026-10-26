@@ -205,6 +205,8 @@ export class TorneosService {
   }
 
   crear(c: Contexto, d: CrearTorneoInput) {
+    if (d.formato === 'FLEXIBLE')
+      throw new ErrorNegocio('Un torneo por fases se crea desde "Armá el formato".');
     return this.db.enOrg(c.organizacionId, async (tx) => {
       const slug = await slugUnico(
         d.nombre,
@@ -412,6 +414,8 @@ export class TorneosService {
       if (!torneo) throw noEncontrado('el torneo');
       if (torneo.formato === 'COPA')
         throw new ErrorNegocio('La copa no tiene fase de liga: generá directamente las llaves.');
+      if (torneo.formato === 'FLEXIBLE')
+        throw new ErrorNegocio('Es un torneo por fases: generá cada fase desde la pestaña Fases.');
       const jugados = await tx.partido.count({
         where: { torneoId: id, estado: { in: ['EN_JUEGO', 'FINALIZADO', 'WO'] } },
       });
@@ -492,6 +496,8 @@ export class TorneosService {
     return this.db.enOrg(c.organizacionId, async (tx) => {
       const torneo = await tx.torneo.findUnique({ where: { id } });
       if (!torneo) throw noEncontrado('el torneo');
+      if (torneo.formato === 'FLEXIBLE')
+        throw new ErrorNegocio('Es un torneo por fases: generá cada fase desde la pestaña Fases.');
       if (torneo.formato === 'LIGA')
         throw new ErrorNegocio(
           'Un torneo de liga no tiene llaves. Elegí copa, liga + playoffs o grupos + playoffs.',

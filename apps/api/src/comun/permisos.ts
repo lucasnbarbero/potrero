@@ -55,3 +55,12 @@ export function permitidaSinPermiso(rol: string, ruta: string): boolean {
 PERMISOS_POR_ROL.ADMINISTRADOR = [...PERMISOS_POR_ROL.ADMINISTRADOR!, 'expediente.informe'];
 PERMISOS_POR_ROL.ARBITRO = [...PERMISOS_POR_ROL.ARBITRO!, 'expediente.informe'];
 PERMISOS_POR_ROL.TRIBUNAL = [...PERMISOS_POR_ROL.TRIBUNAL!, 'expediente.informe'];
+
+// ── Cobros (decisión del dueño) ──
+// El administrador de torneo también registra pagos (efectivo, transferencia, anulaciones, levantamientos). Retirar
+// dinero y la caja siguen siendo del dueño y del tesorero.
+PERMISOS_POR_ROL.ADMINISTRADOR = [...PERMISOS_POR_ROL.ADMINISTRADOR!, 'cobro.registrar'];
+// ── Cuenta del jugador (E20-01) ──
+// El jugador solo ve lo suyo (Membresia.jugadorId): ningún permiso del organizador ni del capitán.
+PERMISOS_POR_ROL.JUGADOR = ['jugador.cuenta'];
+ROLES_ACOTADOS.add('JUGADOR');

@@ -12,13 +12,14 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { pesos } from '@/lib/formato';
 import { proximoSabado } from './comun';
+import { CrearConFormato } from './CrearConFormato';
 import { Cronograma } from './Cronograma';
 import { DiagramaDeFases } from './DiagramaDeFases';
 import { EditorDeFases } from './EditorDeFases';
 
 const INICIAL: PlantillaDeFormato = 'GRUPOS_PLAYOFFS_COPA';
-// Cuota de ejemplo para la simulación (el valor por defecto de los torneos es 0: no se cobra). TODO datos.json
-const CUOTA_DE_EJEMPLO = DATOS.cobrosPorFechaPorDefecto.cuotaPorFecha || 10000;
+// Cuota de ejemplo para la simulación (el valor por defecto de los torneos es 0: no se cobra).
+const CUOTA_DE_EJEMPLO = DATOS.cobrosPorFechaPorDefecto.cuotaPorFecha || DATOS.simulador.cuotaDeEjemplo;
 
 function Numero({
   etiqueta,
@@ -116,8 +117,8 @@ export function Simulador() {
           <Icono nombre="spark" />
         </span>
         <p>
-          <b>Simulador: así quedaría tu torneo.</b> Crear torneos con formatos combinados llega en la próxima
-          versión.
+          <b>Simulador: así quedaría tu torneo.</b> Cuando te cierre, creá el torneo con este formato y generá
+          cada fase a medida que se juega.
         </p>
       </div>
 
@@ -235,6 +236,14 @@ export function Simulador() {
           ))}
         </section>
       )}
+
+      <CrearConFormato
+        formato={formato}
+        equipos={equipos}
+        inscripcion={inscripcion}
+        cuotaPorFecha={cuotaPorFecha}
+        conErrores={errores.length > 0}
+      />
 
       <DiagramaDeFases formato={formato} sim={sim} equipos={equipos} primerSabado={primerSabado} />
 

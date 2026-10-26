@@ -14,7 +14,7 @@ import {
   Res,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { loginSchema, registroSchema, type LoginInput, type RegistroInput } from '@potrero/shared';
+import { DATOS, loginSchema, registroSchema, type LoginInput, type RegistroInput } from '@potrero/shared';
 import argon2 from 'argon2';
 import type { Request, Response } from 'express';
 import { jwtVerify, SignJWT } from 'jose';
@@ -36,7 +36,8 @@ import { controlarIntentos, crearLink, registrarIntento } from './links.js';
 
 const SECRETO = new TextEncoder().encode(config.JWT_SECRET);
 const DURACION_ACCESO_SEG = 15 * 60;
-const DURACION_REFRESH_DIAS = 30;
+/** Días que dura la sesión sin volver a ingresar (docs/datos.json). */
+const DURACION_REFRESH_DIAS = DATOS.cuentas.sesionDias;
 export const COOKIE_ACCESO = 'potrero_at';
 export const COOKIE_REFRESH = 'potrero_rt';
 

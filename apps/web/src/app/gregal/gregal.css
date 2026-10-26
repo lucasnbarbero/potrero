@@ -1,0 +1,89 @@
+/* Backoffice de Gregal (E36): mismo sistema visual del panel, con el verde de Gregal Tech como acento "interno". */
+.gregal {
+  --gregal: #12c28a;
+  --gregal-tinta: #0a0f0d;
+}
+.bg-gregal {
+  background: var(--gregal);
+  color: var(--gregal-tinta);
+}
+.text-gregal {
+  color: var(--gregal);
+}
+.pill-gregal {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgb(18 194 138 / 0.15);
+  color: #08734f;
+}
+.tile-gregal {
+  position: relative;
+  overflow: hidden;
+  border-radius: 2rem;
+  padding: 1.5rem;
+  background: var(--gregal);
+  color: var(--gregal-tinta);
+  min-width: 0;
+}
+/* Columnas (una serie): barras finas con la punta redondeada apoyadas en la base y el valor arriba. */
+.gregal-cols {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  height: 190px;
+}
+.gregal-cols > div {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.35rem;
+  height: 100%;
+  font-size: 11px;
+  color: var(--color-mute);
+}
+.gregal-cols i {
+  display: block;
+  width: 70%;
+  max-width: 44px;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: var(--color-ink);
+  transform-origin: bottom;
+  animation: gregal-up 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.gregal-cols > div:last-child i {
+  background: var(--gregal);
+}
+.gregal-cols > div:hover i {
+  opacity: 0.8;
+}
+@keyframes gregal-up {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: none;
+  }
+}
+/* Mezcla de medios: barra apilada con 2px de separación entre segmentos. */
+.gregal-mezcla {
+  display: flex;
+  gap: 2px;
+  height: 14px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: rgb(0 0 0 / 0.05);
+}
+.gregal-mezcla > i {
+  display: block;
+  height: 100%;
+}

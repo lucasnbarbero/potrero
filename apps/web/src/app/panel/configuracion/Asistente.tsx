@@ -275,7 +275,7 @@ function PasoMercadoPago({ estado, listo }: { estado: EstadoConfiguracion; listo
 }
 
 const TIPOS_LOGO = ['image/png', 'image/jpeg', 'image/webp'];
-const MAX_LOGO = 300 * 1024;
+const MAX_LOGO = DATOS.organizacion.logoMaximoKb * 1024;
 
 function PasoMarca({
   estado,
@@ -297,7 +297,10 @@ function PasoMarca({
     setErrorLogo(null);
     if (!archivo) return;
     if (!TIPOS_LOGO.includes(archivo.type)) return setErrorLogo('El logo tiene que ser PNG, JPG o WEBP.');
-    if (archivo.size > MAX_LOGO) return setErrorLogo('El logo pesa más de 300 KB. Probá con uno más chico.');
+    if (archivo.size > MAX_LOGO)
+      return setErrorLogo(
+        `El logo pesa más de ${DATOS.organizacion.logoMaximoKb} KB. Probá con uno más chico.`,
+      );
     const lector = new FileReader();
     lector.onload = () => setMarca({ ...marca, logo: String(lector.result) });
     lector.readAsDataURL(archivo);

@@ -3,7 +3,14 @@
 // Cada toque se guarda primero en el dispositivo (cola en IndexedDB) y se ve al instante; la cola viaja al servidor en
 // orden apenas hay conexión. Cada evento lleva un clientUuid, así un reenvío nunca duplica nada (ADR-004).
 import { Icono } from '@potrero/ui';
-import { DATOS, type OperacionActa, ordenarLineaDeTiempo, procesarCola, vistaLocal } from '@potrero/shared';
+import {
+  DATOS,
+  type OperacionActa,
+  ordenarLineaDeTiempo,
+  pidePenales,
+  procesarCola,
+  vistaLocal,
+} from '@potrero/shared';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MensajeError, useEnvio } from '@/componentes/formulario';
@@ -71,7 +78,13 @@ export function ActaDigital({ inicial }: { inicial: Acta }) {
   const cuentaWo = (ms: number) =>
     `${String(Math.floor(ms / 60_000)).padStart(2, '0')}:${String(Math.floor((ms % 60_000) / 1000)).padStart(2, '0')}`;
   // En una llave no hay empate: si termina igualado, se definen penales antes de cerrar.
-  const empateEnLlave = acta.fase === 'LLAVE' && acta.marcador.local === acta.marcador.visitante;
+  // En ida y vuelta (torneos por fases), solo la vuelta y solo si empata el global.
+  const empateEnLlave = acta.serie
+    ? pidePenales(
+        { golesLocal: acta.marcador.local, golesVisitante: acta.marcador.visitante },
+        { ...acta.serie, ida: acta.serie.ida ?? undefined },
+      )
+    : acta.fase === 'LLAVE' && acta.marcador.local === acta.marcador.visitante;
   // Un solo dueño por partido: otro dispositivo con el acta bloquea la carga desde este.
   const soyDueno = !dispositivo || !base.dueno || base.dueno.dispositivoId === dispositivo;
   // Con un equipo ausente, el resultado lo define el reglamento (viene del servidor), no los eventos.
@@ -234,11 +247,16 @@ export function ActaDigital({ inicial }: { inicial: Acta }) {
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <Link
-        href={`/panel/torneos/${acta.torneo.id}?tab=${acta.fase === 'LLAVE' ? 'llaves' : 'fixture'}`}
+        href={`/panel/torneos/${acta.torneo.id}?tab=${acta.faseId ? 'fases' : acta.fase === 'LLAVE' ? 'llaves' : 'fixture'}`}
         className="inline-flex items-center gap-1 text-sm font-semibold text-mute hover:text-ink"
       >
         <Icono nombre="back" />
-        {acta.torneo.nombre} · {acta.fase === 'LLAVE' ? 'Llave' : `Fecha ${acta.fecha}`}
+        {acta.torneo.nombre} ·{' '}
+        {acta.serie
+          ? `${acta.serie.ronda ?? 'Llave'}${acta.serie.idaYVuelta ? (acta.serie.pierna === 2 ? ' · Vuelta' : ' · Ida') : ''}`
+          : acta.fase === 'LLAVE'
+            ? 'Llave'
+            : `Fecha ${acta.fecha}`}
         {acta.grupo ? ` · Grupo ${acta.grupo}` : ''}
       </Link>
 
@@ -621,7 +639,11 @@ export function ActaDigital({ inicial }: { inicial: Acta }) {
           ))}
           {empateEnLlave && (
             <div className="rounded-2xl bg-ink/10 p-3">
-              <b className="text-sm">Es un cruce de llave y terminó empatado: cargá los penales</b>
+              <b className="text-sm">
+                {acta.serie?.idaYVuelta
+                  ? 'El global de la serie está empatado: cargá los penales'
+                  : 'Es un cruce de llave y terminó empatado: cargá los penales'}
+              </b>
               <div className="mt-2 grid grid-cols-2 gap-3">
                 {[
                   ['penalesLocal', acta.local.nombre],

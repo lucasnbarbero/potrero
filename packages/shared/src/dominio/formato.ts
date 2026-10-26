@@ -148,7 +148,8 @@ export function tamanosDeGrupos(n: number, g: number): number[] {
   return Array.from({ length: g }, (_, i) => Math.floor(n / g) + (i < n % g ? 1 : 0));
 }
 
-function cantidadDeGrupos(fase: FaseDeFormato, equipos: number): number {
+/** Cantidad de grupos de una fase de grupos para esa cantidad de equipos. */
+export function cantidadDeGruposDeFase(fase: Pick<FaseDeFormato, 'grupos'>, equipos: number): number {
   if (fase.grupos.modo === 'CANTIDAD') return Math.max(1, Math.min(fase.grupos.valor, equipos));
   return Math.max(1, Math.round(equipos / Math.max(1, fase.grupos.valor)));
 }
@@ -424,7 +425,7 @@ function armarFase(a: FaseAnalizada) {
     a.grupos = equipos > 0 ? [equipos] : [];
     a.fechas = fechasDeLiga(equipos, fase.ruedas);
   } else if (fase.tipo === 'GRUPOS') {
-    a.grupos = tamanosDeGrupos(equipos, cantidadDeGrupos(fase, equipos));
+    a.grupos = tamanosDeGrupos(equipos, cantidadDeGruposDeFase(fase, equipos));
     const porGrupo = a.grupos.map((t) => fechasDeLiga(t, fase.ruedas));
     const largo = Math.max(0, ...porGrupo.map((f) => f.length));
     a.fechas = Array.from({ length: largo }, (_, k) => porGrupo.reduce((s, f) => s + (f[k] ?? 0), 0));

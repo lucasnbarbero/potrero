@@ -1,7 +1,16 @@
 // Usuarios de la organización (E04-09, E04-06): quién puede invitar a quién, estado de una invitación y cuándo se
 // puede quitar un acceso. El dueño no se invita: nace con la organización y nunca se queda sin uno.
+import { DATOS } from '../datos.js';
 
-export const ROLES = ['DUENO', 'ADMINISTRADOR', 'TESORERO', 'ARBITRO', 'TRIBUNAL', 'CAPITAN'] as const;
+export const ROLES = [
+  'DUENO',
+  'ADMINISTRADOR',
+  'TESORERO',
+  'ARBITRO',
+  'TRIBUNAL',
+  'CAPITAN',
+  'JUGADOR',
+] as const;
 export type RolOrganizacion = (typeof ROLES)[number];
 
 /** Roles que se pueden dar por invitación. */
@@ -15,19 +24,22 @@ export const NOMBRE_ROL: Record<RolOrganizacion, string> = {
   ARBITRO: 'Árbitro / delegado',
   TRIBUNAL: 'Tribunal de disciplina',
   CAPITAN: 'Capitán',
+  JUGADOR: 'Jugador',
 };
 
 export const DESCRIPCION_ROL: Record<RolOrganizacion, string> = {
   DUENO: 'Todo, incluido cobros, retiros, usuarios y plan.',
-  ADMINISTRADOR: 'Fixture, sanciones, comunicación, documentación y árbitros. Sin retirar dinero.',
+  ADMINISTRADOR:
+    'Fixture, sanciones, comunicación, documentación, árbitros y registrar pagos. Sin retirar dinero.',
   TESORERO: 'Ver y registrar pagos, egresos y caja.',
   ARBITRO: 'Cargar y cerrar el acta de los partidos.',
   TRIBUNAL: 'Expedientes, descargos y resoluciones.',
   CAPITAN: 'Solo su equipo: plantel, convocatoria, documentación, sanciones y descargos.',
+  JUGADOR: 'Solo lo suyo: próximos partidos, asistencia, estadísticas, sanciones y documentación.',
 };
 
-/** Días que vale el link de una invitación. TODO datos.json: llevar esta cifra a docs/datos.json. */
-export const DIAS_VENCIMIENTO_INVITACION = 7;
+/** Días que vale el link de una invitación (docs/datos.json). */
+export const DIAS_VENCIMIENTO_INVITACION: number = DATOS.usuarios.vencimientoInvitacionDias;
 
 /**
  * Quién invita a quién. El dueño, a cualquier rol invitable. El administrador de torneo, solo a roles operativos que no

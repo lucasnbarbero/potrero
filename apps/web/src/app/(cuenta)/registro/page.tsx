@@ -1,4 +1,5 @@
 'use client';
+import { DATOS } from '@potrero/shared';
 import Link from 'next/link';
 import { Campo, MensajeError, useEnvio } from '@/componentes/formulario';
 import { api } from '@/lib/cliente';
@@ -36,9 +37,9 @@ export default function Registro() {
         name="password"
         type="password"
         required
-        minLength={10}
+        minLength={DATOS.cuentas.contrasenaMinimaCaracteres}
         autoComplete="new-password"
-        ayuda="Al menos 10 caracteres."
+        ayuda={`Al menos ${DATOS.cuentas.contrasenaMinimaCaracteres} caracteres.`}
         error={campos.password}
       />
       <MensajeError error={error} />

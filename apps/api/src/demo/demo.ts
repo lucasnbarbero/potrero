@@ -70,6 +70,8 @@ export const TABLAS_DE_ORGANIZACION = [
   // Usuarios e invitaciones (E04-09) y convocatoria del capitán (E19-02).
   'invitacion',
   'convocatoria',
+  // Torneos por fases (ADR-026). Se borra en cascada con el torneo; va acá por si quedara alguna suelta.
+  'fase',
 ] as const;
 
 @Injectable()

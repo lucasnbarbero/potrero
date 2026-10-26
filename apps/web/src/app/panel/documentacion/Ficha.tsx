@@ -1,10 +1,11 @@
 'use client';
+import { DATOS } from '@potrero/shared';
 import { useCallback, useEffect, useState } from 'react';
 import { Campo, MensajeError, useEnvio } from '@/componentes/formulario';
 import { api } from '@/lib/cliente';
 import type { FichaJugador, TipoDocumento } from '@/lib/tipos';
 
-const MB = 2;
+const MB = DATOS.documentacion.tamanoMaximoMb;
 
 const aBase64 = (archivo: File) =>
   new Promise<string>((ok, mal) => {

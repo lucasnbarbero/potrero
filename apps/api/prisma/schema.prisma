@@ -66,6 +66,8 @@ enum Rol {
   TRIBUNAL
   /// Capitán de un equipo (E19): solo ve y opera su equipo (`Membresia.equipoId`).
   CAPITAN
+  /// Jugador con cuenta (E20-01): solo ve lo suyo (`Membresia.jugadorId`).
+  JUGADOR
 }
 
 model Membresia {
@@ -76,10 +78,13 @@ model Membresia {
   creadoEn       DateTime     @default(now()) @map("creado_en")
   /// Alcance del rol CAPITAN: el equipo que maneja. Nulo en los demás roles.
   equipoId       String?      @map("equipo_id")
+  /// Alcance del rol JUGADOR (E20-01): el perfil de jugador que reclamó. Nulo en los demás roles.
+  jugadorId      String?      @map("jugador_id")
   usuario        Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   organizacion   Organizacion @relation(fields: [organizacionId], references: [id], onDelete: Cascade)
 
   @@unique([usuarioId, organizacionId])
+  @@unique([organizacionId, jugadorId])
   @@map("membresia")
 }
 
@@ -167,6 +172,8 @@ enum Formato {
   COPA
   GRUPOS_PLAYOFFS
   LIGA_PLAYOFFS
+  /// Por fases, armado en "Armá el formato" (ADR-026). Las fases están en `Fase`.
+  FLEXIBLE
 }
 
 enum EstadoTorneo {
@@ -232,6 +239,8 @@ model Torneo {
   partidos             Partido[]
   sanciones            Sancion[]
   expedientes          Expediente[]
+  /// Torneos por fases (ADR-026): una fila por fase del formato.
+  fases                Fase[]
 
   @@unique([organizacionId, slug])
   @@map("torneo")
@@ -462,9 +471,14 @@ model Partido {
   torneo           Torneo          @relation(fields: [torneoId], references: [id], onDelete: Cascade)
   cancha           Cancha?         @relation(fields: [canchaId], references: [id])
   eventos          EventoPartido[]
+  /// Torneos por fases (ADR-026): fase del partido, ronda de la llave y pierna (1 = ida o partido único, 2 = vuelta).
+  faseId           String?         @map("fase_id")
+  ronda            Int?
+  pierna           Int?
 
   @@unique([torneoId, clave])
   @@index([torneoId, fecha])
+  @@index([faseId])
   @@map("partido")
 }
 
@@ -940,6 +954,8 @@ model Invitacion {
   rol            Rol
   /// Solo para CAPITAN: el equipo que va a manejar.
   equipoId       String?   @map("equipo_id")
+  /// Solo para JUGADOR (E20-01): el perfil que reclama (lo invita el capitán desde su plantel).
+  jugadorId      String?   @map("jugador_id")
   tokenHash      String    @unique @map("token_hash")
   venceEn        DateTime  @map("vence_en")
   aceptadaEn     DateTime? @map("aceptada_en")
@@ -966,4 +982,82 @@ model Convocatoria {
   @@unique([partidoId, jugadorId])
   @@index([organizacionId, partidoId])
   @@map("convocatoria")
+}
+
+// ───────────── Backoffice de Gregal (E36) ─────────────
+// Equipo interno de Gregal Tech: tablas globales, separadas de usuarios y membresías de las organizaciones.
+// Solo las usa el módulo `gregal` con `db.sistema` (lee todas las ligas); cada acción del staff queda en StaffAuditoria.
+
+enum RolStaff {
+  SUPERADMIN
+  SOPORTE
+  FINANZAS
+  DIRECCION
+}
+
+model StaffUsuario {
+  id              String           @id @default(cuid())
+  email           String           @unique
+  nombre          String
+  passwordHash    String           @map("password_hash")
+  rol             RolStaff
+  activo          Boolean          @default(true)
+  ultimoIngresoEn DateTime?        @map("ultimo_ingreso_en")
+  creadoEn        DateTime         @default(now()) @map("creado_en")
+  acciones        StaffAuditoria[]
+
+  @@map("staff_usuario")
+}
+
+/// Registro inmutable de cada acción del staff (E36-03): ingresos, lecturas de ligas y cambios. La base rechaza editarlo.
+model StaffAuditoria {
+  id             String        @id @default(cuid())
+  staffId        String?       @map("staff_id")
+  accion         String
+  entidad        String?
+  entidadId      String?       @map("entidad_id")
+  organizacionId String?       @map("organizacion_id")
+  detalle        Json?
+  ip             String?
+  creadoEn       DateTime      @default(now()) @map("creado_en")
+  staff          StaffUsuario? @relation(fields: [staffId], references: [id], onDelete: SetNull)
+
+  @@index([creadoEn])
+  @@index([staffId, creadoEn])
+  @@map("staff_auditoria")
+}
+
+/// Fase de un torneo por fases (ADR-026, E10-07). Guarda la definición validada (FaseDeFormato de @potrero/shared)
+/// y, una vez generada, sus equipos, grupos o cuadro y la programación. Los partidos apuntan con `Partido.faseId`.
+model Fase {
+  id             String     @id @default(cuid())
+  organizacionId String     @map("organizacion_id")
+  torneoId       String     @map("torneo_id")
+  /// Identificador dentro del formato ("f1", "f2"…), el que usan las entradas de las otras fases.
+  clave          String
+  orden          Int
+  nombre         String
+  tipo           String
+  /// FaseDeFormato completa: entradas, ruedas, grupos, ida y vuelta por ronda, cruces.
+  definicion     Json
+  estado         EstadoFase @default(PENDIENTE)
+  /// Equipos que entraron, de mejor a peor semilla.
+  equipoIds      String[]   @default([]) @map("equipo_ids")
+  /// Grupos: [{ grupo, equipoIds }] (un todos contra todos tiene uno solo, con grupo null).
+  grupos         Json?
+  /// Eliminación: { cuadro, programacion }.
+  llave          Json?
+  /// Número de fecha del torneo desde el que se cuentan las fechas de esta fase.
+  baseFecha      Int        @default(0) @map("base_fecha")
+  creadoEn       DateTime   @default(now()) @map("creado_en")
+  torneo         Torneo     @relation(fields: [torneoId], references: [id], onDelete: Cascade)
+
+  @@unique([torneoId, clave])
+  @@map("fase")
+}
+
+enum EstadoFase {
+  PENDIENTE
+  EN_CURSO
+  FINALIZADA
 }

@@ -1,5 +1,6 @@
 'use client';
 // Elegir una contraseña nueva con el link de recuperación (E04-02). Al guardarla se cierran las demás sesiones.
+import { DATOS } from '@potrero/shared';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -50,9 +51,9 @@ export default function Restablecer() {
         name="password"
         type="password"
         autoComplete="new-password"
-        minLength={10}
+        minLength={DATOS.cuentas.contrasenaMinimaCaracteres}
         required
-        ayuda="Al menos 10 caracteres."
+        ayuda={`Al menos ${DATOS.cuentas.contrasenaMinimaCaracteres} caracteres.`}
         error={campos.password}
       />
       <Campo

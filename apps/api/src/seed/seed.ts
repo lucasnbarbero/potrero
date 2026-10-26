@@ -15,6 +15,10 @@ import { EquiposService } from '../equipos/equipos.js';
 import { TorneosService } from '../torneos/torneos.js';
 import { CAPITAN_DEMO, cargarUsuariosDemo } from './usuarios-demo.js';
 import { cargarDuenoDeVeteranos } from './dueno-veteranos.js';
+import { cargarGregalDemo, STAFF_DEMO } from './gregal-demo.js';
+import { cargarJugadorDemo } from './jugador-demo.js';
+// Torneo por fases (ADR-026).
+import { cargarTorneoPorFasesDemo } from '../demo/fases-demo.js';
 
 export const DEMO = {
   email: 'demo@potrero.app',
@@ -58,6 +62,10 @@ async function main() {
   await cargarPanelDemo(app, c, apertura.id);
   await cargarSegundaOrganizacion(app, c.usuarioId);
   await cargarDuenoDeVeteranos(app, DEMO.password);
+  // Cuenta del jugador (E20-01): un jugador del equipo del capitán, con su convocatoria pendiente.
+  await cargarJugadorDemo(app, c);
+  // Torneo por fases armado desde "Armá el formato", con la fase de grupos a mitad de camino (ADR-026).
+  await cargarTorneoPorFasesDemo(app, c);
 
   // ── Otra organización: sirve para comprobar el aislamiento entre ligas (RLS) ──
   const otra = await sesion('norte@potrero.app', 'potrero-demo-2026', 'Organizador Norte', 'Complejo Norte');
@@ -75,9 +83,13 @@ async function main() {
   const en = await equipos.crear(otra, { nombre: 'Norte FC' });
   await cobros.inscribir(otra, tn.id, en.id);
 
+  // Backoffice de Gregal (E36): staff de demo y dos ligas chicas para las métricas y la salud.
+  await cargarGregalDemo(app, DEMO.password);
+
   console.log('Demo cargada.');
   console.log(`  Organizador: ${DEMO.email} / ${DEMO.password}`);
   console.log(`  Sitio público: /t/liga-barrial-sur/apertura-2026`);
+  console.log(`  Equipo Gregal: ${STAFF_DEMO.email} / ${DEMO.password} (en /gregal)`);
   await app.close();
 }
 

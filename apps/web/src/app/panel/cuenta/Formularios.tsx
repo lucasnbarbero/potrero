@@ -1,5 +1,6 @@
 'use client';
 // Formularios de "Mi cuenta" (E04-02, E04-10, E04-14).
+import { DATOS } from '@potrero/shared';
 import { Icono } from '@potrero/ui';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -155,9 +156,9 @@ export function CambiarPassword() {
         name="nueva"
         type="password"
         autoComplete="new-password"
-        minLength={10}
+        minLength={DATOS.cuentas.contrasenaMinimaCaracteres}
         required
-        ayuda="Al menos 10 caracteres."
+        ayuda={`Al menos ${DATOS.cuentas.contrasenaMinimaCaracteres} caracteres.`}
         error={campos.nueva}
       />
       <MensajeError error={error} />

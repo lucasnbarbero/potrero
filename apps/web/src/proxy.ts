@@ -17,14 +17,20 @@ function rolDe(token: string | undefined) {
     return null;
   }
 }
+// Jugador (E20-01): su lugar es /jugador; no entra al panel del organizador ni al del capitán.
+const PANTALLA_DEL_ROL: Record<string, string> = { CAPITAN: '/capitan', JUGADOR: '/jugador' };
 function pantallaDelRol(req: NextRequest, token: string | undefined) {
-  const esCapitan = rolDe(token) === 'CAPITAN';
-  const enCapitan = req.nextUrl.pathname.startsWith('/capitan');
-  if (esCapitan === enCapitan) return null;
-  return NextResponse.redirect(new URL(esCapitan ? '/capitan' : '/panel', req.url));
+  const destino = PANTALLA_DEL_ROL[rolDe(token) ?? ''] ?? '/panel';
+  if (req.nextUrl.pathname.startsWith(destino)) return null;
+  return NextResponse.redirect(new URL(destino, req.url));
 }
 
 export async function proxy(req: NextRequest) {
+  // Backoffice de Gregal (E36): sesión de staff aparte (potrero_staff); la de organizador no sirve acá. La API la valida.
+  if (req.nextUrl.pathname.startsWith('/gregal'))
+    return req.nextUrl.pathname === '/gregal/ingresar' || req.cookies.has('potrero_staff')
+      ? NextResponse.next()
+      : NextResponse.redirect(new URL('/gregal/ingresar', req.url));
   if (req.cookies.has('potrero_at'))
     return pantallaDelRol(req, req.cookies.get('potrero_at')?.value) ?? NextResponse.next();
   const refresh = req.cookies.get('potrero_rt')?.value;
@@ -53,4 +59,4 @@ export async function proxy(req: NextRequest) {
   return res;
 }
 
-export const config = { matcher: ['/panel/:path*', '/capitan/:path*'] };
+export const config = { matcher: ['/panel/:path*', '/capitan/:path*', '/jugador/:path*', '/gregal/:path*'] };

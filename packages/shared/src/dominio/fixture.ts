@@ -79,6 +79,8 @@ export function cantidadDePartidos(equipos: number, formato: Formato, idaYVuelta
       return equipos - 1;
     case 'LIGA_PLAYOFFS':
       return liga + Math.min(8, 2 ** Math.floor(Math.log2(equipos))) - 1;
+    case 'FLEXIBLE':
+      return 0; // Se estima con simularFormato (formato.ts).
     case 'GRUPOS_PLAYOFFS': {
       const grupos = Math.max(1, Math.round(equipos / 4));
       const porGrupo = equipos / grupos;

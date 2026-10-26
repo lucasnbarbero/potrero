@@ -21,10 +21,15 @@ import { MetricasModule } from './metricas/metricas.js';
 import { ConfiguracionModule } from './configuracion/configuracion.js';
 import { SponsorsModule } from './sponsors/sponsors.js';
 import { CapitanModule } from './capitan/capitan.js';
+import { JugadorModule } from './jugador/jugador.js';
 import { UsuariosModule } from './usuarios/usuarios.js';
 // Panel del organizador y cuenta del usuario (E18, E04-02/05/10/14).
 import { CuentaModule } from './auth/cuenta.js';
 import { PanelModule } from './panel/panel.js';
+// Backoffice de Gregal (E36).
+import { GregalModule } from './gregal/gregal.js';
+// Torneos por fases (ADR-026).
+import { FasesModule } from './torneos/fases.js';
 
 @Module({
   imports: [
@@ -50,6 +55,12 @@ import { PanelModule } from './panel/panel.js';
     CapitanModule,
     PanelModule,
     CuentaModule,
+    // Backoffice de Gregal (E36): staff interno con sesión propia.
+    GregalModule,
+    // Cuenta y panel del jugador (E20-01, E20-05).
+    JugadorModule,
+    // Torneos por fases (ADR-026).
+    FasesModule,
     // Sandboxes de la demo pública (ADR-019): fuera del entorno de demo estas rutas no existen.
     ...(config.DEMO_MODE ? [DemoModule] : []),
   ],

@@ -63,7 +63,11 @@ export class CapitanService {
   }
 
   async resumen(c: Contexto, torneoId?: string) {
-    const equipoId = await this.equipoDe(c);
+    return this.resumenDeEquipo(c, await this.equipoDe(c), torneoId);
+  }
+
+  /** El panel de un equipo. También lo usa el panel del jugador (E20), que se queda solo con lo suyo. */
+  async resumenDeEquipo(c: Contexto, equipoId: string, torneoId?: string) {
     const base = await this.db.enOrg(c.organizacionId, async (tx) => {
       const [equipo, usuario] = await enSerie([
         () =>
@@ -128,9 +132,30 @@ export class CapitanService {
         where: { id: { in: expedientes.flatMap((e) => (e.jugadorId ? [e.jugadorId] : [])) } },
         select: { id: true, nombre: true, apellido: true },
       });
+      // Cuenta de cada jugador en la app (E20-01): la membresía es global, se filtra por la organización.
+      const [cuentas, invitados] = await enSerie([
+        () =>
+          tx.membresia.findMany({
+            where: { organizacionId: c.organizacionId, jugadorId: { in: jugadorIds } },
+            select: { jugadorId: true },
+          }),
+        () =>
+          tx.invitacion.findMany({
+            where: {
+              jugadorId: { in: jugadorIds },
+              aceptadaEn: null,
+              anuladaEn: null,
+              rechazadaEn: null,
+              venceEn: { gt: new Date() },
+            },
+            select: { jugadorId: true },
+          }),
+      ]);
       return {
         equipo,
         usuario,
+        cuentas,
+        invitados,
         torneos,
         torneo,
         est,
@@ -264,6 +289,11 @@ export class CapitanService {
           suspendidoPor: suspendidos.get(p.jugadorId) ?? 0,
           convocatoria: estadoConvocado.get(p.jugadorId) ?? null,
           baja: puedeDarDeBaja({ eventosEnTorneoEnCurso: eventosEnCurso }),
+          cuenta: base.cuentas.some((m) => m.jugadorId === p.jugadorId)
+            ? ('ACTIVA' as const)
+            : base.invitados.some((i) => i.jugadorId === p.jugadorId)
+              ? ('INVITADO' as const)
+              : null,
         };
       }),
       documentacion: {
@@ -275,6 +305,7 @@ export class CapitanService {
       },
       sanciones: sanciones.map((s) => ({
         id: s.id,
+        jugadorId: s.jugadorId,
         jugador: s.jugador,
         causa: s.causa,
         partidos: s.partidos,
@@ -457,5 +488,6 @@ export class CapitanController {
   imports: [DocumentacionModule, TribunalModule],
   controllers: [CapitanController],
   providers: [CapitanService],
+  exports: [CapitanService],
 })
 export class CapitanModule {}

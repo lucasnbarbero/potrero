@@ -1,5 +1,6 @@
 'use client';
 // Partido en vivo del panel (E18-01): marcador y goleadores que se refrescan solos cada pocos segundos.
+import { DATOS } from '@potrero/shared';
 import { Icono } from '@potrero/ui';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -8,7 +9,7 @@ import { api } from '@/lib/cliente';
 import { fechaCorta, hora } from '@/lib/formato';
 import type { PartidoEnVivo, Tablero } from '@/lib/tipos-panel';
 
-const CADA_MS = 15_000;
+const CADA_MS = DATOS.panel.refrescoEnVivoSegundos * 1000;
 
 const goles = (p: PartidoEnVivo) =>
   p.goles.map(

@@ -20,17 +20,24 @@ import { CobroEquipo } from './CobroEquipo';
 import { GenerarFixture, GenerarLlaves, InscribirEquipo, VencimientoInscripcion } from './acciones';
 import { CobrosPorFecha } from './CobrosPorFecha';
 import { GrillaFixture } from './GrillaFixture';
+import { PestanaFases } from './PestanaFases';
 
 const pestanasDe = (formato: string) =>
-  [
-    ['inscripciones', 'Inscripciones y pagos'],
-    ...(formato === 'COPA'
-      ? []
-      : [['fixture', formato === 'GRUPOS_PLAYOFFS' ? 'Fase de grupos' : 'Fixture']]),
-    ...(formato === 'LIGA' ? [] : [['llaves', 'Llaves']]),
-    ...(formato === 'COPA' ? [] : [['tabla', 'Tabla']]),
-    ['sanciones', 'Sanciones'],
-  ] as [string, string][];
+  (formato === 'FLEXIBLE'
+    ? [
+        ['inscripciones', 'Inscripciones y pagos'],
+        ['fases', 'Fases'],
+        ['sanciones', 'Sanciones'],
+      ]
+    : [
+        ['inscripciones', 'Inscripciones y pagos'],
+        ...(formato === 'COPA'
+          ? []
+          : [['fixture', formato === 'GRUPOS_PLAYOFFS' ? 'Fase de grupos' : 'Fixture']]),
+        ...(formato === 'LIGA' ? [] : [['llaves', 'Llaves']]),
+        ...(formato === 'COPA' ? [] : [['tabla', 'Tabla']]),
+        ['sanciones', 'Sanciones'],
+      ]) as [string, string][];
 
 export default async function DetalleTorneoPagina({
   params,
@@ -41,13 +48,19 @@ export default async function DetalleTorneoPagina({
   const sp = await searchParams;
   const tab =
     (typeof sp.tab === 'string' ? sp.tab : null) ??
-    (t.estado === 'INSCRIPCION' ? 'inscripciones' : t.formato === 'COPA' ? 'llaves' : 'fixture');
+    (t.estado === 'INSCRIPCION'
+      ? 'inscripciones'
+      : t.formato === 'FLEXIBLE'
+        ? 'fases'
+        : t.formato === 'COPA'
+          ? 'llaves'
+          : 'fixture');
   const urlPublica = `/t/${t.organizacionSlug}/${t.slug}`;
 
   return (
     <div className="space-y-6">
       <Encabezado
-        eyebrow={`${t.modalidad.replace('F', 'Fútbol ')} · ${t.formato.replace('_', ' + ').toLowerCase()}`}
+        eyebrow={`${t.modalidad.replace('F', 'Fútbol ')} · ${t.formato === 'FLEXIBLE' ? 'por fases' : t.formato.replace('_', ' + ').toLowerCase()}`}
         titulo={t.nombre}
       >
         <Estado estado={t.estado} />
@@ -77,6 +90,7 @@ export default async function DetalleTorneoPagina({
       {tab === 'llaves' && <PestanaLlaves torneo={t} />}
       {tab === 'tabla' && <PestanaTabla id={id} />}
       {tab === 'sanciones' && <PestanaSanciones id={id} />}
+      {tab === 'fases' && <PestanaFases torneoId={id} fase={typeof sp.fase === 'string' ? sp.fase : null} />}
     </div>
   );
 }

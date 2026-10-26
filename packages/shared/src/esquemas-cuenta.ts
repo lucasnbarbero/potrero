@@ -1,10 +1,14 @@
 // Validaciones de la cuenta del usuario (E04-02, E04-10, E04-14): recuperación, verificación, perfil y organización activa.
+import { DATOS } from './datos.js';
 import { z } from 'zod';
 
 const email = z.email('Ingresá un email válido.').toLowerCase();
 const passwordNueva = z
   .string()
-  .min(10, 'La contraseña necesita al menos 10 caracteres.')
+  .min(
+    DATOS.cuentas.contrasenaMinimaCaracteres,
+    `La contraseña necesita al menos ${DATOS.cuentas.contrasenaMinimaCaracteres} caracteres.`,
+  )
   .max(200, 'La contraseña es demasiado larga.');
 const token = z.string().trim().min(20, 'El link no es válido.').max(200);
 

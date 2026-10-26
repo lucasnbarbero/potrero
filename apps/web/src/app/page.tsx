@@ -610,6 +610,8 @@ export default function Landing() {
             <a href="#">Términos</a>
             <a href="#">Privacidad</a>
             <a href="#">Contacto</a>
+            {/* Backoffice interno (E36). */}
+            <a href="/gregal/ingresar">Equipo Gregal</a>
           </div>
           <a href="https://gregal.tech" className="flex items-center gap-2">
             Un producto de

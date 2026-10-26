@@ -17,6 +17,7 @@ import {
 } from '@nestjs/common';
 import {
   aCsv,
+  DATOS,
   asientoDeIngreso,
   type CategoriaSponsor,
   cobroSponsorSchema,
@@ -57,8 +58,8 @@ import { DbService, type Tx } from '../db/db.service.js';
 /** Los cobros de un sponsor son asientos de la caja con esta referencia. */
 export const REFERENCIA_SPONSOR = 'SPONSOR';
 
-/** Ventana del panel: impresiones y clics de los últimos 30 días. */
-const DIAS_PANEL = 30;
+/** Ventana del panel: impresiones y clics de los últimos días (docs/datos.json). */
+const DIAS_PANEL = DATOS.sponsors.ventanaMetricasDias;
 
 const dia = (d: Date) => d.toISOString().slice(0, 10);
 const aFecha = (d: string) => new Date(`${d}T00:00:00Z`);

@@ -1,6 +1,7 @@
 import { Body, Controller, Get, HttpStatus, Injectable, Module, Param, Post } from '@nestjs/common';
 import {
   comisionPlataforma,
+  DATOS,
   inscripcionPublicaSchema,
   type InscripcionPublicaInput,
   type Plan,
@@ -10,6 +11,7 @@ import { type Contexto, Ctx, ErrorNegocio, noEncontrado, Publico, Zod } from '..
 import { CobrosModule, CobrosService, inscribirEquipo } from '../cobros/cobros.js';
 import { DbService, enSerie } from '../db/db.service.js';
 import { llaveDelTorneo } from '../torneos/llaves.js';
+import { vistaDeFases } from '../torneos/fases.js';
 import { estadisticasDelTorneo, partidosDelTorneo } from '../torneos/torneos.js';
 import { jugadoresPublicos, PaginasPublicasController, PaginasPublicasService } from './paginas.js';
 
@@ -53,6 +55,11 @@ export class PublicoService {
         () => llaveDelTorneo(tx, t.id),
         () => tx.inscripcion.count({ where: { torneoId: t.id, estado: { not: 'BAJA' } } }),
       ]);
+      // Torneos por fases (ADR-026): cada fase con sus tablas, llave y partidos (solo nombres de equipos).
+      const fases =
+        t.formato === 'FLEXIBLE'
+          ? (await vistaDeFases(tx, t.id)).fases.map(({ puedeGenerar: _p, motivo: _m, ...f }) => f)
+          : null;
       const activas = est.sanciones.filter((s) => s.activa);
       // Nombres según la privacidad de cada jugador (E20-04); el id solo va si tiene perfil público.
       const publicos = await jugadoresPublicos(tx, [
@@ -75,6 +82,7 @@ export class PublicoService {
         tabla: est.tabla,
         grupos: est.grupos,
         llave,
+        fases,
         goleadores: est.goleadores.map((g) => ({
           ...g,
           jugadorId: publicos.get(g.jugadorId)?.perfil ? g.jugadorId : null,
@@ -214,12 +222,18 @@ export class PanelController {
               where: {
                 estado: 'PROGRAMADO',
                 arbitroId: null,
-                inicio: { gte: ahora, lt: new Date(ahora.getTime() + 7 * 86_400_000) },
+                inicio: {
+                  gte: ahora,
+                  lt: new Date(ahora.getTime() + DATOS.panel.diasProximaFecha * 86_400_000),
+                },
               },
             }),
           () =>
             tx.mensaje.count({
-              where: { estado: 'FALLIDO', creadoEn: { gte: new Date(ahora.getTime() - 7 * 86_400_000) } },
+              where: {
+                estado: 'FALLIDO',
+                creadoEn: { gte: new Date(ahora.getTime() - DATOS.panel.mensajesFallidosDias * 86_400_000) },
+              },
             }),
         ]);
       const nombre = new Map(equipos.map((e) => [e.id, e.nombre]));

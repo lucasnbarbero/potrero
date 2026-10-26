@@ -12,6 +12,7 @@ const FORMATOS: Record<string, string> = {
   COPA: 'Copa',
   GRUPOS_PLAYOFFS: 'Grupos + playoffs',
   LIGA_PLAYOFFS: 'Liga + playoffs',
+  FLEXIBLE: 'Por fases',
 };
 
 export default async function Torneos() {

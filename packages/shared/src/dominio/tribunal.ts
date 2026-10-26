@@ -1,4 +1,5 @@
 // Tribunal de disciplina (E14): expedientes, resolución que puede ampliar o reducir lo sugerido y historial.
+import { DATOS } from '../datos.js';
 import type { Reglamento } from './tipos.js';
 
 export const TIPOS_EXPEDIENTE = [
@@ -18,8 +19,9 @@ export const NOMBRE_TIPO_EXPEDIENTE: Record<TipoExpediente, string> = {
   OTRO: 'Otro',
 };
 
-export const MAX_PARTIDOS_SANCION = 20;
-export const MAX_MULTA = 1_000_000;
+/** Topes de una resolución del tribunal (docs/datos.json). */
+export const MAX_PARTIDOS_SANCION: number = DATOS.tribunal.maximoPartidosSuspension;
+export const MAX_MULTA: number = DATOS.tribunal.maximaMulta;
 
 /** Cuántos partidos sugiere el reglamento para cada tipo de expediente. La agresión y los incidentes los define el tribunal. */
 export function sugeridoPorReglamento(tipo: TipoExpediente, r: Reglamento): number {

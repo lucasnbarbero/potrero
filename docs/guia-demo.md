@@ -45,6 +45,7 @@ Las fechas se calculan desde el día de la carga. Liga **Liga Barrial Sur** (dir
 | Apertura 2026 | Fútbol 5 · Liga | En curso | 9 inscriptos (8 en el fixture), 7 fechas. Fechas 1–3 jugadas. De la fecha 4: un partido **en juego hoy**, uno **hoy más tarde sin árbitro**, uno **de ayer sin acta** y uno el sábado |
 | Clausura 2026 | Fútbol 7 · Liga | Inscripción abierta | 3 de 12 equipos, $ 75.000 por equipo |
 | Copa Relámpago | Fútbol 5 · Copa | En curso | Llave de 8: cuartos y semis jugados, final pendiente |
+| Torneo Primavera 2026 | Fútbol 7 · Por fases | En curso | 12 equipos: 2 grupos de 6, clasifican 4 por grupo a playoffs (ida y vuelta, final única) + copa estímulo. Fase de grupos jugada hasta la fecha 3, domingos a la mañana |
 | Clausura 2025, Apertura 2025, Verano 2025 | Liga | Finalizados | Historia para métricas y perfiles. Clausura 2025 tiene un partido con equipo ausente |
 
 - **Equipos (13):**
@@ -78,9 +79,14 @@ Todos usan la contraseña `potrero-demo-2026`.
 | tesoreria@potrero.app | Tesorero | Jorge Medina |
 | tribunal@potrero.app | Tribunal de disciplina | Raúl Acosta |
 | capitan@potrero.app | Capitán de Villa Unión | Matías Gómez |
+| jugador@potrero.app | Jugador de Villa Unión (#8), con cuenta propia | Facundo Ledesma |
 | veteranos@potrero.app | Dueño de Veteranos del Oeste (donde demo@ es administradora) | Héctor Sosa |
 | norte@potrero.app | Dueño de otra liga (Complejo Norte) | — |
 | marcos.costa@ejemplo.com.ar | Invitación pendiente como árbitro (todavía no tiene cuenta) | Marcos Costa |
+| staff@gregal.tech | Equipo de Gregal, superadmin (entra por `/gregal/ingresar`) | — |
+| soporte@gregal.tech | Equipo de Gregal, soporte (no ve Dinero ni Auditoría) | — |
+
+Las cifras que se pueden cambiar sin tocar código (plazos, límites, montos por defecto, umbrales) están en `docs/datos.json`. Después de cambiarlas: `pnpm datos` y reiniciar la demo.
 
 ---
 
@@ -123,7 +129,7 @@ Estas pruebas no modifican datos, salvo donde se aclara.
 - [ ] **Celular:** con la ventana a ~390 px de ancho, el panel se ve sin scroll horizontal.
 
 ### 1.3 Torneos
-- [ ] **`/panel/torneos`:** 6 tarjetas con modalidad, estado, formato, "Equipos x/cupo", "Partidos" e "Inscripción" (tabla de la sección 0).
+- [ ] **`/panel/torneos`:** 7 tarjetas con modalidad, estado, formato, "Equipos x/cupo", "Partidos" e "Inscripción" (tabla de la sección 0).
 - [ ] **Apertura 2026, pestañas:** "Inscripciones y pagos", "Fixture", "Tabla" y "Sanciones".
 - [ ] **"Inscripciones y pagos":**
   - Cuadros "Equipos" 9/10, "Cobrado" y "Pendiente" $ 30.000.
@@ -202,7 +208,7 @@ Estas pruebas no modifican datos, salvo donde se aclara.
 - [ ] **Abrir no es tomar:** abrir un acta ya no la reserva para tu dispositivo; se toma recién al cargar algo (ver 4.3).
 
 ### 1.8 Sitio público (sin sesión, en incógnito)
-- [ ] **`/t/liga-barrial-sur`:** las tarjetas de los 6 torneos.
+- [ ] **`/t/liga-barrial-sur`:** las tarjetas de los 7 torneos.
 - [ ] **`/t/liga-barrial-sur/apertura-2026`:**
   - "Tabla de posiciones" (8 filas).
   - Goleadores con link al perfil: uno se ve con nombre completo y otro con el apodo "Pipa".
@@ -231,12 +237,12 @@ Estas pruebas no modifican datos, salvo donde se aclara.
 ### 1.9 Métricas (`/panel/metricas`)
 - [ ] **Pestañas:** "30 días", "Temporada" (por defecto) e "Histórico", más el botón "Reporte".
 - [ ] **Temporada:**
-  - Retención **71%** (5 de 7, de Clausura 2025 a Apertura 2026).
+  - Retención ≈ **88%** (≈), con el detalle de quién vuelve de un torneo al siguiente.
   - Tasa de cobro, asistencia y equipos inscriptos por torneo.
   - "Cómo te pagan": efectivo, transferencia y online.
   - "Quién vuelve": repiten 5, se fueron 2 (Unión Vecinal, Los Halcones) y nuevos.
   - Mapa de "Horarios más pedidos" y "Uso de cada cancha".
-- [ ] **Histórico:** retención **57%**. "Cobro por torneo" incluye Apertura 2025.
+- [ ] **Histórico:** retención ≈ 87% (≈). "Cobro por torneo" incluye Apertura 2025. El insight de horarios dice que los domingos se llenan primero (por el Torneo Primavera).
 - [ ] **Pastilla "Clausura 2025":** muestra quién no volvió.
 
 ### 1.10 Caja (`/panel/caja`)
@@ -315,10 +321,12 @@ Entrá en incógnito con cada usuario. El menú lateral muestra solo las seccion
 
 | Usuario | Menú esperado | Qué puede hacer |
 |---|---|---|
-| admin@ | Todo menos lo exclusivo del dueño | Opera torneos, equipos, documentación, comunicación y sanciones. Ve la caja pero no registra pagos ni retiros. Invita árbitro, tribunal o capitán |
+| admin@ | Todo menos lo exclusivo del dueño | Opera torneos, equipos, documentación, comunicación y sanciones. Registra pagos (no retiros). Invita árbitro, tribunal o capitán |
 | tesoreria@ | Panel, Torneos, Equipos, Caja, Comunicación, Métricas | Registra pagos y movimientos de caja (no retiros: solo el dueño) |
 | tribunal@ | Panel, Torneos, Equipos, Sanciones | Resuelve expedientes y carga el informe del árbitro |
 | árbitro (Marcos, después de 2.4) | Panel, Torneos, Equipos | Carga actas |
+
+- [ ] **Botones de cobro:** con admin@, en un torneo → Inscripciones aparecen "Registrar pago", "Cobré … en efectivo" y "Anular" en "Ver pagos". Con tribunal@ no aparece ningún botón de cobro.
 
 - [ ] Comprobá el menú de cada uno.
 - [ ] **Sección sin permiso:** con tesoreria@ abrí `/panel/documentacion`, y con tribunal@ abrí `/panel/caja`. Aparece "Tu rol no tiene acceso a esta sección" con "Volver al panel".
@@ -371,6 +379,28 @@ Entrá en incógnito con cada usuario. El menú lateral muestra solo las seccion
   - Con el jugador nuevo aparece "Pedir faltantes por WhatsApp" en Documentación.
   - Dalo de baja con ✗.
   - Un jugador con goles o tarjetas muestra un candado: "pedile la baja al organizador".
+  - Facundo Ledesma (#8) dice "En la app". En otro jugador, "Invitar a la app" → email → link con "Mandar por WhatsApp".
+
+### 2.6 Panel del jugador (jugador@potrero.app, en incógnito)
+- [ ] **Ingresar:** va solo a `/jugador`. Entrar a `/panel` o a `/capitan` lo devuelve a `/jugador`.
+- [ ] **Próximo partido:** vs La Banda, con "Voy" y "No voy". Tocá "Voy".
+- [ ] **"Mis avisos":** con los datos recién cargados aparece "¿Vas contra…?"; después de responder, ya no.
+- [ ] **Lo suyo:** goles y partidos, sanciones, documentación (puede subir DNI y apto), trayectoria y deuda del equipo (solo lectura).
+- [ ] **"Cómo aparezco":** elegí "Apodo" (pide escribirlo) o "Iniciales". En el sitio público su nombre cambia.
+- [ ] **Del lado del capitán:** entrá con capitan@: en la convocatoria Facundo figura "Va".
+- [ ] **Aceptar una invitación de jugador:** abrí el link que generó el capitán en 2.5. Dice "Te invitaron como jugador de Villa Unión" y pide aceptar los términos para crear la cuenta.
+
+### 2.7 Panel de Gregal (staff@gregal.tech, en incógnito)
+- [ ] **Entrar:** desde el pie de la landing, "Equipo Gregal" → `/gregal/ingresar` → staff@gregal.tech. Arriba dice "Uso interno · todo queda auditado".
+- [ ] **Inicio:**
+  - Ligas activas, torneos en curso con equipos y jugadores, cobrado total y comisión de Gregal.
+  - Partidos cerrados por semana (últimas 8), cobrado por medio, ligas nuevas por mes.
+  - "Ligas para llamar": Liga Amigos de Quilmes en riesgo, y Veteranos del Oeste y Fútbol 5 Palermo en atención.
+- [ ] **Organizaciones:** buscá "quilmes" → detalle con 3 alertas (pocas actas cargadas, solo pagos manuales, sin usar el panel hace 21 días), sus torneos, usuarios y cobros.
+- [ ] **Dinero:** cobros y comisiones por mes y por liga.
+- [ ] **Auditoría:** cada consulta que hiciste figura con tu usuario, la liga que miraste y la hora.
+- [ ] **Sesiones separadas:** con la sesión de demo@ abrí `/gregal` → pide el ingreso del staff. Con la del staff abrí `/panel` → pide el ingreso de organizador.
+- [ ] **Rol soporte:** con soporte@gregal.tech, Dinero y Auditoría muestran que no tiene acceso.
 
 ---
 
@@ -442,7 +472,7 @@ Entrá en incógnito con cada usuario. El menú lateral muestra solo las seccion
 
 ### 3.6 Armá el formato (simulador del armado flexible)
 - [ ] **Abrir:** `/panel/torneos` → "Armá el formato" (también está en "Nuevo torneo", sección "2 · Formato").
-  - Cartel "Simulador": muestra cómo quedaría el torneo; todavía no lo crea.
+  - Arriba explica que es la vista previa del torneo; abajo, la tarjeta "¿Te cierra?" con "Crear torneo con este formato".
 - [ ] **Ejemplo inicial:** 20 equipos, 2 canchas × 5 horarios, plantilla "Grupos + playoffs + copa estímulo".
   - Totales ≈ 16 sábados, 140 partidos, 69 % de sábados con todos jugando y recaudación estimada ≈ $ 4.000.000 (inscripción + una cuota de ejemplo de $ 10.000 por fecha).
 - [ ] **Diagrama de fases:** Fase 1 (2 grupos) → Playoffs (octavos a final, ida y vuelta salvo la final) y Copa estímulo (los eliminados) → final de la copa. Cada fase muestra de dónde vienen sus equipos y sus cruces ("1º A vs 8º B").
@@ -451,6 +481,19 @@ Entrá en incógnito con cada usuario. El menú lateral muestra solo las seccion
 - [ ] **Error:** en Playoffs, poné "al 12" → aparece "no hay puesto 12".
 - [ ] **Plantillas:** probá "Liga", "Copa", "Grupos + playoffs" y "Liga + playoffs".
 - [ ] **Celular (~390 px):** sin scroll horizontal; el cronograma aparece antes del editor.
+
+### 3.7 Torneos por fases de verdad
+- [ ] **Torneo de ejemplo:** `/panel/torneos` → "Torneo Primavera 2026" → pestaña "Fases".
+  - Fase 1: dos grupos de 6, con tabla por grupo y partidos por fecha (jugada hasta la fecha 3).
+  - Playoffs: "todavía no se puede armar: Falta terminar Fase 1", con las rondas previstas (cuartos y semis ida y vuelta, final a partido único).
+  - Copa estímulo: espera a los eliminados.
+- [ ] **Sitio público:** `/t/liga-barrial-sur/torneo-primavera-2026`, con una pestaña por fase.
+- [ ] **Crear uno desde el simulador:**
+  - En "Armá el formato", elegí una plantilla chica (por ejemplo, "Grupos + playoffs" con 8 equipos) → "Crear torneo con este formato" → nombre "Prueba Fases", inscripción 0 → crear.
+  - Inscribí 8 equipos (con inscripción $ 0 quedan confirmados) → pestaña "Fases" → "Generar Fase 1" con primer día, horarios y canchas.
+  - Cerrá las actas de la fase de grupos (o marcá equipos ausentes en partidos cuya hora pasó). Cuando la fase termina, aparece "Generar" en la siguiente con los clasificados correctos.
+- [ ] **Ida y vuelta:** en la vuelta de una serie, si el global queda empatado, el acta pide "El global de la serie está empatado: cargá los penales". En la ida no los pide.
+- [ ] **Formatos fijos intactos:** Apertura, Clausura y Copa siguen funcionando como antes.
 
 ---
 
@@ -691,9 +734,11 @@ Con los datos recién cargados (`pnpm db:reset` + `pnpm demo`), en este orden:
 | 7 | Sitio público → goleador | Perfil con trayectoria | — |
 | 8 | Métricas | Cómo te pagan, quién vuelve | "El efectivo es el medio principal: lo medimos." |
 | 9 | Clausura 2026 → Inscripciones | "Registrar pago": $ 30.000 por transferencia, pago parcial | "El efectivo y la transferencia también se registran, con su comprobante." |
-| 10 | Torneos → "Armá el formato" | Grupos + playoffs + copa estímulo: sábados cubiertos y recaudación | "Armás el torneo a tu manera y ves cuántos sábados juegan todos." |
+| 10 | Torneos → "Armá el formato", después "Torneo Primavera 2026" | Grupos + playoffs + copa estímulo: sábados cubiertos y recaudación; el torneo creado, con sus fases | "Armás el torneo a tu manera, ves cuántas fechas juegan todos y lo creás." |
 | 11 | Configuración → Importación | El Excel con errores, explicado fila por fila | "Dejá el Excel: lo importás en minutos." |
 | 12 | Capitán (otra ventana) | Convocatoria, documentación, descargo | "El capitán hace su parte y te saca trabajo." |
+| 13 | Jugador (otra ventana) | "Voy" al próximo partido, sus goles y su documentación | "Cada jugador confirma solo; el capitán lo ve al instante." |
+| 14 | `/gregal` (staff@gregal.tech) | Ligas activas, cobrado, ligas para llamar | "Así vemos nosotros toda la plataforma." |
 
 ---
 
@@ -704,25 +749,24 @@ Lo que todavía no está bien. No hace falta reportarlo. Las fallas corregidas e
 **Torneos y cobros**
 1. El alta de torneo no tiene seña, reglamento propio completo (desempates, tolerancia) ni documentación exigida. La documentación se configura en Documentación.
 2. No hay vista previa antes de generar el fixture, ni forma de regenerarlo.
-3. El administrador ve los botones de cobro, pero no tiene permiso para registrar pagos (solo el dueño y el tesorero). Decidir si se lo damos o se le ocultan.
-4. El simulador "Armá el formato" todavía no crea torneos, y su calendario no saltea feriados.
+3. Torneos por fases: la fase 1 se genera a mano (no sola al cerrar la inscripción); no se puede editar el formato ni rehacer una fase; al programar, las fases no se cruzan entre sí (hay que elegir canchas y horarios distintos); no hay grilla para mover partidos a mano; el calendario no saltea feriados. La ida y vuelta solo existe en torneos por fases.
 
 **Cuenta**
 
-5. El capitán no tiene "Mi cuenta": solo puede cambiar su contraseña con "¿Te olvidaste la contraseña?".
+4. El capitán y el jugador no tienen "Mi cuenta": solo pueden cambiar su contraseña con "¿Te olvidaste la contraseña?".
 
 **Panel y operación**
 
-6. "Conciliar" no tiene botón: la conciliación pasa sola al abrir Caja, sin mensaje.
-7. En Árbitros, el aviso de disponibilidad no se puede ver porque el selector ya filtra a los no disponibles.
-8. Reprogramaciones no deja elegir otro día cuando hay alerta de clima.
-9. Los avisos automáticos no tienen una bandeja para verlos (solo un contador).
-10. El espacio de sponsor "Tarjeta de resultado" no aparece en la imagen del partido.
+5. "Conciliar" no tiene botón: la conciliación pasa sola al abrir Caja, sin mensaje.
+6. En Árbitros, el aviso de disponibilidad no se puede ver porque el selector ya filtra a los no disponibles.
+7. Reprogramaciones no deja elegir otro día cuando hay alerta de clima.
+8. Los avisos automáticos no tienen una bandeja para verlos (solo un contador).
+9. El espacio de sponsor "Tarjeta de resultado" no aparece en la imagen del partido.
 
 **Demo pública**
 
-11. Muestra las credenciales de demo@, que no existen en esa base. "Crear mi liga de verdad" lleva a un registro bloqueado.
-12. Si el visitante sale, pierde su liga y no puede volver a entrar.
+10. Muestra las credenciales de demo@, que no existen en esa base. "Crear mi liga de verdad" lleva a un registro bloqueado.
+11. Si el visitante sale, pierde su liga y no puede volver a entrar.
 
 ## Si algo falla
 - **"Docker no está corriendo":** abrí Docker Desktop y esperá a que diga que está activo.

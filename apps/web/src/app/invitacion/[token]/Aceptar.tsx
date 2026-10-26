@@ -1,4 +1,5 @@
 'use client';
+import { DATOS } from '@potrero/shared';
 import { useEffect, useState } from 'react';
 import { Campo, MensajeError, useEnvio } from '@/componentes/formulario';
 import { api } from '@/lib/cliente';
@@ -53,8 +54,10 @@ export function Aceptar({ token }: { token: string }) {
           await api('POST', `/invitaciones/${token}/aceptar`, {
             nombre: datos.tieneCuenta ? undefined : f.get('nombre'),
             password: f.get('password'),
+            terminosVersion: datos.terminos && f.get('terminos') ? datos.terminos.version : undefined,
           });
-          window.location.href = datos.rol === 'CAPITAN' ? '/capitan' : '/panel';
+          window.location.href =
+            datos.rol === 'CAPITAN' ? '/capitan' : datos.rol === 'JUGADOR' ? '/jugador' : '/panel';
         });
       }}
     >
@@ -84,9 +87,20 @@ export function Aceptar({ token }: { token: string }) {
         required
         minLength={datos.tieneCuenta ? 1 : 10}
         autoComplete={datos.tieneCuenta ? 'current-password' : 'new-password'}
-        ayuda={datos.tieneCuenta ? undefined : 'Al menos 10 caracteres.'}
+        ayuda={
+          datos.tieneCuenta ? undefined : `Al menos ${DATOS.cuentas.contrasenaMinimaCaracteres} caracteres.`
+        }
         error={campos.password}
       />
+      {datos.terminos && (
+        <label className="flex items-start gap-3 rounded-2xl bg-black/5 p-4 text-sm">
+          <input type="checkbox" name="terminos" required className="mt-1 size-4 accent-ink" />
+          <span>
+            <b className="block">{datos.terminos.titulo}</b>
+            <span className="text-mute">{datos.terminos.texto}</span>
+          </span>
+        </label>
+      )}
       <MensajeError error={error} />
       <button className="btn btn-lg w-full" disabled={enviando}>
         {datos.tieneCuenta ? 'Entrar y aceptar' : 'Crear cuenta y aceptar'}

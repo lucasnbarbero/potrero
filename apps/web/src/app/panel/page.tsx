@@ -1,5 +1,5 @@
 // Panel del organizador (E18, mock 01-dashboard): lo que pasa hoy en la liga y qué conviene hacer.
-import type { AlertaPanel } from '@potrero/shared';
+import { type AlertaPanel, DATOS } from '@potrero/shared';
 import { Icono, type NombreIcono } from '@potrero/ui';
 import Link from 'next/link';
 import { Escudo, Vacio } from '@/componentes/ui';
@@ -153,7 +153,7 @@ export default async function Panel() {
             </p>
             <Linea serie={t.dinero.serie} />
             <p className="mt-1 text-xs text-ink/60">
-              Evolución en los últimos 30 días · Online {pesos(t.dinero.online)}
+              Evolución en los últimos {DATOS.panel.serieCobradoDias} días · Online {pesos(t.dinero.online)}
             </p>
           </section>
 

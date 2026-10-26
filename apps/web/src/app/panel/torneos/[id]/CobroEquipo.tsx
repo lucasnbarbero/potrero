@@ -6,6 +6,7 @@ import { Icono } from '@potrero/ui';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Campo, MensajeError, Selector, useEnvio } from '@/componentes/formulario';
+import { usePermiso } from '@/componentes/Permisos';
 import { api } from '@/lib/cliente';
 import { fechaCorta, pesos } from '@/lib/formato';
 import type { InscripcionConPagos, PagoDeInscripcion } from '@/lib/tipos';
@@ -23,6 +24,8 @@ export function CobroEquipo({ inscripcion: i }: { inscripcion: InscripcionConPag
   const [link, setLink] = useState<string | null>(null);
   const [registrar, setRegistrar] = useState(false);
   const [verPagos, setVerPagos] = useState(false);
+  const puedeVerCobros = usePermiso('cobro.leer');
+  const puedeCobrar = usePermiso('cobro.registrar');
   const pendientes = i.cargos.map((c) => ({ ...c, saldo: saldoDelCargo(c) })).filter((c) => c.saldo > 0);
   // El próximo cargo a cobrar (vienen ordenados por vencimiento), con lo que falta de ese cargo.
   const proximo = pendientes[0];
@@ -34,40 +37,46 @@ export function CobroEquipo({ inscripcion: i }: { inscripcion: InscripcionConPag
           {pendientes.length > 1 && (
             <span className="w-full text-right text-xs text-mute">Próximo: {proximo.concepto}</span>
           )}
-          <button
-            className="btn-glass btn-sm"
-            disabled={enviando}
-            onClick={() =>
-              enviar(async () => {
-                const r = await api<{ urlPago: string }>('POST', `/cargos/${proximo.id}/link`);
-                setLink(r.urlPago);
-                await navigator.clipboard?.writeText(r.urlPago).catch(() => undefined);
-              })
-            }
-          >
-            <Icono nombre="link" />
-            Link de pago
-          </button>
-          <button
-            className="btn-glass btn-sm"
-            disabled={enviando}
-            onClick={() =>
-              enviar(async () => {
-                await api('POST', `/cargos/${proximo.id}/pagos`, {
-                  metodo: 'EFECTIVO',
-                  monto: proximo.saldo,
-                  comprobante: 'Registrado desde el panel',
-                });
-                router.refresh();
-              })
-            }
-          >
-            Cobré {pesos(proximo.saldo)} en efectivo
-          </button>
-          <button className="btn btn-sm" disabled={enviando} onClick={() => setRegistrar(true)}>
-            <Icono nombre="plus" />
-            Registrar pago
-          </button>
+          {puedeVerCobros && (
+            <button
+              className="btn-glass btn-sm"
+              disabled={enviando}
+              onClick={() =>
+                enviar(async () => {
+                  const r = await api<{ urlPago: string }>('POST', `/cargos/${proximo.id}/link`);
+                  setLink(r.urlPago);
+                  await navigator.clipboard?.writeText(r.urlPago).catch(() => undefined);
+                })
+              }
+            >
+              <Icono nombre="link" />
+              Link de pago
+            </button>
+          )}
+          {puedeCobrar && (
+            <>
+              <button
+                className="btn-glass btn-sm"
+                disabled={enviando}
+                onClick={() =>
+                  enviar(async () => {
+                    await api('POST', `/cargos/${proximo.id}/pagos`, {
+                      metodo: 'EFECTIVO',
+                      monto: proximo.saldo,
+                      comprobante: 'Registrado desde el panel',
+                    });
+                    router.refresh();
+                  })
+                }
+              >
+                Cobré {pesos(proximo.saldo)} en efectivo
+              </button>
+              <button className="btn btn-sm" disabled={enviando} onClick={() => setRegistrar(true)}>
+                <Icono nombre="plus" />
+                Registrar pago
+              </button>
+            </>
+          )}
         </>
       ) : (
         <span className="text-mute">Al día</span>
@@ -214,6 +223,7 @@ function ListaPagos({ pagos, total, pagado }: { pagos: PagoDeInscripcion[]; tota
   const router = useRouter();
   const { enviando, error, enviar } = useEnvio();
   const [anulando, setAnulando] = useState<string | null>(null);
+  const puedeAnular = usePermiso('cobro.registrar');
   return (
     <div className="space-y-3">
       <p className="text-sm">
@@ -234,7 +244,7 @@ function ListaPagos({ pagos, total, pagado }: { pagos: PagoDeInscripcion[]; tota
             </span>
             {p.estado === 'ANULADO' ? (
               <span className="pill">Anulado</span>
-            ) : p.metodo === 'MERCADO_PAGO' ? null : anulando === p.id ? (
+            ) : p.metodo === 'MERCADO_PAGO' || !puedeAnular ? null : anulando === p.id ? (
               <span className="flex gap-1">
                 <button
                   className="btn btn-sm !bg-red-600 !text-white"

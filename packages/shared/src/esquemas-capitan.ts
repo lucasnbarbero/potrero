@@ -17,6 +17,8 @@ export type InvitarInput = z.infer<typeof invitarSchema>;
 export const aceptarInvitacionSchema = z.object({
   nombre: texto(80).optional(),
   password: z.string().min(1, 'Ingresá tu contraseña.').max(200),
+  /** Solo para JUGADOR (E20-01): versión de los términos que aceptó. */
+  terminosVersion: z.number().int().positive().optional(),
 });
 export type AceptarInvitacionInput = z.infer<typeof aceptarInvitacionSchema>;
 
@@ -39,3 +41,16 @@ export const respuestaConvocatoriaSchema = z.object({
   respuesta: z.enum(['VA', 'NO_VA', 'PENDIENTE']),
 });
 export type RespuestaConvocatoriaInput = z.infer<typeof respuestaConvocatoriaSchema>;
+
+// ── Cuenta del jugador (E20-01, E19-02) ──
+/** El capitán invita a un jugador de su plantel a tener cuenta. */
+export const invitarJugadorSchema = z.object({
+  email: z.email('Ingresá un email válido.').toLowerCase(),
+});
+export type InvitarJugadorInput = z.infer<typeof invitarJugadorSchema>;
+
+/** El jugador confirma su asistencia al próximo partido de su equipo. */
+export const confirmarAsistenciaSchema = z.object({
+  respuesta: z.enum(['VA', 'NO_VA']),
+});
+export type ConfirmarAsistenciaInput = z.infer<typeof confirmarAsistenciaSchema>;

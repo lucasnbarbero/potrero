@@ -1,5 +1,6 @@
 // Validaciones de entrada compartidas entre la API y los formularios de la web.
 import { z } from 'zod';
+import { DATOS } from './datos.js';
 import { CUENTAS_DE_PLATA, RUBROS_EGRESO } from './dominio/caja.js';
 import { CANALES } from './dominio/mensajeria.js';
 import { CATEGORIAS_SPONSOR, ESPACIOS_SPONSOR } from './dominio/sponsors.js';
@@ -12,7 +13,13 @@ const hora = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Usá el formato HH:M
 export const registroSchema = z.object({
   nombre: texto(),
   email: z.email('Ingresá un email válido.').toLowerCase(),
-  password: z.string().min(10, 'La contraseña necesita al menos 10 caracteres.').max(200),
+  password: z
+    .string()
+    .min(
+      DATOS.cuentas.contrasenaMinimaCaracteres,
+      `La contraseña necesita al menos ${DATOS.cuentas.contrasenaMinimaCaracteres} caracteres.`,
+    )
+    .max(200),
   organizacion: texto(),
 });
 export type RegistroInput = z.infer<typeof registroSchema>;
@@ -45,9 +52,9 @@ export const crearTorneoSchema = z.object({
   idaYVuelta: z.boolean().default(false),
   cupo: z.number().int().min(2).max(64),
   inscripcion: z.number().int().min(0),
-  puntosVictoria: z.number().int().min(0).max(10).default(3),
-  puntosEmpate: z.number().int().min(0).max(10).default(1),
-  umbralAmarillas: z.number().int().min(1).max(20).default(5),
+  puntosVictoria: z.number().int().min(0).max(10).default(DATOS.reglamentoPorDefecto.puntosVictoria),
+  puntosEmpate: z.number().int().min(0).max(10).default(DATOS.reglamentoPorDefecto.puntosEmpate),
+  umbralAmarillas: z.number().int().min(1).max(20).default(DATOS.reglamentoPorDefecto.umbralAmarillas),
   /** Lo que no se indique toma el valor por defecto de datos.json. */
   cobrosPorFecha: cobrosPorFechaSchema.partial().optional(),
 });
@@ -83,7 +90,7 @@ export type CrearCanchaInput = z.infer<typeof crearCanchaSchema>;
 
 export const generarFixtureSchema = z.object({
   primerDia: dia,
-  diasEntreFechas: z.number().int().min(1).max(31).default(7),
+  diasEntreFechas: z.number().int().min(1).max(31).default(DATOS.fixture.diasEntreFechasPorDefecto),
   horarios: z.array(hora).min(1),
   canchaIds: z.array(z.string().min(1)).min(1),
   /** Grupos + playoffs: cantidad de grupos (los equipos se reparten en serpentina). */
@@ -108,7 +115,7 @@ export type MoverPartidoInput = z.infer<typeof moverPartidoSchema>;
 
 export const generarLlavesSchema = z.object({
   primerDia: dia,
-  diasEntreRondas: z.number().int().min(1).max(31).default(7),
+  diasEntreRondas: z.number().int().min(1).max(31).default(DATOS.fixture.diasEntreFechasPorDefecto),
   horarios: z.array(hora).min(1),
   canchaIds: z.array(z.string().min(1)).min(1),
   /** Liga + playoffs: cuántos clasifican (potencia de dos). Por defecto, según la cantidad de equipos. */
@@ -450,11 +457,15 @@ export const marcaSchema = z.object({
     .min(3, 'Al menos 3 caracteres.')
     .max(40),
   colorMarca: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Elegí un color.'),
-  /** Logo como data URL (PNG, JPG o WEBP, hasta 300 KB). null lo quita; sin el campo, no se toca. */
+  /** Logo como data URL (PNG, JPG o WEBP, hasta DATOS.organizacion.logoMaximoKb). null lo quita; sin el campo, no se toca. */
   logo: z
     .string()
     .regex(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/, 'El logo tiene que ser PNG, JPG o WEBP.')
-    .max(410_000, 'El logo pesa más de 300 KB.')
+    // En base64 el archivo ocupa 4/3 de lo que pesa, más el encabezado del data URL.
+    .max(
+      Math.ceil((DATOS.organizacion.logoMaximoKb * 1024 * 4) / 3) + 400,
+      `El logo pesa más de ${DATOS.organizacion.logoMaximoKb} KB.`,
+    )
     .nullable()
     .optional(),
 });

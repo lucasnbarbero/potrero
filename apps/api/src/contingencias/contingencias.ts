@@ -4,6 +4,7 @@ import { Body, Controller, Get, HttpStatus, Injectable, Module, Param, Post } fr
 import {
   type Alcance,
   contingenciaSchema,
+  DATOS,
   type ContingenciaInput,
   diaArgentina,
   equiposAfectados,
@@ -47,7 +48,7 @@ export interface ProveedorClima {
 
 export class PronosticoSimulado implements ProveedorClima {
   alerta(partidos: readonly { inicio: Date }[], ahora: Date): AlertaClima | null {
-    const hasta = ahora.getTime() + 7 * 86_400_000;
+    const hasta = ahora.getTime() + DATOS.contingencias.pronosticoDias * 86_400_000;
     const proximos = partidos.filter(
       (p) => p.inicio.getTime() > ahora.getTime() && p.inicio.getTime() <= hasta,
     );

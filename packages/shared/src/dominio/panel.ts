@@ -163,13 +163,13 @@ export function alertasDelPanel(e: EntradaAlertas): AlertaPanel[] {
 // ───────────── Sugerencias del próximo paso (E18-04) ─────────────
 
 /**
- * Plantel mínimo por modalidad para considerar a un equipo "con plantel completo": los titulares más tres suplentes.
- * TODO datos.json: llevar esta cifra a docs/datos.json (reglamento por defecto) cuando se apruebe.
+ * Plantel mínimo por modalidad para considerar a un equipo "con plantel completo": los titulares más tres suplentes
+ * (docs/datos.json).
  */
-export const PLANTEL_MINIMO: Record<Modalidad, number> = { F5: 8, F7: 10, F8: 11, F11: 14 };
+export const PLANTEL_MINIMO: Record<Modalidad, number> = DATOS.planteles.minimoPorModalidad;
 
 /** Días hacia adelante que mira el panel para la próxima fecha (árbitros, avisos). */
-export const DIAS_PROXIMA_FECHA = 7;
+export const DIAS_PROXIMA_FECHA: number = DATOS.panel.diasProximaFecha;
 
 export interface TorneoParaSugerir {
   id: string;

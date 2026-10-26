@@ -100,5 +100,69 @@ export const DATOS = {
     "cobrarWO": true,
     "deudaBloqueaJugar": false,
     "anticipacionDias": 7
+  },
+  "cuentas": {
+    "contrasenaMinimaCaracteres": 10,
+    "intentosIngreso": {
+      "porCuenta": 5,
+      "porIp": 20,
+      "ventanaMinutos": 15
+    },
+    "vigenciaLinkMinutos": {
+      "RECUPERAR": 60,
+      "VERIFICAR_EMAIL": 2880
+    },
+    "sesionDias": 30
+  },
+  "usuarios": {
+    "vencimientoInvitacionDias": 7
+  },
+  "planteles": {
+    "minimoPorModalidad": {
+      "F5": 8,
+      "F7": 10,
+      "F8": 11,
+      "F11": 14
+    }
+  },
+  "fixture": {
+    "diasEntreFechasPorDefecto": 7
+  },
+  "tribunal": {
+    "maximoPartidosSuspension": 20,
+    "maximaMulta": 1000000
+  },
+  "simulador": {
+    "cuotaDeEjemplo": 10000
+  },
+  "sponsors": {
+    "avisoVencimientoDias": 7,
+    "ventanaMetricasDias": 30
+  },
+  "importacion": {
+    "maximoFilas": 3000
+  },
+  "organizacion": {
+    "logoMaximoKb": 300
+  },
+  "panel": {
+    "diasProximaFecha": 7,
+    "actaAtrasadaHoras": 2,
+    "mensajesFallidosDias": 7,
+    "equiposNuevosDias": 7,
+    "serieCobradoDias": 30,
+    "refrescoEnVivoSegundos": 15
+  },
+  "contingencias": {
+    "pronosticoDias": 7
+  },
+  "saludDeLiga": {
+    "$comentario": "Backoffice de Gregal (E36-05): alertas de riesgo de abandono del documento 5. Provisorio.",
+    "diasSinEquipos": 7,
+    "actasMinimas": 0.5,
+    "partidosMinimosParaActas": 4,
+    "pagosManualesSostenidos": 5,
+    "diasSinUsoDelPanel": 14,
+    "diasLigaActiva": 30
   }
 } as const;

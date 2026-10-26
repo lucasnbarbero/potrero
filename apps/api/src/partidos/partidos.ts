@@ -23,6 +23,7 @@ import { MensajeriaModule, MensajeriaService } from '../mensajeria/mensajeria.js
 import { acreditadosPorSancion, cumplimiento, SELECT_PARTIDO_SANCION } from '../tribunal/levantar.js';
 import { abrirPorNoHabilitado, abrirPorRoja } from '../tribunal/tribunal.js';
 import { avanzarLlave } from '../torneos/llaves.js';
+import { avanzarFase, pidePenalesEnActa, serieDelPartido } from '../torneos/fases.js';
 import { aReglamento } from '../torneos/torneos.js';
 import { sincronizarCobrosPorFecha } from '../cobros/por-fecha.js';
 
@@ -153,6 +154,9 @@ export class PartidosService {
         clave: p.clave,
         penalesLocal: p.penalesLocal,
         penalesVisitante: p.penalesVisitante,
+        // Torneos por fases: serie de ida y vuelta (el acta pide penales en la vuelta si empata el global).
+        faseId: p.faseId,
+        serie: await serieDelPartido(tx, p),
         inicio: p.inicio,
         estado: p.estado,
         cancha: p.cancha ? `${p.cancha.sede.nombre} · ${p.cancha.nombre}` : null,
@@ -345,8 +349,8 @@ export class PartidosService {
       if (!(d.firmaLocal && d.firmaVisitante) && !d.justificacion)
         throw new ErrorNegocio('Falta la firma de ambos capitanes o la justificación del árbitro.');
       const m = marcador(p.eventos, p.localId, p.visitanteId);
-      // En una llave no puede haber empate: se define por penales.
-      const empateEnLlave = p.fase === 'LLAVE' && m.local === m.visitante;
+      // En una llave no puede haber empate: se define por penales (en ida y vuelta, solo si empata el global).
+      const empateEnLlave = await pidePenalesEnActa(tx, p, m);
       if (
         empateEnLlave &&
         (d.penalesLocal == null || d.penalesVisitante == null || d.penalesLocal === d.penalesVisitante)
@@ -395,7 +399,8 @@ export class PartidosService {
       // Cadena al cerrar: el ganador de una llave avanza y se crea el próximo cruce.
       // Cargos automáticos de la caja: pago al árbitro y alquiler de la cancha, si están encendidos.
       await this.caja.cargosDelPartido(tx, c, id);
-      if (p.fase === 'LLAVE') await avanzarLlave(tx, c, p.torneoId);
+      if (p.faseId) await avanzarFase(tx, c, p.faseId);
+      else if (p.fase === 'LLAVE') await avanzarLlave(tx, c, p.torneoId);
       return { partido: cerrado, sanciones: sanciones.length };
     });
   }
@@ -443,7 +448,8 @@ export class PartidosService {
           ...duenoSiLibre(p, c, dispositivoId),
         },
       });
-      if (p.fase === 'LLAVE') await avanzarLlave(tx, c, p.torneoId);
+      if (p.faseId) await avanzarFase(tx, c, p.faseId);
+      else if (p.fase === 'LLAVE') await avanzarLlave(tx, c, p.torneoId);
       // Cuota por fecha (E06-20): el W.O. se cobra o no según la configuración del torneo.
       await sincronizarCobrosPorFecha(tx, c.organizacionId, p.torneoId);
       return cerrado;

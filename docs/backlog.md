@@ -14,7 +14,7 @@ Fuente: documentos 1 a 6 (`docs/src`). Si algo de este backlog contradice esos d
 
 ## Avance
 
-Última actualización: 26/10/2026. Hecho: 129 tareas · parciales: 58. Resumen de lo que funciona: `docs/contexto/estado-actual.md`.
+Última actualización: 26/10/2026. Hecho: 136 tareas · parciales: 63. Resumen de lo que funciona: `docs/contexto/estado-actual.md`.
 
 ## Mapa de épicas
 
@@ -134,7 +134,7 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 - [ ] **E04-03** `dev` Enlace mágico por email.
 - [x] **E04-04** `dev` Sesiones con token de acceso corto y token de renovación rotativo; cierre de sesión en todos los dispositivos.
 - [x] **E04-05** `dev` Límites de intentos y bloqueo temporal ante fuerza bruta.
-- [~] **E04-06** `dev` Roles del documento 1 (dueño, administrador de torneo, tesorero, árbitro/delegado, tribunal, capitán, jugador, tutor, público, staff interno) y permisos finos (`tournament.fixture.write`, `cash.payout.create`, etc.). _Hecho: rol CAPITAN con alcance a su equipo; el administrador invita solo árbitro, tribunal y capitán. Falta: jugador, tutor y staff interno._
+- [~] **E04-06** `dev` Roles del documento 1 (dueño, administrador de torneo, tesorero, árbitro/delegado, tribunal, capitán, jugador, tutor, público, staff interno) y permisos finos (`tournament.fixture.write`, `cash.payout.create`, etc.). _Hecho: roles CAPITAN (con su equipo) y JUGADOR (con su perfil), staff interno de Gregal con roles propios (E36-02); el administrador también registra pagos. Falta: tutor con cuenta propia._
 - [~] **E04-07** `dev` Guards de NestJS por permiso, con tests de la matriz completa rol × acción. _Hecho: guards por permiso, menú y pantallas según el rol, tests de los casos clave de cada rol. Falta: la matriz completa rol × acción._
 - [x] **E04-08** `dev` Crear organización, slug único y datos de facturación.
 - [~] **E04-09** `dev` Invitar usuarios a la organización con un rol; aceptar o rechazar la invitación. _Hecho: invitación con rol (incluido capitán atado a un equipo), link de un solo uso que vence a los 7 días, aceptar o rechazar, reenviar y anular. Falta: enviarla por email real (hoy el link se copia o se manda por WhatsApp)._
@@ -214,12 +214,12 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 ## E10 · Llaves y playoffs · módulo 17
 - [x] **E10-01** `dev` Clasificación de grupos o liga a llaves según las reglas de avance.
 - [x] **E10-02** `dev` Cuadro eliminatorio que se completa solo con los resultados.
-- [~] **E10-03** `dev` Definición por penales y partidos de ida y vuelta en llaves. _Hecho: penales. Falta: ida y vuelta en llaves._
+- [~] **E10-03** `dev` Definición por penales y partidos de ida y vuelta en llaves. _Hecho: penales; ida y vuelta con global y penales en la vuelta en torneos por fases. Falta: ida y vuelta en las llaves de los formatos fijos._
 - [~] **E10-04** `dev` Publicación en tiempo real. _Hecho: el sitio público muestra el cuadro y se actualiza solo cada pocos segundos. Falta: tiempo real (E02-15)._
 - [x] **E10-05** `dev` Pantalla de llaves (mock 17).
-- [~] **E10-06** `dev` Formato flexible por fases (ADR-026): el organizador encadena fases (todos contra todos, grupos, eliminación) y elige quién entra a cada una (puestos, mejores N, ganadores o perdedores, no clasificados), ida y vuelta por ronda y fases en paralelo, a partir de plantillas. _Hecho: modelo, validación, simulación de sábados y recaudación y plantillas en `shared/dominio/formato.ts`; simulador "Armá el formato" (`/panel/torneos/formato`). Falta: crear torneos con fases (E10-07)._
-- [ ] **E10-07** `dev` Persistir las fases del torneo y armar el fixture fase por fase (tabla `Fase`, `Partido` con fase, grupo, ronda y pierna), con el editor de fases en "Nuevo torneo". _Depende de:_ E10-06.
-- [ ] **E10-08** `dev` Tabla, llaves y sitio público por fase, incluida una copa paralela (por ejemplo, copa estímulo) y el cronograma de sábados. _Depende de:_ E10-07, E10-03.
+- [x] **E10-06** `dev` Formato flexible por fases (ADR-026): el organizador encadena fases (todos contra todos, grupos, eliminación) y elige quién entra a cada una (puestos, mejores N, ganadores o perdedores, no clasificados), ida y vuelta por ronda y fases en paralelo, a partir de plantillas. _Modelo, validación, simulación y plantillas en `shared/dominio/formato.ts`; simulador "Armá el formato" con "Crear torneo con este formato"._
+- [~] **E10-07** `dev` Persistir las fases del torneo y armar el fixture fase por fase (tabla `Fase`, `Partido` con fase, grupo, ronda y pierna), con el editor de fases en "Nuevo torneo". _Hecho: tabla `Fase` con RLS, `Partido` con fase, ronda y pierna, formato FLEXIBLE, creación desde el simulador y "Generar fase" cuando sus equipos están definidos (puestos, mejores N, ganadores o perdedores, no clasificados), con copa en paralelo. Falta: fase 1 automática al cerrar la inscripción, editar el formato, rehacer una fase, cruce de canchas entre fases, grilla a mano y feriados._
+- [~] **E10-08** `dev` Tabla, llaves y sitio público por fase, incluida una copa paralela (por ejemplo, copa estímulo) y el cronograma de sábados. _Hecho: pestaña "Fases" en el panel con tablas por grupo y llaves, sitio público con pestañas por fase y torneo de ejemplo en la semilla. Falta: ida o vuelta en la página del partido y cronograma de sábados en el sitio público._
 
 ## E11 · Partidos y acta digital · módulo 05
 - [x] **E11-01** `dev` `Match` con estados (programado, en juego, finalizado, suspendido, equipo ausente) y transiciones válidas.
@@ -310,8 +310,8 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 - [x] **E18-05** `dev` Pantalla del panel (mock 01).
 
 ## E19 · Panel del capitán · módulo 07
-- [~] **E19-01** `dev` Plantel del equipo: altas, bajas e invitación a jugadores. _Hecho: altas y bajas del capitán con las reglas de documentación (no da de baja a quien ya jugó). Falta: invitar a los jugadores a tener cuenta (E20-01)._
-- [~] **E19-02** `dev` Convocatoria con confirmación de asistencia. _Hecho: el capitán anota quién va y avisa a los pendientes por WhatsApp. Falta: que el jugador confirme solo por link o push._
+- [x] **E19-01** `dev` Plantel del equipo: altas, bajas e invitación a jugadores. _Las altas y bajas respetan la documentación; el capitán invita a cada jugador a la app ("Invitar a la app")._
+- [x] **E19-02** `dev` Convocatoria con confirmación de asistencia. _El capitán anota quién va o el jugador confirma desde su panel ("Voy" / "No voy"); los dos ven la misma convocatoria._
 - [ ] **E19-03** `dev` Cuotas por jugador y pago individual.
 - [x] **E19-04** `dev` Documentación del equipo: qué falta y quién.
 - [x] **E19-05** `dev` Sanciones del equipo y presentación de descargos.
@@ -319,11 +319,11 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 - [x] **E19-07** `dev` Pantalla del capitán (mock 07).
 
 ## E20 · Jugadores y perfil · módulo 08
-- [ ] **E20-01** `dev` Cuenta del jugador, aceptación de términos y reclamo del perfil creado por el capitán.
+- [x] **E20-01** `dev` Cuenta del jugador, aceptación de términos y reclamo del perfil creado por el capitán. _Invitación del capitán, cuenta con aceptación de términos versionada (consentimiento) y perfil vinculado; el jugador solo ve lo suyo._
 - [x] **E20-02** `dev` Perfil con estadísticas y trayectoria entre torneos.
 - [ ] **E20-03** `dev` Valoración de juego limpio.
 - [x] **E20-04** `dev` Privacidad: apodo o iniciales, perfiles de menores opcionales.
-- [ ] **E20-05** `dev` Notificaciones personales (partido, convocatoria, sanción).
+- [~] **E20-05** `dev` Notificaciones personales (partido, convocatoria, sanción). _Hecho: "Mis avisos" en el panel del jugador (convocatoria, partido, sanción, documentación, deuda). Falta: enviarlos por push o mensaje._
 - [x] **E20-06** `dev` Pantalla del perfil de jugador (mock 08).
 
 ## E21 · Página de partido · módulo 09
@@ -353,7 +353,7 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 - [x] **E24-02** `dev` Tasa de cobro y cobro antes del inicio.
 - [x] **E24-03** `dev` Ocupación de canchas y mapa de horarios más pedidos.
 - [x] **E24-04** `dev` Pantalla de métricas (mock 19).
-- [ ] **E24-05** `dev` Métricas internas de la plataforma: ligas activas, GMV, take rate, partidos cerrados por semana (norte del producto). Se muestran en el backoffice (E36-12).
+- [x] **E24-05** `dev` Métricas internas de la plataforma: ligas activas, GMV, take rate, partidos cerrados por semana (norte del producto). Se muestran en el backoffice (E36-12). _En el inicio del panel de Gregal (`/gregal`)._
 
 ## E25 · Configuración inicial e importación · módulo 20
 - [~] **E25-01** `dev` Asistente de 5 pasos: organización, Mercado Pago, marca y dominio, reglamento, importación. _Hecho: asistente de 5 pasos que se puede retomar. Falta: conectar Mercado Pago de verdad (hoy es informativo) y un reglamento propio de la liga (hoy muestra el de por defecto)._
@@ -451,18 +451,18 @@ Lo que no es código pero bloquea al código. Fase A del documento 5.
 ## E36 · Backoffice de Gregal
 Aplicación interna separada del producto (`apps/admin`), solo para el equipo de Gregal. Reúne las herramientas internas que antes estaban dispersas. Cada tarea se hace cuando existe el módulo que administra.
 
-- [ ] **E36-01** `dev` App `apps/admin` con su propio login, 2FA obligatoria, sesión corta y acceso restringible por red. _Depende de:_ E04.
-- [ ] **E36-02** `dev` Usuarios internos y roles propios (soporte, finanzas, dirección, superadmin) separados de los roles de las organizaciones.
-- [ ] **E36-03** `dev` Auditoría de toda acción interna, consultable desde el backoffice.
-- [ ] **E36-04** `dev` Organizaciones: listado, búsqueda, detalle, plan, estado, ligas fundadoras, migración asistida y acceso de soporte temporal con motivo (E04-13, E25-03).
-- [ ] **E36-05** `dev` Salud de cada liga: alertas de riesgo de abandono del documento 5 (sin equipos a los 7 días, menos del 50 % de actas cargadas, solo pagos manuales, panel sin uso).
-- [ ] **E36-06** `dev` Dinero: cobros y comisiones de todas las ligas, conciliación con Mercado Pago, diferencias, reembolsos y contracargos. _Depende de:_ E06.
+- [~] **E36-01** `dev` App `apps/admin` con su propio login, 2FA obligatoria, sesión corta y acceso restringible por red. _Depende de:_ E04. _Hecho: panel interno en `/gregal` dentro de la web, con login y sesión propios (cookie aparte, 8 h). Falta: app aparte, 2FA obligatoria y acceso por red._
+- [~] **E36-02** `dev` Usuarios internos y roles propios (soporte, finanzas, dirección, superadmin) separados de los roles de las organizaciones. _Hecho: staff con roles SUPERADMIN, SOPORTE, FINANZAS y DIRECCION, separado de las organizaciones. Falta: alta y edición desde la pantalla._
+- [x] **E36-03** `dev` Auditoría de toda acción interna, consultable desde el backoffice. _Cada ingreso y consulta del staff queda en una auditoría inmutable, con pantalla propia._
+- [~] **E36-04** `dev` Organizaciones: listado, búsqueda, detalle, plan, estado, ligas fundadoras, migración asistida y acceso de soporte temporal con motivo (E04-13, E25-03). _Hecho: listado con búsqueda, plan, estado, torneos, equipos, cobrado y último uso; detalle con torneos, usuarios y cobros. Falta: marcar fundadoras, migración asistida y acceso de soporte temporal._
+- [x] **E36-05** `dev` Salud de cada liga: alertas de riesgo de abandono del documento 5 (sin equipos a los 7 días, menos del 50 % de actas cargadas, solo pagos manuales, panel sin uso). _Alertas de riesgo con umbrales en `datos.json` (`saludDeLiga`) y lista "Ligas para llamar"._
+- [~] **E36-06** `dev` Dinero: cobros y comisiones de todas las ligas, conciliación con Mercado Pago, diferencias, reembolsos y contracargos. _Depende de:_ E06. _Hecho: cobros y comisiones por mes y por liga (lectura). Falta: conciliación con Mercado Pago, reembolsos y contracargos._
 - [ ] **E36-07** `dev` Facturación de comisiones: comprobantes emitidos, pendientes y errores ante ARCA. _Depende de:_ E26-07.
 - [ ] **E36-08** `dev` Suscripciones y planes: altas, bajas y cambios de Pro, cupo de fundadoras, referidos, packs de mensajes y descuentos aprobados. _Depende de:_ E26.
 - [ ] **E36-09** `dev` Configuración global: precios y comisiones vigentes, feature flags por organización, plantillas de WhatsApp y textos legales versionados.
 - [ ] **E36-10** `dev` Operación: colas y jobs, webhooks fallidos, actas con error de sincronización, mensajes fallidos y costo de mensajería por liga; panel de estado del fin de semana (E02-07, E31-05).
 - [ ] **E36-11** `dev` Moderación y datos personales: fotos, crónicas, mercado de pases, sponsors, denuncias, pedidos de acceso, rectificación y supresión, y auditoría de accesos a documentos (E28-04).
-- [ ] **E36-12** `dev` Métricas del negocio: ligas activas, GMV, take rate, retención, embudo de ventas y partidos cerrados por semana (E24-05).
+- [~] **E36-12** `dev` Métricas del negocio: ligas activas, GMV, take rate, retención, embudo de ventas y partidos cerrados por semana (E24-05). _Hecho: ligas activas, GMV por medio, comisión, partidos cerrados por semana y ligas nuevas por mes. Falta: retención y embudo de ventas._
 - [ ] **E36-13** `dev` Exportaciones para dirección y contabilidad (CSV) y reporte mensual.
 
 ## E37 · Demo pública con sandbox por visitante

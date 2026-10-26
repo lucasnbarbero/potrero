@@ -4,6 +4,7 @@ import { Icono } from '@potrero/ui';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Campo, MensajeError, Selector, useEnvio } from '@/componentes/formulario';
+import { usePermiso } from '@/componentes/Permisos';
 import { api } from '@/lib/cliente';
 import { pesos } from '@/lib/formato';
 import type { Sede } from '@/lib/tipos';
@@ -136,6 +137,7 @@ export function AccionesCobro({ cargoId, debe }: { cargoId: string; debe: number
   const router = useRouter();
   const { enviando, error, enviar } = useEnvio();
   const [link, setLink] = useState<string | null>(null);
+  const puedeCobrar = usePermiso('cobro.registrar');
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
       <button
@@ -152,22 +154,24 @@ export function AccionesCobro({ cargoId, debe }: { cargoId: string; debe: number
         <Icono nombre="link" />
         Link de pago
       </button>
-      <button
-        className="btn btn-sm"
-        disabled={enviando}
-        onClick={() =>
-          enviar(async () => {
-            await api('POST', `/cargos/${cargoId}/pagos`, {
-              metodo: 'EFECTIVO',
-              monto: debe,
-              comprobante: 'Registrado desde el panel',
-            });
-            router.refresh();
-          })
-        }
-      >
-        Cobré {pesos(debe)} en efectivo
-      </button>
+      {puedeCobrar && (
+        <button
+          className="btn btn-sm"
+          disabled={enviando}
+          onClick={() =>
+            enviar(async () => {
+              await api('POST', `/cargos/${cargoId}/pagos`, {
+                metodo: 'EFECTIVO',
+                monto: debe,
+                comprobante: 'Registrado desde el panel',
+              });
+              router.refresh();
+            })
+          }
+        >
+          Cobré {pesos(debe)} en efectivo
+        </button>
+      )}
       {link && (
         <a
           href={link}

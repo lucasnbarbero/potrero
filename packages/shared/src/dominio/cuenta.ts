@@ -1,13 +1,17 @@
 // Cuenta del usuario (E04-02, E04-05): límite de intentos de ingreso y vigencia de los links de un solo uso.
+import { DATOS } from '../datos.js';
 
 /**
- * Límites contra la fuerza bruta: intentos fallidos por cuenta y por IP dentro de la ventana.
- * TODO datos.json: llevar estas cifras a docs/datos.json cuando se aprueben.
+ * Límites contra la fuerza bruta: intentos fallidos por cuenta y por IP dentro de la ventana (docs/datos.json).
  */
-export const LIMITE_INGRESO = { porCuenta: 5, porIp: 20, ventanaMin: 15 } as const;
+export const LIMITE_INGRESO = {
+  porCuenta: DATOS.cuentas.intentosIngreso.porCuenta,
+  porIp: DATOS.cuentas.intentosIngreso.porIp,
+  ventanaMin: DATOS.cuentas.intentosIngreso.ventanaMinutos,
+} as const;
 
-/** Vigencia de los links que se mandan por email, en minutos. TODO datos.json. */
-export const VIGENCIA_LINK_MIN = { RECUPERAR: 60, VERIFICAR_EMAIL: 48 * 60 } as const;
+/** Vigencia de los links que se mandan por email, en minutos (docs/datos.json). */
+export const VIGENCIA_LINK_MIN = DATOS.cuentas.vigenciaLinkMinutos;
 export type TipoLinkCuenta = keyof typeof VIGENCIA_LINK_MIN;
 
 export interface Bloqueo {

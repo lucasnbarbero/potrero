@@ -42,6 +42,8 @@ export interface InvitacionPublica {
   estado: UsuariosOrganizacion['invitaciones'][number]['estado'];
   venceEn: string;
   tieneCuenta: boolean;
+  /** Solo para JUGADOR (E20-01): términos que acepta al crear su cuenta. */
+  terminos: { version: number; titulo: string; texto: string } | null;
 }
 
 export interface PanelCapitan {
@@ -77,6 +79,8 @@ export interface PanelCapitan {
     suspendidoPor: number;
     convocatoria: RespuestaConvocatoria | 'SUSPENDIDO' | null;
     baja: Decision;
+    /** Cuenta del jugador en la app (E20-01). */
+    cuenta: 'ACTIVA' | 'INVITADO' | null;
   }[];
   documentacion: {
     requeridos: string[];

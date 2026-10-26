@@ -4,7 +4,7 @@ import { Escudo, Vacio } from '@/componentes/ui';
 import { apiServidor } from '@/lib/api';
 import { fechaCorta, hora, pesos } from '@/lib/formato';
 import type { PanelCapitan } from '@/lib/tipos-capitan';
-import { AltaJugador, BajaJugador, Convocatoria, Descargo } from './Capitan';
+import { AltaJugador, BajaJugador, Convocatoria, Descargo, InvitarJugador } from './Capitan';
 
 export const metadata = { title: 'Mi equipo' };
 
@@ -326,7 +326,7 @@ export default async function MiEquipo({ searchParams }: PageProps<'/capitan'>) 
           ) : (
             <ul className="grid gap-x-6 md:grid-cols-2">
               {r.plantel.map((j) => (
-                <li key={j.jugadorId} className="list-row" data-testid="jugador-plantel">
+                <li key={j.jugadorId} className="list-row flex-wrap" data-testid="jugador-plantel">
                   <span className="num grid size-11 shrink-0 place-items-center rounded-full bg-black/10 font-bold">
                     {j.numero ?? '—'}
                   </span>
@@ -340,6 +340,7 @@ export default async function MiEquipo({ searchParams }: PageProps<'/capitan'>) 
                     </span>
                   </div>
                   {!j.habilitado && <span className="pill-red hidden sm:inline-flex">No habilitado</span>}
+                  <InvitarJugador jugadorId={j.jugadorId} nombre={j.nombre} cuenta={j.cuenta} />
                   <BajaJugador jugadorId={j.jugadorId} nombre={j.nombre} baja={j.baja} />
                 </li>
               ))}

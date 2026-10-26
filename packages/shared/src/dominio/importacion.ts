@@ -2,6 +2,7 @@
 // Todo lo de acá es puro: la web lee el archivo y lo convierte en tablas de texto, la API agrega lo que ya
 // existe en la liga (equipos, canchas y si un DNI ya está registrado) y las dos usan la misma validación.
 // La API vuelve a validar al confirmar y, si hay un solo error, no importa nada.
+import { DATOS } from '../datos.js';
 import { dniValido, normalizarDni } from './documentacion.js';
 
 export const HOJAS_IMPORTACION = ['equipos', 'jugadores', 'canchas'] as const;
@@ -60,7 +61,7 @@ export const COLUMNAS_IMPORTACION: Record<HojaImportacion, Columna[]> = {
 };
 
 /** Tope de filas por archivo: una liga grande tiene unos pocos cientos de jugadores. */
-export const MAXIMO_FILAS_IMPORTACION = 3000;
+export const MAXIMO_FILAS_IMPORTACION: number = DATOS.importacion.maximoFilas;
 
 /** Una tabla leída del archivo: una hoja del Excel o un CSV. La primera fila son los encabezados. */
 export interface TablaCruda {

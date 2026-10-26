@@ -34,7 +34,11 @@ Actualizar al cerrar cada bloque de trabajo. Detalle de tareas: `docs/backlog.md
 
 - Pagos manuales completos o parciales (efectivo o transferencia) con comprobante y anulación; editar el torneo y cambiar su estado (cerrar o reabrir la inscripción, finalizar).
 - Menú y pantallas según el rol, con aviso amable cuando una sección no corresponde.
-- Simulador "Armá el formato" (ADR-026): torneos por fases con plantillas, incluida una copa estímulo, y vista previa de sábados, partidos y recaudación. Todavía no crea torneos.
+- Simulador "Armá el formato" (ADR-026): torneos por fases con plantillas, incluida una copa estímulo, y vista previa de sábados, partidos y recaudación. Crea el torneo por fases: cada fase se genera cuando sus equipos están definidos, con tablas por grupo, llaves ida y vuelta (penales en la vuelta) y copa en paralelo; se ve por fases en el panel y en el sitio público.
+
+- Panel del jugador (`/jugador`): cuenta propia invitada por el capitán con aceptación de términos, "Voy" / "No voy" que ve el capitán, estadísticas, sanciones, documentación, cómo aparece su nombre y avisos personales.
+- Panel interno de Gregal (`/gregal`): staff con login y roles propios, métricas de la plataforma, organizaciones con su salud (ligas para llamar), dinero por mes y por liga, y auditoría inmutable de cada acceso.
+- Cifras configurables en `docs/datos.json`: además de precios y reglamento, plazos de cuentas e invitaciones, límites de ingreso, plantel mínimo, tribunal, simulador, sponsors, importación, panel, pronóstico y umbrales de salud de las ligas.
 
 - Demo pública (ADR-019, `pnpm demo --publica`): cada visitante entra desde la landing a su propia sandbox con los datos de la plantilla, aislada por RLS; vence a las 24 h y un job la elimina; botón "Reiniciar demo"; sin registro abierto; tope de sandboxes por IP y en total. Falta el despliegue del entorno (E37-08).
 
@@ -42,7 +46,7 @@ Actualizar al cerrar cada bloque de trabajo. Detalle de tareas: `docs/backlog.md
 - Mercado Pago real, WhatsApp, email y push: no integrados; los canales de mensajería son simulados (E06-04, ADR-022). El pronóstico de clima también es simulado (E17-06).
 - El acta sin conexión está probada en el navegador (incluido con el servidor apagado), no en celulares reales de gama baja (E11-13). Hay que abrirla una vez con señal antes del partido.
 - Llaves sin ida y vuelta (solo partido único con penales).
-- Sin backoffice, mercado de pases, cuenta propia del jugador ni fotos de partido (ver backlog). Los torneos se crean con los cuatro formatos fijos; el formato por fases solo se simula (E10-07). Invitaciones, recuperación de contraseña y verificación de email: el link se muestra o se comparte a mano hasta tener proveedor de email.
+- Sin backoffice, mercado de pases, cuenta propia del jugador ni fotos de partido (ver backlog). Torneos por fases: fase 1 a mano, sin editar el formato ni grilla a mano (E10-07). Invitaciones, recuperación de contraseña y verificación de email: el link se muestra o se comparte a mano hasta tener proveedor de email.
 - Cifras provisorias en código, a pasar a `datos.json`: vencimiento de invitaciones (7 días), plantel mínimo por modalidad, límites de ingreso y vigencia de los links de cuenta (marcadas `TODO datos.json`).
 - Cuota por fecha: con `deudaBloqueaJugar` el acta solo avisa, todavía no impide cargar al equipo.
 - Caja: sin reembolsos (E06-12), sin PDF ni comprobantes como archivo; el retiro es solo un registro y falta la verificación en dos pasos.

@@ -16,6 +16,7 @@ import {
 } from '@nestjs/common';
 import {
   aceptarInvitacionSchema,
+  DATOS,
   type AceptarInvitacionInput,
   estadoInvitacion,
   invitarSchema,
@@ -26,6 +27,8 @@ import {
   type RolOrganizacion,
   rolesQuePuedeInvitar,
   vencimientoInvitacion,
+  CONSENTIMIENTO_TERMINOS_JUGADOR,
+  TERMINOS_JUGADOR,
 } from '@potrero/shared';
 import argon2 from 'argon2';
 import type { Response } from 'express';
@@ -144,6 +147,42 @@ export class UsuariosService {
     });
   }
 
+  /**
+   * Invitación de un jugador a tener cuenta (E20-01). La pide el capitán desde su plantel (ver jugador/jugador.ts, que
+   * controla que el jugador sea de su equipo); al aceptarla, la cuenta queda atada a ese perfil.
+   */
+  invitarJugador(c: Contexto, d: { equipoId: string; jugadorId: string; email: string; nombre: string }) {
+    return this.db.enOrg(c.organizacionId, async (tx) => {
+      if (
+        await tx.membresia.findFirst({ where: { organizacionId: c.organizacionId, jugadorId: d.jugadorId } })
+      )
+        throw new ErrorNegocio('Ese jugador ya tiene cuenta en la app.', HttpStatus.CONFLICT);
+      // Una sola invitación viva por jugador: la anterior queda anulada.
+      await tx.invitacion.updateMany({
+        where: { jugadorId: d.jugadorId, aceptadaEn: null, rechazadaEn: null, anuladaEn: null },
+        data: { anuladaEn: new Date() },
+      });
+      const { token, tokenHash } = nuevoToken();
+      const inv = await tx.invitacion.create({
+        data: {
+          organizacionId: c.organizacionId,
+          email: d.email,
+          nombre: d.nombre,
+          rol: 'JUGADOR',
+          equipoId: d.equipoId,
+          jugadorId: d.jugadorId,
+          tokenHash,
+          venceEn: vencimientoInvitacion(new Date()),
+          invitadoPorId: c.usuarioId,
+        },
+      });
+      await auditar(tx, c, 'jugador.invitar', 'invitacion', inv.id, {
+        despues: { email: d.email, jugadorId: d.jugadorId, equipoId: d.equipoId },
+      });
+      return { id: inv.id, link: linkDe(token), venceEn: inv.venceEn };
+    });
+  }
+
   private async gestionable(tx: Tx, c: Contexto, id: string) {
     const inv = await tx.invitacion.findUnique({ where: { id } });
     if (!inv) throw noEncontrado('la invitación');
@@ -243,6 +282,8 @@ export class UsuariosService {
       estado: estadoInvitacion(inv, new Date()),
       venceEn: inv.venceEn,
       tieneCuenta: !!usuario,
+      // Jugador (E20-01): acepta los términos con versión al reclamar su perfil.
+      terminos: inv.rol === 'JUGADOR' ? TERMINOS_JUGADOR : null,
     };
   }
 
@@ -265,6 +306,8 @@ export class UsuariosService {
    */
   async aceptar(token: string, d: AceptarInvitacionInput) {
     const inv = await this.vigente(token);
+    if (inv.rol === 'JUGADOR' && d.terminosVersion !== TERMINOS_JUGADOR.version)
+      throw new ErrorNegocio('Para crear tu cuenta tenés que aceptar los términos de uso.');
     let usuario = await this.db.app.usuario.findUnique({ where: { email: inv.email } });
     if (usuario) {
       if (!(await argon2.verify(usuario.passwordHash, d.password)))
@@ -275,7 +318,10 @@ export class UsuariosService {
         );
     } else {
       if (!d.nombre) throw new ErrorNegocio('Contanos tu nombre.');
-      if (d.password.length < 10) throw new ErrorNegocio('La contraseña necesita al menos 10 caracteres.');
+      if (d.password.length < DATOS.cuentas.contrasenaMinimaCaracteres)
+        throw new ErrorNegocio(
+          `La contraseña necesita al menos ${DATOS.cuentas.contrasenaMinimaCaracteres} caracteres.`,
+        );
       usuario = await this.db.app.usuario.create({
         data: { email: inv.email, nombre: d.nombre, passwordHash: await argon2.hash(d.password) },
       });
@@ -294,8 +340,33 @@ export class UsuariosService {
       if (ya)
         throw new ErrorNegocio('Ya sos parte de esta organización. Iniciá sesión.', HttpStatus.CONFLICT);
       const m = await tx.membresia.create({
-        data: { usuarioId, organizacionId: inv.organizacionId, rol: inv.rol, equipoId: inv.equipoId },
+        data: {
+          usuarioId,
+          organizacionId: inv.organizacionId,
+          rol: inv.rol,
+          equipoId: inv.equipoId,
+          jugadorId: inv.jugadorId,
+        },
       });
+      if (inv.rol === 'JUGADOR' && inv.jugadorId) {
+        if (
+          await tx.membresia.count({
+            where: { organizacionId: inv.organizacionId, jugadorId: inv.jugadorId, NOT: { id: m.id } },
+          })
+        )
+          throw new ErrorNegocio('Ese perfil de jugador ya tiene cuenta.', HttpStatus.CONFLICT);
+        // La aceptación de los términos queda guardada con su versión, como los demás consentimientos.
+        await tx.consentimiento.create({
+          data: {
+            organizacionId: inv.organizacionId,
+            jugadorId: inv.jugadorId,
+            tipo: CONSENTIMIENTO_TERMINOS_JUGADOR,
+            version: TERMINOS_JUGADOR.version,
+            otorgante: usuario.nombre,
+            vinculo: 'PROPIO',
+          },
+        });
+      }
       await auditar(
         tx,
         { organizacionId: inv.organizacionId, usuarioId },
@@ -303,7 +374,7 @@ export class UsuariosService {
         'membresia',
         m.id,
         {
-          despues: { rol: inv.rol, equipoId: inv.equipoId, invitacionId: inv.id },
+          despues: { rol: inv.rol, equipoId: inv.equipoId, jugadorId: inv.jugadorId, invitacionId: inv.id },
         },
       );
     });
@@ -386,5 +457,10 @@ export class UsuariosController {
   }
 }
 
-@Module({ imports: [AuthModule], controllers: [UsuariosController], providers: [UsuariosService] })
+@Module({
+  imports: [AuthModule],
+  controllers: [UsuariosController],
+  providers: [UsuariosService],
+  exports: [UsuariosService],
+})
 export class UsuariosModule {}

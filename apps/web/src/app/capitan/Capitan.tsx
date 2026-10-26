@@ -264,3 +264,101 @@ export function Descargo({ id, actual }: { id: string; actual: string | null }) 
     </form>
   );
 }
+
+/** Invitar a un jugador del plantel a tener cuenta (E20-01): el link se manda por WhatsApp o se copia. */
+export function InvitarJugador({
+  jugadorId,
+  nombre,
+  cuenta,
+}: {
+  jugadorId: string;
+  nombre: string;
+  cuenta: Jugador['cuenta'];
+}) {
+  const router = useRouter();
+  const { enviando, error, campos, enviar } = useEnvio();
+  const [abierto, setAbierto] = useState(false);
+  const [listo, setListo] = useState<{ link: string; texto: string } | null>(null);
+  if (cuenta === 'ACTIVA') return <span className="pill-ink hidden sm:inline-flex">En la app</span>;
+  return (
+    <>
+      <button
+        className="btn-glass btn-sm"
+        aria-label={`Invitar a ${nombre} a la app`}
+        onClick={() => setAbierto((x) => !x)}
+      >
+        <Icono nombre="send" />
+        <span className="hidden sm:inline">{cuenta === 'INVITADO' ? 'Reinvitar' : 'Invitar a la app'}</span>
+      </button>
+      {abierto && (
+        <div className="basis-full rounded-3xl bg-black/5 p-4" data-testid="invitar-jugador">
+          {listo ? (
+            <div className="space-y-3" role="status">
+              <p className="text-sm">
+                Listo. Mandale este link a {nombre}: crea su cuenta y confirma si va a los partidos.
+              </p>
+              <input
+                className="input w-full text-xs"
+                readOnly
+                value={listo.link}
+                aria-label="Link de invitación"
+              />
+              <div className="flex flex-wrap gap-2">
+                <a
+                  className="btn-volt btn-sm"
+                  href={`https://wa.me/?text=${encodeURIComponent(listo.texto)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <Icono nombre="whatsapp" />
+                  Mandar por WhatsApp
+                </a>
+                <button
+                  className="btn-glass btn-sm"
+                  onClick={() => void navigator.clipboard?.writeText(listo.link)}
+                >
+                  <Icono nombre="link" />
+                  Copiar link
+                </button>
+              </div>
+            </div>
+          ) : (
+            <form
+              className="flex flex-wrap items-end gap-2"
+              onSubmit={(ev) => {
+                ev.preventDefault();
+                const email = String(new FormData(ev.currentTarget).get('email') ?? '').trim();
+                void enviar(async () => {
+                  setListo(
+                    await api<{ link: string; texto: string }>(
+                      'POST',
+                      `/capitan/plantel/${jugadorId}/invitar`,
+                      {
+                        email,
+                      },
+                    ),
+                  );
+                  router.refresh();
+                });
+              }}
+            >
+              <div className="min-w-[12rem] flex-1">
+                <Campo
+                  etiqueta={`Email de ${nombre}`}
+                  name="email"
+                  type="email"
+                  required
+                  error={campos.email}
+                />
+              </div>
+              <button className="btn btn-sm" disabled={enviando}>
+                Generar invitación
+              </button>
+              <MensajeError error={error} />
+            </form>
+          )}
+        </div>
+      )}
+    </>
+  );
+}

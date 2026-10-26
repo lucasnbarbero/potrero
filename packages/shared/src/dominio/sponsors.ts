@@ -1,5 +1,6 @@
 // Sponsors del torneo (E23): los vende el organizador (documento 2, sección 6). Reglas puras: qué categorías se aceptan,
 // cuándo se muestra un espacio y cómo se mide el alcance, siempre en forma agregada y sin datos personales.
+import { DATOS } from '../datos.js';
 import { sumarDias } from './fixture.js';
 import { diasEntre } from './mensajeria.js';
 
@@ -54,7 +55,7 @@ export const ESPACIO_SPONSOR: Record<EspacioSponsor, { nombre: string; descripci
 };
 
 /** Desde cuántos días antes del final un espacio se marca "por vencer". */
-export const DIAS_AVISO_VENCIMIENTO_SPONSOR = 7;
+export const DIAS_AVISO_VENCIMIENTO_SPONSOR: number = DATOS.sponsors.avisoVencimientoDias;
 
 /**
  * Por qué no se puede vender este rubro en este torneo, o null si se puede.

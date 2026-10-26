@@ -1,6 +1,7 @@
 import { Icono } from '@potrero/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { DetalleDeFase, PestanasDeFases } from '@/componentes/FasesDelTorneo';
 import { Llave } from '@/componentes/Llave';
 import { MarcoPublico } from '@/componentes/MarcoPublico';
 import { SponsorsDelTorneo } from '@/componentes/SponsorsDelTorneo';
@@ -8,6 +9,7 @@ import { Escudo, Estado } from '@/componentes/ui';
 import { apiPublica } from '@/lib/api';
 import { fechaCorta, hora, pesos } from '@/lib/formato';
 import type { Estadisticas, Llave as LlaveDatos, Partido } from '@/lib/tipos';
+import type { FaseVista } from '@/lib/tipos-fases';
 
 interface SitioTorneo {
   organizacion: { nombre: string; slug: string };
@@ -25,6 +27,8 @@ interface SitioTorneo {
   tabla: Estadisticas['tabla'];
   grupos: Estadisticas['grupos'];
   llave: LlaveDatos | null;
+  /** Torneos por fases (ADR-026): cada fase con sus tablas, llave y partidos. */
+  fases?: FaseVista[] | null;
   // Sin perfil público (menor sin consentimiento), el id no viene y no se enlaza.
   goleadores: (Omit<Estadisticas['goleadores'][number], 'jugadorId'> & { jugadorId: string | null })[];
   suspendidos: { jugador: string; equipo: string; restantes: number }[];
@@ -107,8 +111,9 @@ function TablaPosiciones({
   );
 }
 
-export default async function SitioDelTorneo({ params }: PageProps<'/t/[org]/[torneo]'>) {
+export default async function SitioDelTorneo({ params, searchParams }: PageProps<'/t/[org]/[torneo]'>) {
   const { org, torneo } = await params;
+  const { fase: faseElegida } = await searchParams;
   const s = await apiPublica<SitioTorneo>(`/publico/${org}/${torneo}`);
   const fechas = [...Map.groupBy(s.partidos, (p) => p.fecha)];
   // Próxima fecha a jugar: la primera con partidos sin cerrar.
@@ -148,7 +153,13 @@ export default async function SitioDelTorneo({ params }: PageProps<'/t/[org]/[to
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_22rem]">
         <div className="min-w-0 space-y-4">
-          {s.torneo.formato === 'COPA' && s.llave ? (
+          {s.fases?.length ? (
+            <FasesPublicas
+              fases={s.fases}
+              elegida={typeof faseElegida === 'string' ? faseElegida : null}
+              base={`/t/${org}/${torneo}`}
+            />
+          ) : s.torneo.formato === 'COPA' && s.llave ? (
             <section>
               <b className="mb-2 block text-lg">Cuadro del torneo</b>
               <Llave llave={s.llave} />
@@ -278,5 +289,35 @@ export default async function SitioDelTorneo({ params }: PageProps<'/t/[org]/[to
       </div>
       <SponsorsDelTorneo org={org} torneo={torneo} espacio="TARJETA_RESULTADO" className="mt-4" />
     </MarcoPublico>
+  );
+}
+
+/** Torneo por fases: una pestaña por fase; por defecto, la última que ya arrancó. */
+function FasesPublicas({
+  fases,
+  elegida,
+  base,
+}: {
+  fases: FaseVista[];
+  elegida: string | null;
+  base: string;
+}) {
+  const actual =
+    fases.find((f) => f.clave === elegida) ??
+    [...fases].reverse().find((f) => f.estado === 'EN_CURSO') ??
+    [...fases].reverse().find((f) => f.estado !== 'PENDIENTE') ??
+    fases[0]!;
+  return (
+    <section className="space-y-4" aria-label="Fases del torneo">
+      <PestanasDeFases fases={fases} actual={actual.clave} href={(c) => `?fase=${c}`} />
+      {actual.estado === 'PENDIENTE' ? (
+        <div className="tile text-sm text-mute">
+          <b className="block text-lg text-ink">{actual.nombre}</b>
+          Se arma cuando se definan sus equipos: {actual.entradas.join(' + ').toLowerCase()}.
+        </div>
+      ) : (
+        <DetalleDeFase fase={actual} angosto hrefPartido={(id) => `${base}/partido/${id}`} />
+      )}
+    </section>
   );
 }

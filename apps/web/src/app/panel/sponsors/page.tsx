@@ -1,4 +1,4 @@
-import { ESPACIO_SPONSOR, ESPACIOS_SPONSOR, type EstadoPlacement } from '@potrero/shared';
+import { DATOS, ESPACIO_SPONSOR, ESPACIOS_SPONSOR, type EstadoPlacement } from '@potrero/shared';
 import { Icono } from '@potrero/ui';
 import Link from 'next/link';
 import { LogoSponsor } from '@/componentes/LogoSponsor';
@@ -106,7 +106,7 @@ export default async function Sponsors({ searchParams }: PageProps<'/panel/spons
           style={{ '--d': 1 } as React.CSSProperties}
           data-testid="impresiones"
         >
-          <span className="eyebrow">Impresiones · últimos 30 días</span>
+          <span className="eyebrow">Impresiones · últimos {DATOS.sponsors.ventanaMetricasDias} días</span>
           <div className="num mt-3 text-5xl font-bold tracking-tighter">{compacto(r.impresiones)}</div>
           <p className="mt-1 text-sm text-mute">
             {r.clics.toLocaleString('es-AR')} clics · CTR {porcentaje(r.ctr)} · en el sitio del torneo

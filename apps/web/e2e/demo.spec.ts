@@ -243,7 +243,9 @@ test('sanciones: levantar una suspensión pagando (opción del reglamento) y el 
   await foto(page, '24-sanciones-historial');
 });
 
-test('métricas: retención, cobro por medio, canchas y horarios con filtro por período y torneo', async ({ page }) => {
+test('métricas: retención, cobro por medio, canchas y horarios con filtro por período y torneo', async ({
+  page,
+}) => {
   await page.goto('/panel/metricas');
   await expect(page).toHaveURL(/ingresar/);
   await page.getByLabel('Email').fill('demo@potrero.app');
@@ -252,12 +254,14 @@ test('métricas: retención, cobro por medio, canchas y horarios con filtro por 
   await page.getByRole('complementary').getByRole('link', { name: 'Métricas' }).click();
   await expect(page.getByRole('heading', { name: 'Métricas', level: 1 })).toBeVisible();
 
-  // Temporada: de Clausura 2025 a Apertura 2026 volvieron 5 de 7 equipos.
-  await expect(page.getByTestId('kpi-retencion')).toHaveText('71%');
-  await expect(page.getByTestId('retencion')).toContainText('5 de 7');
+  // Temporada: de Clausura 2025 a Apertura 2026 volvieron 5 de 7 equipos y del Apertura al Torneo Primavera (por
+  // fases) los 9. La cifra exacta depende de los torneos que crean los otros recorridos (sobre la semilla sola, 88%).
+  await expect(page.getByTestId('kpi-retencion')).toHaveText(/^\d+%$/);
+  await expect(page.getByTestId('retencion')).toContainText('Torneo Primavera 2026');
   await expect(page.getByTestId('kpi-cobro')).toHaveText(/\d+%/);
   await expect(page.getByTestId('medio-EFECTIVO')).toContainText('%');
-  await expect(page.getByTestId('insight-horarios')).toContainText('los sábados');
+  // Los domingos a la mañana del Torneo Primavera (por fases) son la franja más pedida.
+  await expect(page.getByTestId('insight-horarios')).toContainText('los domingos');
   await expect(page.getByTestId('cobro-por-torneo')).toContainText('Apertura 2026');
   await expect(page.getByTestId('canchas')).toContainText('Cancha 1');
   await foto(page, '40-metricas');
@@ -265,7 +269,7 @@ test('métricas: retención, cobro por medio, canchas y horarios con filtro por 
   // Histórico: entran los torneos del año pasado y el efectivo pasa a ser el medio principal.
   await page.getByRole('link', { name: 'Histórico' }).click();
   await expect(page).toHaveURL(/periodo=HISTORICO/);
-  await expect(page.getByTestId('kpi-retencion')).toHaveText('57%');
+  await expect(page.getByTestId('kpi-retencion')).toHaveText(/^\d+%$/);
   await expect(page.getByTestId('cobro-por-torneo')).toContainText('Apertura 2025');
   await expect(page.getByTestId('kpi-ocupacion')).not.toHaveText('—');
 
@@ -488,7 +492,9 @@ test('usuarios con rol, invitación y panel del capitán (E04-09, E19)', async (
   const expediente = cap.getByTestId('expediente-capitan').filter({ hasText: 'Roja directa' });
   const editar = expediente.getByRole('button', { name: 'Editar descargo' });
   if (await editar.isVisible()) await editar.click();
-  await expediente.getByLabel('Tu descargo para el tribunal').fill('Fue una pelota dividida, no hubo intención.');
+  await expediente
+    .getByLabel('Tu descargo para el tribunal')
+    .fill('Fue una pelota dividida, no hubo intención.');
   await expediente.getByRole('button', { name: 'Enviar descargo' }).click();
   await expect(expediente).toContainText('Descargo enviado');
 
@@ -710,7 +716,10 @@ test('fallas: sanciones del torneo, menú y avisos por rol, checkout de una mult
   await expect(page).toHaveURL(`/panel/sanciones?torneoId=${apertura.id}`);
 
   // F9: el checkout de una multa dice "Pago acreditado", no que se confirmó la inscripción.
-  const inscripciones = await api<{ equipo: { id: string } }[]>('GET', `/torneos/${apertura.id}/inscripciones`);
+  const inscripciones = await api<{ equipo: { id: string } }[]>(
+    'GET',
+    `/torneos/${apertura.id}/inscripciones`,
+  );
   const exp = await api<{ id: string }>('POST', '/expedientes', {
     tipo: 'OTRO',
     torneoId: apertura.id,
@@ -973,4 +982,301 @@ test('acta: equipo ausente con tolerancia y resultado, línea de tiempo por minu
   await expect
     .poll(async () => (await api<{ estado: string }>('GET', `/partidos/${vuelta.id}`)).estado)
     .toBe('FINALIZADO');
+});
+
+// Torneos por fases (ADR-026, E10-07/08): crear el torneo desde "Armá el formato", generar la fase de grupos, jugarla,
+// generar los playoffs con los clasificados y verlo por fases en el panel y en el sitio público.
+test('torneo por fases: del simulador a los playoffs, en el panel y en el sitio público', async ({
+  page,
+}) => {
+  test.setTimeout(180_000);
+  await page.goto('/ingresar');
+  await page.getByLabel('Email').fill('demo@potrero.app');
+  await page.getByLabel('Contraseña').fill('potrero-demo-2026');
+  await page.getByRole('button', { name: 'Ingresar' }).click();
+  await page.waitForURL((u) => u.pathname.startsWith('/panel'));
+  const api = async <T>(metodo: 'GET' | 'POST', ruta: string, data?: unknown): Promise<T> => {
+    const r = await page.request.fetch(`/api${ruta}`, { method: metodo, data });
+    expect(r.ok(), `${metodo} ${ruta}: ${await r.text()}`).toBe(true);
+    const texto = await r.text();
+    return (texto ? JSON.parse(texto) : null) as T;
+  };
+
+  // El torneo de ejemplo de la demo ya está armado y con la fase de grupos a mitad de camino.
+  await page.goto('/panel/torneos');
+  await page.getByRole('link', { name: /Torneo Primavera 2026/ }).click();
+  await expect(page.getByRole('navigation', { name: 'Fases' })).toBeVisible();
+  await expect(page.getByTestId('detalle-f1')).toContainText('Grupo B');
+  await page
+    .getByRole('navigation', { name: 'Fases' })
+    .getByRole('link', { name: /Playoffs/ })
+    .click();
+  await expect(page.getByText('Playoffs todavía no se puede armar')).toBeVisible();
+  await expect(page.getByText('Falta terminar Fase 1.')).toBeVisible();
+  await foto(page, '50-torneo-por-fases');
+
+  // Del simulador al torneo.
+  await page.goto('/panel/torneos/formato');
+  await page.getByLabel('Equipos', { exact: true }).fill('8');
+  await page.getByRole('button', { name: /Grupos \+ playoffs Zonas/ }).click();
+  await page.getByRole('button', { name: 'Crear torneo con este formato' }).click();
+  const form = page.getByRole('form', { name: 'Crear torneo con este formato' });
+  const nombre = `Fases E2E ${Date.now() % 100000}`;
+  await form.getByLabel('Nombre').fill(nombre);
+  await form.getByLabel('Inscripción por equipo ($)').fill('0');
+  await form.getByLabel('Cuota por fecha ($)').fill('0');
+  await form.getByRole('button', { name: 'Crear torneo' }).click();
+  await page.waitForURL((u) => /^\/panel\/torneos\/(?!formato$|nuevo$)[^/]+$/.test(u.pathname));
+  const torneoId = new URL(page.url()).pathname.split('/').at(-1)!;
+  await expect(page.getByRole('heading', { name: nombre })).toBeVisible();
+
+  // Ocho equipos de la liga (sin arancel quedan confirmados).
+  const equipos = await api<{ id: string }[]>('GET', '/equipos');
+  for (const e of equipos.slice(0, 8))
+    await api('POST', `/torneos/${torneoId}/inscripciones`, { equipoId: e.id });
+
+  // Fase 1: se genera desde la pestaña Fases, con fechas lejanas para no tocar los sábados de la demo.
+  await page.goto(`/panel/torneos/${torneoId}?tab=fases`);
+  const generarGrupos = page.getByRole('form', { name: 'Generar Fase de grupos' });
+  await generarGrupos.getByLabel('Primer día de juego').fill('2027-06-06');
+  await generarGrupos.getByLabel('Horarios').fill('09:00, 10:00');
+  await generarGrupos.getByRole('button', { name: /Generar Fase de grupos con 8 equipos/ }).click();
+  await expect(page.getByTestId('detalle-f1')).toContainText('0 de 12 partidos jugados');
+
+  // Se juega por la API: gana siempre el local.
+  type Vista = { fases: { clave: string; estado: string; partidos: { id: string; estado: string }[] }[] };
+  const jugar = async (id: string) => {
+    const acta = await api<{ local: { id: string; jugadores: { id: string; habilitado: boolean }[] } }>(
+      'GET',
+      `/partidos/${id}`,
+    );
+    await api('POST', `/partidos/${id}/iniciar`, {});
+    await api('POST', `/partidos/${id}/eventos`, {
+      tipo: 'GOL',
+      equipoId: acta.local.id,
+      jugadorId: (acta.local.jugadores.find((j) => j.habilitado) ?? acta.local.jugadores[0])?.id,
+      minuto: 10,
+      clientUuid: crypto.randomUUID(),
+    });
+    await api('POST', `/partidos/${id}/cerrar`, { firmaLocal: true, firmaVisitante: true });
+  };
+  for (const p of (await api<Vista>('GET', `/torneos/${torneoId}/fases?t=${Date.now()}`)).fases[0]!.partidos)
+    await jugar(p.id);
+
+  // Fase 2: los playoffs toman a los dos primeros de cada grupo.
+  await page.goto(`/panel/torneos/${torneoId}?tab=fases&fase=f2`);
+  await expect(page.getByText('Ya están los 4 equipos')).toBeVisible();
+  const generarPlayoffs = page.getByRole('form', { name: 'Generar Playoffs' });
+  await generarPlayoffs.getByLabel('Primer día de juego').fill('2027-07-11');
+  await generarPlayoffs.getByLabel('Horarios').fill('09:00, 10:00');
+  await generarPlayoffs.getByRole('button', { name: /Generar Playoffs/ }).click();
+  await expect(page.getByTestId('detalle-f2')).toContainText('0 de 2 partidos jugados');
+  // Semifinales y, cuando se crea, la final.
+  for (let i = 0; i < 4; i++) {
+    const vista = await api<Vista>('GET', `/torneos/${torneoId}/fases?t=${Date.now()}`);
+    const pendientes = vista.fases[1]!.partidos.filter((p) => p.estado === 'PROGRAMADO');
+    if (!pendientes.length) break;
+    for (const p of pendientes) await jugar(p.id);
+  }
+  await page.reload();
+  await expect(page.getByTestId('detalle-f2')).toContainText('Terminada');
+  await foto(page, '51-playoffs-por-fases');
+
+  // Sitio público por fases.
+  const t = await api<{ slug: string; organizacionSlug: string }>('GET', `/torneos/${torneoId}`);
+  await page.goto(`/t/${t.organizacionSlug}/${t.slug}?fase=f1`);
+  await expect(page.getByRole('navigation', { name: 'Fases' })).toBeVisible();
+  await expect(page.getByTestId('detalle-f1')).toContainText('Grupo A');
+  await page
+    .getByRole('navigation', { name: 'Fases' })
+    .getByRole('link', { name: /Playoffs/ })
+    .click();
+  await expect(page.getByTestId('detalle-f2')).toContainText('Final');
+});
+
+test('permisos de cobro: el administrador registra y anula pagos; el tribunal no ve los botones de cobro', async ({
+  page,
+  browser,
+}) => {
+  const ingresar = async (p: Page, email: string) => {
+    await p.goto('/ingresar');
+    await p.getByLabel('Email').fill(email);
+    await p.getByLabel('Contraseña').fill('potrero-demo-2026');
+    await p.getByRole('button', { name: 'Ingresar' }).click();
+    await expect(p.getByRole('heading', { name: 'Hoy en tu liga' })).toBeVisible();
+  };
+  // El dueño arma un torneo propio con un equipo inscripto que debe la inscripción.
+  await ingresar(page, 'demo@potrero.app');
+  const n = Date.now() % 100000;
+  const torneo = await (
+    await page.request.post('/api/torneos', {
+      data: { nombre: `Prueba Admin ${n}`, modalidad: 'F5', formato: 'COPA', cupo: 6, inscripcion: 60000 },
+    })
+  ).json();
+  const equipos = (await (await page.request.get('/api/equipos')).json()) as { id: string; nombre: string }[];
+  const fenix = equipos.find((e) => e.nombre === 'Fénix FC')!;
+  await page.request.post(`/api/torneos/${torneo.id}/inscripciones`, { data: { equipoId: fenix.id } });
+
+  // Administrador: ve "Registrar pago" y "Cobré … en efectivo", registra un pago parcial y lo puede anular.
+  const adm = await (await browser.newContext()).newPage();
+  await ingresar(adm, 'admin@potrero.app');
+  await expect(adm.locator('aside').getByRole('link', { name: 'Caja' })).toBeVisible();
+  await adm.goto(`/panel/torneos/${torneo.id}?tab=inscripciones`);
+  const fila = adm.getByRole('row').filter({ hasText: 'Fénix FC' });
+  await expect(fila.getByRole('button', { name: /Cobré .* en efectivo/ })).toBeVisible();
+  await fila.getByRole('button', { name: 'Registrar pago' }).click();
+  const dialogo = adm.getByRole('dialog');
+  await dialogo.getByLabel('Monto ($)').fill('20000');
+  await dialogo.getByLabel('Medio').selectOption('EFECTIVO');
+  await dialogo.getByRole('button', { name: /Registrar pago parcial de/ }).click();
+  await expect(dialogo).toBeHidden();
+  await expect(fila).toContainText(/20\.000\s*\/\s*\$\s*60\.000/);
+  await fila.getByRole('button', { name: 'Ver pagos (1)' }).click();
+  await expect(adm.getByRole('dialog').getByRole('button', { name: 'Anular' })).toBeVisible();
+  await foto(adm, '95-administrador-registra-pago');
+
+  // Tribunal: entra al torneo pero no ve los botones de cobro ni la anulación.
+  const tri = await (await browser.newContext()).newPage();
+  await ingresar(tri, 'tribunal@potrero.app');
+  await tri.goto(`/panel/torneos/${torneo.id}?tab=inscripciones`);
+  const filaTri = tri.getByRole('row').filter({ hasText: 'Fénix FC' });
+  await expect(filaTri).toBeVisible();
+  await expect(filaTri.getByRole('button', { name: 'Registrar pago' })).toHaveCount(0);
+  await expect(filaTri.getByRole('button', { name: /Cobré/ })).toHaveCount(0);
+  await filaTri.getByRole('button', { name: 'Ver pagos (1)' }).click();
+  await expect(tri.getByRole('dialog')).toContainText('Efectivo');
+  await expect(tri.getByRole('dialog').getByRole('button', { name: 'Anular' })).toHaveCount(0);
+});
+
+test('backoffice de Gregal: staff separado, métricas, organizaciones, dinero y auditoría (E36)', async ({ page, context }) => {
+  // Un organizador logueado no entra a /gregal: lo manda al ingreso del staff.
+  await page.goto('/ingresar');
+  await page.getByLabel('Email').fill('demo@potrero.app');
+  await page.getByLabel('Contraseña').fill('potrero-demo-2026');
+  await page.getByRole('button', { name: 'Ingresar' }).click();
+  await page.waitForURL('**/panel');
+  await page.goto('/gregal');
+  await expect(page).toHaveURL(/\/gregal\/ingresar$/);
+  await context.clearCookies();
+
+  // Ingreso del staff.
+  await page.getByLabel('Email').fill('staff@gregal.tech');
+  await page.getByLabel('Contraseña').fill('mal-la-clave');
+  await page.getByRole('button', { name: 'Ingresar' }).click();
+  await expect(page.getByText('Email o contraseña incorrectos.')).toBeVisible();
+  await page.getByLabel('Contraseña').fill('potrero-demo-2026');
+  await page.getByRole('button', { name: 'Ingresar' }).click();
+  await page.waitForURL(/\/gregal$/);
+  await expect(page.getByRole('heading', { name: 'Cómo viene Potrero' })).toBeVisible();
+  await expect(page.getByTestId('kpi-ligas')).not.toHaveText('0');
+  await expect(page.getByTestId('partidos-semana').locator('.gregal-cols > div')).toHaveCount(8);
+  await expect(page.getByTestId('ligas-en-riesgo')).toContainText('Liga Amigos de Quilmes');
+  await foto(page, '90-gregal-inicio');
+
+  // Un staff no usa el panel de una liga: sin sesión de organizador, /panel pide ingresar.
+  await page.goto('/panel');
+  await expect(page).toHaveURL(/\/ingresar/);
+
+  // Organizaciones: búsqueda y detalle con la salud.
+  await page.goto('/gregal/organizaciones');
+  const lista = page.getByTestId('lista-organizaciones');
+  await expect(lista).toContainText('Liga Barrial Sur');
+  await expect(lista).toContainText('Fútbol 5 Palermo');
+  await foto(page, '91-gregal-organizaciones');
+  await page.getByLabel('Buscar organización').fill('quilmes');
+  await page.getByRole('button', { name: 'Buscar' }).click();
+  await expect(lista.locator('tbody tr')).toHaveCount(1);
+  await lista.getByRole('link', { name: /Liga Amigos de Quilmes/ }).click();
+  await expect(page.getByRole('heading', { name: 'Liga Amigos de Quilmes' })).toBeVisible();
+  await expect(page.getByTestId('salud')).toContainText('Pocas actas cargadas');
+  await expect(page.getByTestId('salud')).toContainText('Solo pagos manuales');
+  await foto(page, '92-gregal-organizacion');
+
+  await page.getByRole('link', { name: 'Dinero' }).click();
+  await expect(page.getByTestId('dinero-por-mes')).toBeVisible();
+  await foto(page, '93-gregal-dinero');
+
+  // La auditoría registra lo que se acaba de hacer.
+  await page.getByRole('link', { name: 'Auditoría' }).click();
+  const auditoria = page.getByTestId('auditoria');
+  await expect(auditoria).toContainText('Ingresó al backoffice');
+  await expect(auditoria).toContainText('Vio el detalle de una organización');
+  await expect(auditoria).toContainText('Liga Amigos de Quilmes');
+  await foto(page, '94-gregal-auditoria');
+
+  await page.getByTestId('gregal-salir').click();
+  await page.waitForURL(/\/gregal\/ingresar$/);
+});
+
+test('jugador: cuenta, asistencia que ve el capitán, avisos, privacidad e invitación desde el plantel (E20-01, E20-05, E19-02)', async ({
+  page,
+  browser,
+}) => {
+  const ingresar = async (p: Page, email: string) => {
+    await p.goto('/ingresar');
+    await p.getByLabel('Email').fill(email);
+    await p.getByLabel('Contraseña').fill('potrero-demo-2026');
+    await p.getByRole('button', { name: 'Ingresar' }).click();
+  };
+  // El jugador de demo entra y cae en su panel, nunca en el del organizador ni en el del capitán.
+  await ingresar(page, 'jugador@potrero.app');
+  await expect(page).toHaveURL(/\/jugador/);
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  const nombre = (await page.getByRole('heading', { level: 1 }).textContent())!.trim();
+  await expect(page.getByTestId('proximo-jugador').first()).toContainText('Villa Unión');
+  await expect(page.getByTestId('avisos')).toBeVisible();
+  await expect(page.getByTestId('mis-sanciones')).toContainText('Sin suspensión');
+  await expect(page.getByTestId('mi-documentacion')).toBeVisible();
+  await expect(page.getByTestId('mi-trayectoria')).toContainText('Apertura 2026');
+  await foto(page, '60-jugador');
+  await page.goto('/panel');
+  await expect(page).toHaveURL(/\/jugador/);
+  await page.goto('/capitan');
+  await expect(page).toHaveURL(/\/jugador/);
+
+  // Confirma asistencia: primero "No voy" y después "Voy", y el capitán lo ve en su convocatoria.
+  const asistencia = page.getByTestId('asistencia');
+  await asistencia.getByRole('button', { name: 'No voy' }).click();
+  await expect(asistencia).toContainText('Avisaste que no vas');
+  await asistencia.getByRole('button', { name: 'Voy', exact: true }).click();
+  await expect(asistencia).toContainText('Confirmaste que vas');
+  await expect(page.getByTestId('avisos')).not.toContainText('¿Vas contra');
+
+  // Elige cómo aparece su nombre en el sitio público.
+  const privacidad = page.getByTestId('privacidad');
+  await privacidad.getByRole('radio', { name: 'Completo' }).click();
+  await expect(privacidad).toContainText(`aparecés como ${nombre}`);
+  await privacidad.getByRole('radio', { name: 'Nombre e inicial' }).click();
+  await expect(privacidad).not.toContainText(`aparecés como ${nombre}`);
+
+  // El capitán ve la confirmación y al jugador "En la app"; invita a otro del plantel y recibe el link.
+  const cap = await (await browser.newContext()).newPage();
+  await ingresar(cap, 'capitan@potrero.app');
+  await expect(cap).toHaveURL(/\/capitan/);
+  await expect(
+    cap.getByTestId('convocatoria').getByTestId('convocado').filter({ hasText: nombre }),
+  ).toContainText('Va');
+  const fila = cap.getByTestId('jugador-plantel').filter({ hasText: nombre });
+  await expect(fila).toContainText('En la app');
+  const otro = cap
+    .getByTestId('jugador-plantel')
+    .filter({ has: cap.getByRole('button', { name: /^Invitar a .* a la app$/ }) })
+    .first();
+  await otro.getByRole('button', { name: /^Invitar a .* a la app$/ }).click();
+  await otro.getByLabel(/^Email de/).fill(`jugador.e2e${Date.now() % 100000}@ejemplo.com.ar`);
+  await otro.getByRole('button', { name: 'Generar invitación' }).click();
+  const link = await otro.getByLabel('Link de invitación').inputValue();
+  expect(link).toContain('/invitacion/');
+  await foto(cap, '61-capitan-invita');
+
+  // El invitado ve los términos con su versión: sin aceptarlos no puede crear la cuenta.
+  const inv = await (await browser.newContext()).newPage();
+  await inv.goto(new URL(link).pathname);
+  await expect(inv.getByRole('heading', { name: /Te invitaron como jugador de Villa Unión/ })).toBeVisible();
+  await expect(inv.getByText('Términos de uso para jugadores')).toBeVisible();
+  await inv.getByLabel('Elegí una contraseña').fill('clave-segura-e2e');
+  await inv.getByRole('checkbox').check();
+  await inv.getByRole('button', { name: 'Crear cuenta y aceptar' }).click();
+  await expect(inv).toHaveURL(/\/jugador/);
+  await expect(inv.getByTestId('mi-documentacion')).toBeVisible();
 });

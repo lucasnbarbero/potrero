@@ -3,6 +3,7 @@
 import { Controller, Get, Injectable, Module } from '@nestjs/common';
 import {
   alertasDelPanel,
+  DATOS,
   DIAS_PROXIMA_FECHA,
   estadoDeDocumento,
   marcador,
@@ -22,7 +23,7 @@ const ZONA = 'America/Argentina/Buenos_Aires';
 const HORA_MS = 3_600_000;
 const DIA_MS = 86_400_000;
 /** Un partido que empezó hace más de esto y no tiene el acta cerrada cuenta como "acta sin cargar". */
-const ACTA_ATRASADA_MS = 2 * HORA_MS;
+const ACTA_ATRASADA_MS = DATOS.panel.actaAtrasadaHoras * HORA_MS;
 
 const diaDeSemana = (d: Date) =>
   new Intl.DateTimeFormat('es-AR', { timeZone: ZONA, weekday: 'long' }).format(d);
@@ -168,7 +169,10 @@ export class PanelService {
           }),
         () =>
           tx.mensaje.count({
-            where: { estado: 'FALLIDO', creadoEn: { gte: new Date(ahora.getTime() - 7 * DIA_MS) } },
+            where: {
+              estado: 'FALLIDO',
+              creadoEn: { gte: new Date(ahora.getTime() - DATOS.panel.mensajesFallidosDias * DIA_MS) },
+            },
           }),
         // Pagos que ya tienen su asiento en la caja (ADR-023): el resto está sin conciliar.
         () => tx.asiento.findMany({ where: { clave: { startsWith: 'pago:' } }, select: { clave: true } }),
@@ -237,8 +241,8 @@ export class PanelService {
         .filter((v): v is Date => !!v && hoyEnArgentina(v) >= hoy)
         .sort((a, b) => a.getTime() - b.getTime())[0];
 
-      // Cobrado acumulado de los últimos 30 días (un punto por día), para la línea del tile.
-      const DIAS_SERIE = 30;
+      // Cobrado acumulado de los últimos días (un punto por día), para la línea del tile.
+      const DIAS_SERIE = DATOS.panel.serieCobradoDias;
       const desdeSerie = new Date(ahora.getTime() - (DIAS_SERIE - 1) * DIA_MS);
       const previo = pagos
         .filter((p) => hoyEnArgentina(p.acreditadoEn ?? p.creadoEn) < hoyEnArgentina(desdeSerie))
@@ -384,7 +388,7 @@ export class PanelService {
       const equiposActivos = new Map(inscripciones.map((i) => [i.equipo.id, i.equipo.nombre]));
       const nuevos = new Set(
         inscripciones
-          .filter((i) => i.creadoEn.getTime() > ahora.getTime() - 7 * DIA_MS)
+          .filter((i) => i.creadoEn.getTime() > ahora.getTime() - DATOS.panel.equiposNuevosDias * DIA_MS)
           .map((i) => i.equipo.id),
       );
 
